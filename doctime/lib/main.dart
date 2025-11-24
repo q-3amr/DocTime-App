@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
           seedColor: const Color.fromARGB(255, 183, 58, 58),
         ),
       ),
-      home: const MyHomePage(title: 'DocTime Rahmah App'),
+      home: const MyHomePage(title: 'DocTime App'),
     );
   }
 }
