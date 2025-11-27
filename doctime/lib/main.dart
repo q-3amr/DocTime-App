@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // تهيئة Firebase
+
+  // تهيئة Firebase
+  await Firebase.initializeApp();
 
   runApp(const MyApp());
 }
@@ -25,44 +27,53 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int counter = 0;
-
-  Future<void> _addClickToFirestore() async {
-    await FirebaseFirestore.instance.collection("clicks").add({
-      "count": counter,
-      "time": DateTime.now(),
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("DocTime Rahmah App")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text("Number of clicks:"),
-            Text("$counter", style: const TextStyle(fontSize: 30)),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          setState(() {
-            counter++;
-          });
-          await _addClickToFirestore();
+      appBar: AppBar(title: const Text("Firestore Test")),
+      body: FutureBuilder<DocumentSnapshot>(
+        // بنجيب الدوكيومنت users/auto من فايرستور
+        future: FirebaseFirestore.instance
+            .collection("users")
+            .doc("auto")
+            .get(),
+        builder: (context, snapshot) {
+          // لسه بجيب البيانات
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // صار في خطأ
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Error: ${snapshot.error}",
+                textAlign: TextAlign.center,
+              ),
+            );
+          }
+
+          // ما لقى بيانات
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text("No data found"));
+          }
+
+          // في بيانات ✅
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final name = data['name'] ?? 'no name';
+          final age = data['age']?.toString() ?? 'no age';
+
+          return Center(
+            child: Text(
+              "Name: $name\nAge: $age",
+              style: const TextStyle(fontSize: 24),
+              textAlign: TextAlign.center,
+            ),
+          );
         },
-        child: const Icon(Icons.add),
       ),
     );
   }
