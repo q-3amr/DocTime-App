@@ -19,10 +19,33 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'DocTime Rahmah App',
       theme: ThemeData(
+<<<<<<< HEAD
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
       home: const MyHomePage(),
+=======
+        // This is the theme of your application.
+        //
+        // TRY THIS: Try running your application with "flutter run". You'll see
+        // the application has a purple toolbar. Then, without quitting the app,
+        // try changing the seedColor in the colorScheme below to Colors.green
+        // and then invoke "hot reload" (save your changes or press the "hot
+        // reload" button in a Flutter-supported IDE, or press "r" if you used
+        // the command line to start the app).
+        //
+        // Notice that the counter didn't reset back to zero; the application
+        // state is not lost during the reload. To reset the state, use hot
+        // restart instead.
+        //
+        // This works for code too, not just values: Most code changes can be
+        // tested with just a hot reload.
+        colorScheme: .fromSeed(
+          seedColor: const Color.fromARGB(255, 183, 58, 58),
+        ),
+      ),
+      home: const MyHomePage(title: 'DocTime Qusia2 App'),
+>>>>>>> ad573b4455f2c3e569d7984f26e82c76ee73e118
     );
   }
 }
