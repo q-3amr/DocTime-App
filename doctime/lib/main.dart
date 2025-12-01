@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/signup_screen.dart';
+import 'package:doctime/screens/auth/doctors/doctors_list_screen.dart';
+import 'package:doctime/screens/auth/login_screen.dart';
+import 'package:doctime/screens/auth/signup_screen.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -39,7 +41,7 @@ class MyApp extends StatelessWidget {
           seedColor: const Color.fromARGB(255, 183, 58, 58),
         ),
       ),
-      home: const LoginScreen(),
+      home: const DoctorsListScreen(),
     );
   }
 }

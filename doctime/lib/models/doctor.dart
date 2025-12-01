@@ -19,19 +19,21 @@ class DoctorModel {
     this.isVerified = false,
   });
 
+  // من Firebase ➜ إلى الموديل
   factory DoctorModel.fromMap(Map<String, dynamic> map, String documentId) {
     return DoctorModel(
       id: documentId,
       name: map['name'] ?? '',
       specialty: map['specialty'] ?? '',
       imageUrl: map['imageUrl'] ?? '',
-      rating: (map['rating'] ?? 0.0).toDouble(),
+      rating: (map['rating'] is num) ? (map['rating'] as num).toDouble() : 0.0,
       location: map['location'] ?? '',
       about: map['about'] ?? '',
-      isVerified: map['isVerified'] ?? false, // default to false if not provided
+      isVerified: map['isVerified'] ?? false,
     );
   }
 
+  // من الموديل ➜ إلى Map نخزنها في Firestore
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -40,7 +42,7 @@ class DoctorModel {
       'rating': rating,
       'location': location,
       'about': about,
-      'isVerified': isVerified, // include verification status
+      'isVerified': isVerified,
     };
   }
 }
