@@ -1,43 +1,81 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/doctor.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // 1. مراقب حالة المستخدم (عشان نعرف إذا مسجل دخول ولا لأ)
+  // مراقب حالة المستخدم
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // 2. جلب المستخدم الحالي
+  // المستخدم الحالي
   User? get currentUser => _auth.currentUser;
 
-  // 3. تسجيل الدخول (Login)
+  // تسجيل الدخول (زي ما هو)
   Future<UserCredential?> signIn(String email, String password) async {
     try {
-      UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return result;
+      return await _auth.signInWithEmailAndPassword(email: email, password: password);
     } on FirebaseAuthException catch (e) {
-      print("Error in Login: ${e.message}");
-      throw e; // بنرمي الخطأ عشان الواجهة تعرضه للمستخدم
+      throw e.message ?? "An error occurred";
     }
   }
 
-  // 4. إنشاء حساب جديد (Register)
-  Future<UserCredential?> register(String email, String password) async {
+  // --- التحديث القوي هون (التسجيل) ---
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required String name,
+    required String role, // 'doctor' or 'patient'
+    String? specialty, // اختياري (بس للدكتور)
+    String? location,  // اختياري (بس للدكتور)
+  }) async {
     try {
+      // 1. إنشاء الحساب في Authentication (إيميل وباسوورد)
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return result;
+      
+      User? user = result.user;
+      if (user == null) return;
+
+      // 2. حفظ البيانات الإضافية في Firestore حسب الدور
+      if (role == 'doctor') {
+        // إذا دكتور: بنعمل موديل وبنحفظه في doctors collection
+        DoctorModel newDoctor = DoctorModel(
+          id: user.uid, // نستخدم نفس الـ ID تبع الـ Auth
+          name: name,
+          specialty: specialty ?? 'General',
+          location: location ?? 'Amman',
+          imageUrl: '', // صورة فاضية مبدئياً
+          rating: 0.0,
+          about: 'New Doctor',
+          isVerified: false, // أهم اشي: يدخل غير موثق
+        );
+
+        // الحفظ في كولكشن doctors
+        await _firestore.collection('doctors').doc(user.uid).set(newDoctor.toMap());
+      
+      } else {
+        // إذا مريض: بنحفظه في users collection عادي
+        await _firestore.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'name': name,
+          'email': email,
+          'role': 'patient',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
     } on FirebaseAuthException catch (e) {
-      print("Error in Register: ${e.message}");
-      throw e;
+      throw e.message ?? "Registration failed";
+    } catch (e) {
+      throw "Error saving user data: $e";
     }
   }
 
-  // 5. تسجيل الخروج (Sign Out)
+  // تسجيل الخروج
   Future<void> signOut() async {
     await _auth.signOut();
   }
