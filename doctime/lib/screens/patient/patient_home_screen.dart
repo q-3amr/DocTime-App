@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class WelcomeScreen extends StatelessWidget { // <--- 1. غير الاسم هون
-  const WelcomeScreen({super.key});          // <--- 2. وهون
+class PatientHomeScreen extends StatelessWidget { // <--- 1. غير الاسم هون
+  const PatientHomeScreen({super.key});          // <--- 2. وهون
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Welcome"), // <--- 3. اكتب اسم الشاشة هون (مثلاً: Patient Home)
+        title: const Text("Patient"), // <--- 3. اكتب اسم الشاشة هون (مثلاً: Patient Home)
         backgroundColor: Colors.blue,
       ),
       body: Center(
