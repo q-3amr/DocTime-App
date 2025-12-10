@@ -185,29 +185,53 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
 
                 // 👇 هاي الحقول بتطلع بس لما يكبس السويتش
-                if (isDoctor) ...[
-                  const SizedBox(height: 20),
-                  _buildField(
-                    label: "Specialty",
-                    controller: specialtyController,
-                    hint: "e.g. Cardiologist",
-                    icon: Icons.work_outline,
-                    borderColor: borderColor,
-                    primaryBlue: primaryBlue,
-                    labelColor: labelColor,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildField(
-                    label: "Location",
-                    controller: locationController,
-                    hint: "e.g. Amman, Jordan",
-                    icon: Icons.location_on_outlined,
-                    borderColor: borderColor,
-                    primaryBlue: primaryBlue,
-                    labelColor: labelColor,
-                  ),
-                ],
-
+                // 👇 بداية كود الأنيميشن (Slide Down)
+                // 👇 بداية الأنيميشن الجديد (ناعم وفخم)
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 500), // سرعة الظهور
+                  reverseDuration: const Duration(milliseconds: 300), // سرعة الاختفاء
+                  switchInCurve: Curves.easeInOut, // نعومة الحركة
+                  switchOutCurve: Curves.easeInOut,
+                  transitionBuilder: (Widget child, Animation<double> animation) {
+                    return SizeTransition(
+                      sizeFactor: animation,
+                      axisAlignment: -1.0, // -1 يعني ابدأ الفرد من فوق
+                      child: FadeTransition(
+                        opacity: animation, // دمجنا الشفافية مع الحجم
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: isDoctor
+                      ? Column(
+                          // 🔑 المفتاح (Key) ضروري جداً عشان الـ Switcher يفرق بينهم
+                          key: const ValueKey('doctor_fields'),
+                          children: [
+                            const SizedBox(height: 20),
+                            _buildField(
+                              label: "Specialty",
+                              controller: specialtyController,
+                              hint: "e.g. Cardiologist",
+                              icon: Icons.work_outline,
+                              borderColor: borderColor,
+                              primaryBlue: primaryBlue,
+                              labelColor: labelColor,
+                            ),
+                            const SizedBox(height: 20),
+                            _buildField(
+                              label: "Location",
+                              controller: locationController,
+                              hint: "e.g. Amman, Jordan",
+                              icon: Icons.location_on_outlined,
+                              borderColor: borderColor,
+                              primaryBlue: primaryBlue,
+                              labelColor: labelColor,
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(key: ValueKey('empty')), // لما يكون مسكر
+                ),
+                // 👆 نهاية الأنيميشن
                 const SizedBox(height: 30),
 
                 // زر التسجيل
