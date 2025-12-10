@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/doctor.dart';
+import '../models/patient.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -58,14 +59,19 @@ class AuthService {
         await _firestore.collection('doctors').doc(user.uid).set(newDoctor.toMap());
       
       } else {
-        // إذا مريض: بنحفظه في users collection عادي
-        await _firestore.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'name': name,
-          'email': email,
-          'role': 'patient',
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+        // --- ✅ التعديل الجديد (كود المريض) ---
+        
+        // بنعمل اوبجيكت من كلاس المريض
+        PatientModel newPatient = PatientModel(
+          uid: user.uid,
+          email: email,
+          name: name,
+          role: 'patient',
+          profileImage: '', // بنبعثها فاضية بالبداية
+        );
+
+        // بنحفظها بالداتابيس
+        await _firestore.collection('users').doc(user.uid).set(newPatient.toMap());
       }
 
     } on FirebaseAuthException catch (e) {
