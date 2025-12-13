@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import 'signup_screen.dart'; // 👈 تأكد من الاسم
+import 'signup_screen.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../patient/patient_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,11 +21,35 @@ class _LoginScreenState extends State<LoginScreen> {
   void handleLogin() async {
     setState(() => isLoading = true);
     try {
+      // 1. تسجيل الدخول
       await AuthService().signIn(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
-      // هون المفروض ينقلك عالـ HomeWrapper لحاله
+
+      // 2. معرفة الـ ID تبع المستخدم الحالي
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null && mounted) {
+        // 3. فحص هل هو دكتور؟
+        DocumentSnapshot docSnap = await FirebaseFirestore.instance
+            .collection('doctors')
+            .doc(user.uid)
+            .get();
+
+        if (docSnap.exists) {
+          // 👨‍⚕️ طلع دكتور -> وديه على شاشة الدكتور
+          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const DoctorHomeScreen()));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Welcome Doctor!")));
+        } else {
+          // 👤 طلع مريض -> وديه على شاشة المريض
+          Navigator.pushReplacement(
+            context, 
+            MaterialPageRoute(builder: (c) => const PatientHomeScreen())
+          );
+        }
+      }
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
