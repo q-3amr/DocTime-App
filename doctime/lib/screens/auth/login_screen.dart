@@ -21,28 +21,48 @@ class _LoginScreenState extends State<LoginScreen> {
   void handleLogin() async {
     setState(() => isLoading = true);
     try {
-      // 1. تسجيل الدخول
+      // 1. تسجيل الدخول (فايربيس بتأكد من الإيميل والباسورد)
       await AuthService().signIn(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
 
-      // 2. معرفة الـ ID تبع المستخدم الحالي
       User? user = FirebaseAuth.instance.currentUser;
 
       if (user != null && mounted) {
-        // 3. فحص هل هو دكتور؟
+        // 2. فحص هل هو دكتور؟
         DocumentSnapshot docSnap = await FirebaseFirestore.instance
             .collection('doctors')
             .doc(user.uid)
             .get();
 
         if (docSnap.exists) {
-          // 👨‍⚕️ طلع دكتور -> وديه على شاشة الدكتور
-          // Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const DoctorHomeScreen()));
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Welcome Doctor!")));
+          // 👨‍⚕️ طلع دكتور - هسا بنفحص التوثيق
+          Map<String, dynamic> data = docSnap.data() as Map<String, dynamic>;
+          bool isVerified = data['isVerified'] ?? false; // القيمة الافتراضية false
+
+          if (isVerified) {
+             // ✅ موثق: وديه على شاشة الدكتور
+             // Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const DoctorHomeScreen()));
+             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Welcome Doctor!")));
+          } else {
+             // ❌ مش موثق: اطرده
+             await AuthService().signOut(); // 👈 بنسجل خروجه فوراً
+             if (mounted) {
+               showDialog(
+                 context: context,
+                 builder: (context) => AlertDialog(
+                   title: const Text("Pending Approval"),
+                   content: const Text("Your account is currently under review by the admin. Please wait for approval."),
+                   actions: [
+                     TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))
+                   ],
+                 ),
+               );
+             }
+          }
         } else {
-          // 👤 طلع مريض -> وديه على شاشة المريض
+          // 👤 طلع مريض -> وديه على شاشة المريض (المريض ما بده توثيق)
           Navigator.pushReplacement(
             context, 
             MaterialPageRoute(builder: (c) => const PatientHomeScreen())
