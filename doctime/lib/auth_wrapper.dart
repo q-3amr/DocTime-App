@@ -25,7 +25,7 @@ class AuthWrapper extends StatelessWidget {
                 return const Scaffold(body: Center(child: CircularProgressIndicator()));
               }
               if (roleSnapshot.hasData && roleSnapshot.data!.exists) {
-                return const PatientHomeScreen(); // Must be Updated to DoctorHomeScreen
+                return const DoctorHomeScreen(); // Must be Updated to DoctorHomeScreen
               }
               return const PatientHomeScreen();
             },
