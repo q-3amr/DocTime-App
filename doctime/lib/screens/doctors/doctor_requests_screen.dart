@@ -56,8 +56,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                 // بنجيب بس المواعيد اللي حالتها "pending" وتابعة لهذا الدكتور
                 stream: FirebaseFirestore.instance
                     .collection('appointments')
-                    .where('doctor_id', isEqualTo: "dummy_doc_id") // ⚠️ هام: لازم تكون نفس الـ ID اللي حجز فيه المريض
-                    // .where('doctor_id', isEqualTo: user?.uid) // الصح نستخدم هاي بس عشان التجربة خليناها dummy
+                    .where('doctor_id', isEqualTo: user?.uid)
                     .where('status', isEqualTo: 'pending')
                     .snapshots(),
                 builder: (context, snapshot) {

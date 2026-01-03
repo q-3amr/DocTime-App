@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:doctime/screens/common/chat_screen.dart';
 class DoctorDetailsScreen extends StatefulWidget {
   final String doctorName;
   final String specialty;
@@ -115,7 +115,24 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                       _buildInfoChip(Icons.work, "5 Yrs", "Experience"),
                     ],
                   ),
-
+                  Container(
+  height: 56,
+  width: 56,
+  decoration: BoxDecoration(
+    color: primaryBlue.withOpacity(0.1),
+    borderRadius: BorderRadius.circular(16),
+  ),
+  child: IconButton(
+    icon: Icon(Icons.chat_bubble_outline_rounded, color: primaryBlue),
+    onPressed: () {
+      // 👇 هون التربيط السحري: بنفتح الشات وبنمرر معلومات الدكتور
+      Navigator.push(context, MaterialPageRoute(builder: (c) => ChatScreen(
+        receiverId: widget.doctorId,    // الآيدي الحقيقي للدكتور اللي جاي من الداتابيس
+        receiverName: widget.doctorName, // اسم الدكتور اللي رح يظهر فوق بالشات
+      )));
+    },
+  ),
+),
                   const SizedBox(height: 25),
 
                   const Text("About Doctor", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

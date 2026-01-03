@@ -12,13 +12,44 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen> {
   int _buttonIndex = 0; // 0 للقادمة (Upcoming)، 1 للمكتملة (Completed)
   final User? user = FirebaseAuth.instance.currentUser;
+  
+  bool isDoctor = false;
+  bool isLoadingRole = true; // 👇 متغير جديد لمنع اختفاء البيانات
 
-  // ألوان التصميم اللي اعتمدناها
+  // ألوان التصميم الخاصة بك
   final Color primaryBlue = const Color(0xFF407CE2);
   final Color lightBg = const Color(0xFFF5F7FA);
 
   @override
+  void initState() {
+    super.initState();
+    _checkUserRole();
+  }
+
+  // 🛠️ فحص الرتبة قبل جلب البيانات
+  void _checkUserRole() async {
+    if (user != null) {
+      try {
+        var doc = await FirebaseFirestore.instance.collection('doctors').doc(user!.uid).get();
+        if (mounted) {
+          setState(() {
+            isDoctor = doc.exists;
+            isLoadingRole = false; // ننهي التحميل هون
+          });
+        }
+      } catch (e) {
+        if (mounted) setState(() => isLoadingRole = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // إذا لسا مش عارفين الرتبة، بنعرض لودينج خفيف بدل ما تظهر بيانات غلط وتختفي
+    if (isLoadingRole) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -47,12 +78,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
               const SizedBox(height: 25),
 
-              // 2️⃣ جلب البيانات الحقيقية من الفايربيس
+              // 2️⃣ جلب البيانات الحقيقية
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('appointments')
-                      .where('patient_id', isEqualTo: user?.uid) // بنجيب مواعيد المريض الحالي بس
+                      // 👇 المنطق الذكي: ببحث حسب رتبتك الحقيقية
+                      .where(isDoctor ? 'doctor_id' : 'patient_id', isEqualTo: user?.uid)
                       .where('status', isEqualTo: _buttonIndex == 0 ? 'accepted' : 'completed')
                       .snapshots(),
                   builder: (context, snapshot) {
@@ -80,7 +112,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       itemBuilder: (context, index) {
                         var data = appointments[index];
                         return _buildScheduleCard(
-                          doctorName: data['doctor_name'],
+                          // 👇 إذا دكتور اعرض اسم المريض، وإذا مريض اعرض اسم الدكتور
+                          displayName: isDoctor ? (data['patient_name'] ?? "Patient") : (data['doctor_name'] ?? "Doctor"),
                           date: data['date'].toString().substring(0, 10),
                           primaryColor: primaryBlue,
                         );
@@ -96,7 +129,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ودجت كبسة التبديل
   Widget _buildToggleButton(String text, int index) {
     bool isSelected = _buttonIndex == index;
     return Expanded(
@@ -119,8 +151,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 
-  // ودجت كرت الموعد
-  Widget _buildScheduleCard({required String doctorName, required String date, required Color primaryColor}) {
+  Widget _buildScheduleCard({required String displayName, required String date, required Color primaryColor}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
@@ -143,9 +174,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(doctorName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  Text(displayName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 5),
-                  Text("Confirmed Appointment", style: TextStyle(color: Colors.green.shade600, fontWeight: FontWeight.w600, fontSize: 12)),
+                  Text(
+                    _buttonIndex == 0 ? "Confirmed Appointment" : "Session Completed", 
+                    style: TextStyle(color: _buttonIndex == 0 ? Colors.green.shade600 : Colors.blue.shade600, fontWeight: FontWeight.w600, fontSize: 12)
+                  ),
                 ],
               ),
             ],
