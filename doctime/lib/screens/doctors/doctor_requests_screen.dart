@@ -1,11 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class DoctorRequestsScreen extends StatelessWidget {
+class DoctorRequestsScreen extends StatefulWidget {
   const DoctorRequestsScreen({super.key});
 
   @override
+  State<DoctorRequestsScreen> createState() => _DoctorRequestsScreenState();
+}
+
+class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
+  final User? user = FirebaseAuth.instance.currentUser;
+
+  // دالة لقبول الطلب
+  Future<void> _acceptRequest(String docId) async {
+    await FirebaseFirestore.instance.collection('appointments').doc(docId).update({
+      'status': 'accepted', // نغير الحالة لمقبول
+    });
+  }
+
+  // دالة لرفض الطلب
+  Future<void> _declineRequest(String docId) async {
+    await FirebaseFirestore.instance.collection('appointments').doc(docId).update({
+      'status': 'declined', // نغير الحالة لمرفوض
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // 🎨 نفس الألوان والستايل
     final Color primaryBlue = const Color(0xFF407CE2);
     final Color lightBg = const Color(0xFFF5F7FA);
 
@@ -25,39 +47,54 @@ class DoctorRequestsScreen extends StatelessWidget {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24.0), // نفس الحشوة الموحدة
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            // 1️⃣ ملخص سريع (Header)
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: lightBg,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline_rounded, color: Colors.grey, size: 28),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Text(
-                      "You have 3 new requests waiting for approval.",
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w500),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 25),
-
-            // 2️⃣ قائمة الطلبات (List)
-            // استخدمنا Expanded عشان تعبي باقي الشاشة
+            // 1️⃣ StreamBuilder لجلب البيانات الحقيقية
             Expanded(
-              child: ListView.builder(
-                itemCount: 3, // عدد وهمي للتجربة
-                itemBuilder: (context, index) {
-                  return _buildRequestCard(index, primaryBlue);
+              child: StreamBuilder<QuerySnapshot>(
+                // بنجيب بس المواعيد اللي حالتها "pending" وتابعة لهذا الدكتور
+                stream: FirebaseFirestore.instance
+                    .collection('appointments')
+                    .where('doctor_id', isEqualTo: "dummy_doc_id") // ⚠️ هام: لازم تكون نفس الـ ID اللي حجز فيه المريض
+                    // .where('doctor_id', isEqualTo: user?.uid) // الصح نستخدم هاي بس عشان التجربة خليناها dummy
+                    .where('status', isEqualTo: 'pending')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  // حالة التحميل
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  // حالة لا يوجد بيانات
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inbox_rounded, size: 80, color: Colors.grey.shade300),
+                          const SizedBox(height: 15),
+                          Text("No pending requests", style: TextStyle(color: Colors.grey.shade500, fontSize: 18, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    );
+                  }
+
+                  var requests = snapshot.data!.docs;
+
+                  // 2️⃣ عرض القائمة
+                  return ListView.builder(
+                    itemCount: requests.length,
+                    itemBuilder: (context, index) {
+                      var req = requests[index];
+                      return _buildRequestCard(
+                        name: req['patient_name'],
+                        date: req['date'].toString().substring(0, 10), // تاريخ مختصر
+                        docId: req.id, // آيدي المستند عشان التعديل
+                        primaryColor: primaryBlue
+                      );
+                    },
+                  );
                 },
               ),
             ),
@@ -68,7 +105,7 @@ class DoctorRequestsScreen extends StatelessWidget {
   }
 
   // ودجت كرت الطلب
-  Widget _buildRequestCard(int index, Color primaryColor) {
+  Widget _buildRequestCard({required String name, required String date, required String docId, required Color primaryColor}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
@@ -103,17 +140,13 @@ class DoctorRequestsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Patient Name ${index + 1}", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                    Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 5),
                     Row(
                       children: [
                         Icon(Icons.calendar_today_rounded, size: 16, color: Colors.grey.shade500),
                         const SizedBox(width: 6),
-                        Text("12 Jan, 2025", style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
-                        const SizedBox(width: 15),
-                        Icon(Icons.access_time_rounded, size: 16, color: Colors.grey.shade500),
-                        const SizedBox(width: 6),
-                        Text("10:00 AM", style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+                        Text(date, style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ],
@@ -124,13 +157,13 @@ class DoctorRequestsScreen extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // أزرار القبول والرفض (كبار وواضحين)
+          // أزرار القبول والرفض الحقيقية
           Row(
             children: [
               // زر الرفض
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => _declineRequest(docId), // 👇 ربطنا الرفض
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade50,
                     foregroundColor: Colors.red,
@@ -145,7 +178,7 @@ class DoctorRequestsScreen extends StatelessWidget {
               // زر القبول
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => _acceptRequest(docId), // 👇 ربطنا القبول
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,

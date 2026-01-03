@@ -3,12 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
-// 👇 تأكد من استدعاء الصفحات (تأكد من صحة المسارات عندك)
+import 'doctor_search_screen.dart';
 import 'doctor_details_screen.dart'; 
 import 'ai_chat_screen.dart';        
 import '../common/schedule_screen.dart'; 
 import '../common/profile_screen.dart';  
-import '../common/chats_list_screen.dart'; // تأكد إنك عامل هذا الملف
+import '../common/chats_list_screen.dart'; 
 
 // 1️⃣ الإطار الرئيسي (Shell)
 class PatientHomeScreen extends StatefulWidget {
@@ -253,7 +253,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       childAspectRatio: 1.2, 
                       children: [
                         _buildSquareBtn(Icons.person_search_rounded, "Find Doctor", Colors.blue, () {
-                            Navigator.push(context, MaterialPageRoute(builder: (c) => const DoctorDetailsScreen(doctorName: "Qusai", specialty: "SE")));
+                            Navigator.push(context, MaterialPageRoute(builder: (c) => const DoctorSearchScreen()));
                         }),
                         _buildSquareBtn(Icons.smart_toy_rounded, "AI Assistant", Colors.purple, () {
                             Navigator.push(context, MaterialPageRoute(builder: (c) => const AiChatScreen()));

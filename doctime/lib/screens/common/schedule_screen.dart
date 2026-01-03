@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -8,9 +10,10 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  int _buttonIndex = 0; // 0 for Upcoming, 1 for Completed
+  int _buttonIndex = 0; // 0 للقادمة (Upcoming)، 1 للمكتملة (Completed)
+  final User? user = FirebaseAuth.instance.currentUser;
 
-  // ألوان التصميم
+  // ألوان التصميم اللي اعتمدناها
   final Color primaryBlue = const Color(0xFF407CE2);
   final Color lightBg = const Color(0xFFF5F7FA);
 
@@ -20,26 +23,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24.0), // نفس الحشوة الموحدة
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              
-              // 1️⃣ Header
               const Text(
                 "My Schedule",
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Colors.black87),
               ),
-              
               const SizedBox(height: 25),
 
-              // 2️⃣ Toggle Switch (Upcoming / Completed)
+              // 1️⃣ أزرار التبديل (Upcoming / Completed)
               Container(
                 padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: lightBg,
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                decoration: BoxDecoration(color: lightBg, borderRadius: BorderRadius.circular(16)),
                 child: Row(
                   children: [
                     _buildToggleButton("Upcoming", 0),
@@ -48,15 +45,47 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 25),
 
-              // 3️⃣ Appointments List (Expanded to fill screen)
+              // 2️⃣ جلب البيانات الحقيقية من الفايربيس
               Expanded(
-                child: ListView.builder(
-                  itemCount: 3, // عدد وهمي
-                  itemBuilder: (context, index) {
-                    return _buildScheduleCard(index);
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('appointments')
+                      .where('patient_id', isEqualTo: user?.uid) // بنجيب مواعيد المريض الحالي بس
+                      .where('status', isEqualTo: _buttonIndex == 0 ? 'accepted' : 'completed')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.calendar_today_outlined, size: 70, color: Colors.grey.shade300),
+                            const SizedBox(height: 15),
+                            Text("No appointments found", style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                          ],
+                        ),
+                      );
+                    }
+
+                    var appointments = snapshot.data!.docs;
+
+                    return ListView.builder(
+                      itemCount: appointments.length,
+                      itemBuilder: (context, index) {
+                        var data = appointments[index];
+                        return _buildScheduleCard(
+                          doctorName: data['doctor_name'],
+                          date: data['date'].toString().substring(0, 10),
+                          primaryColor: primaryBlue,
+                        );
+                      },
+                    );
                   },
                 ),
               ),
@@ -82,11 +111,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           child: Center(
             child: Text(
               text,
-              style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade600,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: isSelected ? Colors.white : Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ),
@@ -95,7 +120,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   // ودجت كرت الموعد
-  Widget _buildScheduleCard(int index) {
+  Widget _buildScheduleCard({required String doctorName, required String date, required Color primaryColor}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
@@ -103,103 +128,39 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 10))],
       ),
       child: Column(
         children: [
-          // تفاصيل الدكتور/المريض
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.blue.shade100)),
-                child: const CircleAvatar(
-                  radius: 26,
-                  backgroundColor: Colors.blue,
-                  // أيقونة طبيب أو مريض حسب المستخدم
-                  child: Icon(Icons.person, color: Colors.white, size: 30),
-                ),
+              const CircleAvatar(
+                radius: 26,
+                backgroundColor: Colors.blue,
+                child: Icon(Icons.person, color: Colors.white, size: 30),
               ),
               const SizedBox(width: 15),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Dr. Qusai Ahmed", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  Text(doctorName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 5),
-                  Text("Software Engineer", style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+                  Text("Confirmed Appointment", style: TextStyle(color: Colors.green.shade600, fontWeight: FontWeight.w600, fontSize: 12)),
                 ],
               ),
             ],
           ),
-          
           const SizedBox(height: 20),
-          
-          // تفاصيل الوقت والتاريخ (بمربعات رمادية فاتحة)
           Container(
             padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F7FA),
-              borderRadius: BorderRadius.circular(16),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFF5F7FA), borderRadius: BorderRadius.circular(16)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today_rounded, size: 20, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    const Text("Mon, 12 Jan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.access_time_rounded, size: 20, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    const Text("10:00 AM", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  ],
-                ),
+                Row(children: [const Icon(Icons.calendar_today_rounded, size: 18, color: Colors.grey), const SizedBox(width: 8), Text(date, style: const TextStyle(fontWeight: FontWeight.bold))]),
+                const Row(children: [Icon(Icons.access_time_rounded, size: 18, color: Colors.grey), SizedBox(width: 8), Text("10:00 AM", style: TextStyle(fontWeight: FontWeight.bold))]),
               ],
             ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // أزرار التحكم (Cancel / Reschedule)
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: BorderSide(color: Colors.grey.shade300),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: const Text("Cancel", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryBlue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    elevation: 5,
-                    shadowColor: primaryBlue.withOpacity(0.3),
-                  ),
-                  child: const Text("Reschedule", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
           ),
         ],
       ),
