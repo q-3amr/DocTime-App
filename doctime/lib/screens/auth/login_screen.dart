@@ -4,6 +4,7 @@ import 'signup_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../patient/patient_home_screen.dart';
+import '../doctors/doctor_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void handleLogin() async {
     setState(() => isLoading = true);
     try {
-      // 1. تسجيل الدخول (فايربيس بتأكد من الإيميل والباسورد)
+      // 1. تسجيل الدخول
       await AuthService().signIn(
         emailController.text.trim(),
         passwordController.text.trim(),
@@ -37,17 +38,19 @@ class _LoginScreenState extends State<LoginScreen> {
             .get();
 
         if (docSnap.exists) {
-          // 👨‍⚕️ طلع دكتور - هسا بنفحص التوثيق
+          // 👨‍⚕️ طلع دكتور
           Map<String, dynamic> data = docSnap.data() as Map<String, dynamic>;
-          bool isVerified = data['isVerified'] ?? false; // القيمة الافتراضية false
+          bool isVerified = data['isVerified'] ?? false; 
 
           if (isVerified) {
-             // ✅ موثق: وديه على شاشة الدكتور
-             // Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const DoctorHomeScreen()));
-             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Welcome Doctor!")));
+             // ✅ موثق: وديه فوراً على شاشة الدكتور (تم التعديل هنا)
+             Navigator.pushReplacement(
+               context, 
+               MaterialPageRoute(builder: (c) => const DoctorHomeScreen())
+             );
           } else {
              // ❌ مش موثق: اطرده
-             await AuthService().signOut(); // 👈 بنسجل خروجه فوراً
+             await AuthService().signOut();
              if (mounted) {
                showDialog(
                  context: context,
@@ -62,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
              }
           }
         } else {
-          // 👤 طلع مريض -> وديه على شاشة المريض (المريض ما بده توثيق)
+          // 👤 طلع مريض -> وديه على شاشة المريض
           Navigator.pushReplacement(
             context, 
             MaterialPageRoute(builder: (c) => const PatientHomeScreen())
@@ -86,13 +89,12 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        // 🛠️ الحل السحري لتثبيت الفوتر وإلغاء السكرول الزايد
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight, // بجبره يوخذ طول الشاشة كاملة
+                  minHeight: constraints.maxHeight,
                 ),
                 child: IntrinsicHeight(
                   child: Padding(
@@ -225,10 +227,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        // 🛑 هذا السطر هو السر: بيوخذ كل المساحة الفاضية وبدفش الفوتر لتحت
                         const Spacer(),
 
-                        // الفوتر (ثابت بأسفل الشاشة)
+                        // الفوتر
                         Padding(
                           padding: const EdgeInsets.only(bottom: 20),
                           child: Row(
@@ -237,7 +238,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               Text("Don't have an account? ", style: TextStyle(color: labelColor, fontSize: 15, fontWeight: FontWeight.w600)),
                               GestureDetector(
                                 onTap: () {
-                                  // 👇 هون استخدمنا pushReplacement عشان نبدل الصفحة
                                   Navigator.pushReplacement(
                                     context, 
                                     MaterialPageRoute(builder: (context) => const SignupScreen())

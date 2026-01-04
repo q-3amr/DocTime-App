@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:doctime/screens/common/chat_screen.dart';
+import '../common/chat_screen.dart'; 
+
 class DoctorDetailsScreen extends StatefulWidget {
   final String doctorName;
   final String specialty;
-  // ضفنا الـ ID عشان نعرف لمين نبعث الحجز (مؤقتاً ممكن نمرره أو نجيبه)
-  final String doctorId; 
+  final String? doctorId;
 
   const DoctorDetailsScreen({
-    super.key, 
-    required this.doctorName, 
+    super.key,
+    required this.doctorName,
     required this.specialty,
-    this.doctorId = "dummy_doc_id", // قيمة افتراضية للتجربة
+    this.doctorId,
   });
 
   @override
@@ -20,174 +20,272 @@ class DoctorDetailsScreen extends StatefulWidget {
 }
 
 class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
-  bool _isLoading = false;
+  final User? user = FirebaseAuth.instance.currentUser;
+  final Color primaryBlue = const Color(0xFF407CE2);
 
-  // دالة الحجز الحقيقي (Firestore)
-  Future<void> _bookAppointment() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+  DateTime _selectedDate = DateTime.now();
+  String? _selectedTimeSlot;
+  List<String> _availableSlots = [];
+  bool _isLoadingSlots = false;
 
-    setState(() => _isLoading = true);
+  @override
+  void initState() {
+    super.initState();
+    _generateSlotsForDate(_selectedDate);
+  }
+
+  // Helper للحصول على مفتاح التاريخ
+  String _getDateKey(DateTime date) {
+    return "${date.year}-${date.month}-${date.day}";
+  }
+
+  // 📅 جلب الأوقات من Availability Collection تبع الدكتور
+  void _generateSlotsForDate(DateTime date) async {
+    setState(() {
+      _isLoadingSlots = true;
+      _selectedTimeSlot = null; 
+    });
+
+    List<String> availableSlots = [];
+    
+    // 1️⃣ جلب الأوقات التي حددها الدكتور
+    var availabilityDoc = await FirebaseFirestore.instance
+        .collection('doctors')
+        .doc(widget.doctorId)
+        .collection('availability')
+        .doc(_getDateKey(date))
+        .get();
+
+    // إذا الدكتور مش محدد أوقات لهذا اليوم
+    if (!availabilityDoc.exists || availabilityDoc['slots'] == null) {
+      if (mounted) setState(() { _availableSlots = []; _isLoadingSlots = false; });
+      return;
+    }
+
+    List<String> doctorSlots = List<String>.from(availabilityDoc['slots']);
+
+    // 2️⃣ جلب المواعيد المحجوزة في هذا اليوم
+    var appointmentsSnap = await FirebaseFirestore.instance
+        .collection('appointments')
+        .where('doctor_id', isEqualTo: widget.doctorId)
+        .get();
+
+    Set<String> takenTimes = {};
+    for (var doc in appointmentsSnap.docs) {
+      DateTime apptDate;
+      var rawDate = doc['date'];
+      
+      // التعامل مع Timestamp و String لتجنب الأخطاء
+      if (rawDate is Timestamp) apptDate = rawDate.toDate();
+      else if (rawDate is String) apptDate = DateTime.tryParse(rawDate) ?? DateTime.now();
+      else continue;
+
+      if (apptDate.year == date.year && apptDate.month == date.month && apptDate.day == date.day) {
+        if (doc['status'] != 'cancelled' && doc['status'] != 'rejected') {
+           // تحويل وقت الحجز لنفس صيغة الـ Slots للمقارنة
+           String hourStr = "${apptDate.hour > 12 ? apptDate.hour - 12 : (apptDate.hour == 0 ? 12 : apptDate.hour)}";
+           String minuteStr = apptDate.minute == 0 ? "00" : "${apptDate.minute}";
+           String amPm = apptDate.hour >= 12 ? "PM" : "AM";
+           takenTimes.add("$hourStr:$minuteStr $amPm"); 
+        }
+      }
+    }
+
+    // 3️⃣ الفلترة: عرض فقط ما حدده الدكتور ولم يُحجز
+    for (String slot in doctorSlots) {
+       if (!takenTimes.contains(slot)) {
+         availableSlots.add(slot);
+       }
+    }
+
+    // ترتيب الأوقات (اختياري)
+    // availableSlots.sort(...);
+
+    if (mounted) {
+      setState(() {
+        _availableSlots = availableSlots;
+        _isLoadingSlots = false;
+      });
+    }
+  }
+
+  // إرسال الطلب
+  void _bookAppointment() async {
+    if (_selectedTimeSlot == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a time slot first!")));
+      return;
+    }
+
+    // تحويل السترينغ لتاريخ حقيقي للتخزين
+    List<String> parts = _selectedTimeSlot!.split(' '); // ["10:30", "AM"]
+    List<String> timeParts = parts[0].split(':'); 
+    int hour = int.parse(timeParts[0]);
+    int minute = int.parse(timeParts[1]);
+    if (parts[1] == "PM" && hour != 12) hour += 12;
+    if (parts[1] == "AM" && hour == 12) hour = 0;
+
+    DateTime finalDate = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, hour, minute);
 
     try {
-      // 1. نجيب اسم المريض الحالي
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      String patientName = userDoc.exists ? userDoc['name'] : "Unknown Patient";
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user?.uid).get();
+      String patientName = userDoc.exists ? userDoc['name'] : "Unknown";
 
-      // 2. نجهز بيانات الحجز
       await FirebaseFirestore.instance.collection('appointments').add({
-        'doctor_id': widget.doctorId,       // آيدي الدكتور (عشان يعرف الطلب إله)
-        'doctor_name': widget.doctorName,   // اسم الدكتور
-        'patient_id': user.uid,             // آيدي المريض
-        'patient_name': patientName,        // اسم المريض
-        'date': DateTime.now().toString(),  // تاريخ الطلب
-        'status': 'pending',                // الحالة: معلق (لسا ما وافق الدكتور)
+        'doctor_id': widget.doctorId,
+        'doctor_name': widget.doctorName,
+        'patient_id': user?.uid,
+        'patient_name': patientName,
+        'date': finalDate, 
+        'status': 'pending', 
         'created_at': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
-        // 3. عرض رسالة نجاح
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text("Success!"),
-            content: const Text("Your appointment request has been sent to the doctor."),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx); // سكر الديالوج
-                  Navigator.pop(context); // ارجع للصفحة الرئيسية
-                },
-                child: const Text("OK"),
-              )
-            ],
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Request Sent! Wait for approval.")));
+        Navigator.pop(context);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
-
-    if (mounted) setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF407CE2);
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          // 1️⃣ صورة الدكتور (SliverAppBar)
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: 250.0,
+            floating: false,
             pinned: true,
             backgroundColor: primaryBlue,
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(widget.doctorName),
-              background: Image.network(
-                "https://img.freepik.com/free-photo/doctor-with-his-arms-crossed-white-background_1368-5790.jpg",
-                fit: BoxFit.cover,
-              ),
+              background: Container(color: primaryBlue.withOpacity(0.8), child: const Icon(Icons.person, size: 100, color: Colors.white)),
+              title: Text("Dr. ${widget.doctorName}", style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
-
-          // 2️⃣ تفاصيل الدكتور
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // الاسم والتخصص
-                  Text(widget.doctorName, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  Text(widget.specialty, style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // إحصائيات سريعة
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildInfoChip(Icons.people, "1000+", "Patients"),
-                      _buildInfoChip(Icons.star, "4.8", "Rating"),
-                      _buildInfoChip(Icons.work, "5 Yrs", "Experience"),
-                    ],
-                  ),
-                  Container(
-  height: 56,
-  width: 56,
-  decoration: BoxDecoration(
-    color: primaryBlue.withOpacity(0.1),
-    borderRadius: BorderRadius.circular(16),
-  ),
-  child: IconButton(
-    icon: Icon(Icons.chat_bubble_outline_rounded, color: primaryBlue),
-    onPressed: () {
-      // 👇 هون التربيط السحري: بنفتح الشات وبنمرر معلومات الدكتور
-      Navigator.push(context, MaterialPageRoute(builder: (c) => ChatScreen(
-        receiverId: widget.doctorId,    // الآيدي الحقيقي للدكتور اللي جاي من الداتابيس
-        receiverName: widget.doctorName, // اسم الدكتور اللي رح يظهر فوق بالشات
-      )));
-    },
-  ),
-),
-                  const SizedBox(height: 25),
-
-                  const Text("About Doctor", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(widget.specialty, style: TextStyle(color: Colors.grey.shade600, fontSize: 18, fontWeight: FontWeight.w500)),
                   const SizedBox(height: 10),
-                  Text(
-                    "Dr. ${widget.doctorName} is a top specialist in ${widget.specialty}. He has received multiple awards and is dedicated to patient care.",
-                    style: TextStyle(color: Colors.grey.shade600, height: 1.5),
+                  Row(children: [
+                    const Icon(Icons.star, color: Colors.amber, size: 20),
+                    const SizedBox(width: 5),
+                    const Text("4.8 (120 Reviews)", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ]),
+                  
+                  const SizedBox(height: 30),
+                  const Text("Select Date", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  
+                  SizedBox(
+                    height: 80,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: 14, 
+                      itemBuilder: (context, index) {
+                        DateTime day = DateTime.now().add(Duration(days: index));
+                        bool isSelected = day.day == _selectedDate.day && day.month == _selectedDate.month;
+                        
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() => _selectedDate = day);
+                            _generateSlotsForDate(day);
+                          },
+                          child: Container(
+                            width: 60,
+                            margin: const EdgeInsets.only(right: 10),
+                            decoration: BoxDecoration(
+                              color: isSelected ? primaryBlue : Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: isSelected ? primaryBlue : Colors.grey.shade300),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][day.weekday % 7], style: TextStyle(color: isSelected ? Colors.white : Colors.grey)),
+                                const SizedBox(height: 5),
+                                Text("${day.day}", style: TextStyle(color: isSelected ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
 
-                  const SizedBox(height: 100), // مسافة عشان الزر ما يغطي الكلام
+                  const SizedBox(height: 30),
+                  const Text("Available Time Slots", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+
+                  _isLoadingSlots 
+                    ? const Center(child: CircularProgressIndicator())
+                    : _availableSlots.isEmpty 
+                        ? const Padding(padding: EdgeInsets.all(20), child: Text("No slots available for this day", style: TextStyle(color: Colors.grey)))
+                        : Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: _availableSlots.map((slot) {
+                              bool isSelected = _selectedTimeSlot == slot;
+                              return ChoiceChip(
+                                label: Text(slot),
+                                selected: isSelected,
+                                selectedColor: primaryBlue,
+                                labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+                                onSelected: (val) => setState(() => _selectedTimeSlot = val ? slot : null),
+                              );
+                            }).toList(),
+                          ),
+                  
+                  const SizedBox(height: 100), 
                 ],
               ),
             ),
           ),
         ],
       ),
-
-      // 3️⃣ زر الحجز (Floating Button)
+      
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))],
         ),
-        child: ElevatedButton(
-          onPressed: _isLoading ? null : _bookAppointment, // 👇 ربطنا الدالة هون
-          style: ElevatedButton.styleFrom(
-            backgroundColor: primaryBlue,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          child: _isLoading 
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Text("Book Appointment", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        child: Row(
+          children: [
+            Container(
+              decoration: BoxDecoration(color: primaryBlue.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+              child: IconButton(
+                icon: Icon(Icons.chat_bubble_outline_rounded, color: primaryBlue),
+                onPressed: () {
+                   Navigator.push(context, MaterialPageRoute(builder: (c) => ChatScreen(
+                     receiverId: widget.doctorId!,
+                     receiverName: widget.doctorName,
+                   )));
+                },
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _selectedTimeSlot == null ? null : _bookAppointment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryBlue,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text("Book Appointment", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String value, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: const Color(0xFF407CE2), size: 24),
-          const SizedBox(height: 5),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          Text(label, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-        ],
       ),
     );
   }

@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
 import 'doctor_search_screen.dart';
-import 'doctor_details_screen.dart'; 
 import 'ai_chat_screen.dart';        
 import '../common/schedule_screen.dart'; 
 import '../common/profile_screen.dart';  
 import '../common/chats_list_screen.dart'; 
 
-// 1️⃣ الإطار الرئيسي (Shell)
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});
 
@@ -21,49 +20,36 @@ class PatientHomeScreen extends StatefulWidget {
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _selectedIndex = 0; 
 
-  // 📺 قائمة الصفحات للمريض
   final List<Widget> _pages = [
-    const PatientHomeContent(),     // 0: الرئيسية
-    const ScheduleScreen(),         // 1: المواعيد
-    const ChatsListScreen(),        // 2: الشات
-    const ProfileScreen(),          // 3: البروفايل
+    const PatientHomeContent(),     
+    const ScheduleScreen(),         
+    const ChatsListScreen(),        
+    const ProfileScreen(),          
   ];
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF407CE2);
-
     return Scaffold(
       backgroundColor: Colors.white,
-      
-      // 👇 الرسيفر
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
-      
-      // الريموت (البار السفلي)
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
-          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.white,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: primaryBlue,
+          selectedItemColor: const Color(0xFF407CE2),
           unselectedItemColor: Colors.grey.shade400,
-          selectedFontSize: 14,
-          unselectedFontSize: 14,
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_rounded, size: 28), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_today_rounded, size: 26), label: "Schedule"),
-            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded, size: 26), label: "Chat"),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded, size: 28), label: "Profile"),
+            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
+            BottomNavigationBarItem(icon: Icon(Icons.calendar_today_rounded), label: "My Bookings"),
+            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: "Messages"),
+            BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: "Profile"),
           ],
         ),
       ),
@@ -71,8 +57,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 }
 
-// 2️⃣ محتوى الرئيسية للمريض (الداشبورد)
-// 2️⃣ محتوى الرئيسية للمريض (الداشبورد) مع خلفية تدرج لوني فخمة
 class PatientHomeContent extends StatefulWidget {
   const PatientHomeContent({super.key});
 
@@ -81,187 +65,124 @@ class PatientHomeContent extends StatefulWidget {
 }
 
 class _PatientHomeContentState extends State<PatientHomeContent> {
-  final User? user = AuthService().currentUser;
-  String userName = "Patient";
+  final User? user = FirebaseAuth.instance.currentUser;
+  final Color primaryBlue = const Color(0xFF407CE2);
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserName();
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) setState(() {});
+    });
   }
 
-  void _fetchUserName() async {
-    if (user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
-      if (userDoc.exists && mounted) {
-        setState(() { userName = userDoc['name'] ?? "Patient"; });
-      }
-    }
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
-  void _handleLogout() async {
-    await AuthService().signOut();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+  DateTime _parseDate(dynamic dateData) {
+    if (dateData is Timestamp) return dateData.toDate();
+    return DateTime.tryParse(dateData.toString()) ?? DateTime.now();
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF407CE2);
-    final Color lightBg = const Color(0xFFF5F7FA);
-    const double defaultPadding = 24.0; 
-
     return Scaffold(
-      // backgroundColor: Colors.white, // شلناها عشان التدرج يبين
       body: Stack(
         children: [
-          
-          // 🎨 الحركة الجديدة: تدرج لوني ناعم في الخلفية
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topCenter, // يبدأ من فوق
-                end: Alignment.bottomCenter, // ينتهي تحت
-                colors: [
-                  primaryBlue.withOpacity(0.15), // أزرق فاتح جداً من فوق
-                  Colors.white, // بصير أبيض بالنص
-                  Colors.white, // وبضل أبيض تحت
-                ],
-                stops: const [0.0, 0.5, 1.0], // توزيع الألوان: الأزرق بوخذ بس النص الفوقاني
+                begin: Alignment.topCenter, end: Alignment.bottomCenter, 
+                colors: [primaryBlue.withOpacity(0.15), Colors.white], stops: const [0.0, 0.4], 
               ),
             ),
           ),
-
-          // 📦 المحتوى الأصلي (فوق الخلفية)
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(defaultPadding),
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // Header (تم توحيد زر الخروج مع الدكتور)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: primaryBlue, width: 2.5)),
-                            child: const CircleAvatar(
-                              radius: 28,
-                              backgroundColor: Colors.blue,
-                              child: Icon(Icons.person, color: Colors.white, size: 30),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("Hello,", style: TextStyle(color: Colors.grey.shade600, fontSize: 16, fontWeight: FontWeight.w600)),
-                              Text(userName, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.black87)),
-                            ],
+                          Text("Hello,", style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                          FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance.collection('users').doc(user?.uid).get(),
+                            builder: (context, snapshot) {
+                              String name = snapshot.data?['name'] ?? "Patient";
+                              return Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900));
+                            },
                           ),
                         ],
                       ),
+                      // 👇 زر الخروج الجديد (نفس ستايل الدكتور)
                       IconButton(
-                        icon: const Icon(Icons.logout_rounded, color: Colors.grey, size: 28),
-                        onPressed: _handleLogout,
+                        icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 28),
+                        onPressed: () async {
+                          await AuthService().signOut();
+                          if (context.mounted) Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c)=>const LoginScreen()), (r)=>false);
+                        },
                       )
                     ],
                   ),
 
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 30),
 
-                  // Search Bar
-                  Container(
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18), 
-                      border: Border.all(color: Colors.grey.shade200),
-                      boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))]
-                    ),
-                    child: TextField(
-                      style: const TextStyle(fontSize: 18),
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 30),
-                        hintText: "Search doctor...",
-                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 16),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                      ),
-                    ),
+                  // Logic: Timer vs Empty State
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('appointments')
+                        .where('patient_id', isEqualTo: user?.uid)
+                        .where('status', isEqualTo: 'accepted')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return _buildEmptyBanner();
+
+                      var docs = snapshot.data!.docs;
+                      var futureAppointments = docs.map((doc) {
+                        return {
+                          'data': doc.data(),
+                          'date': _parseDate((doc.data() as Map)['date'])
+                        };
+                      }).where((item) => (item['date'] as DateTime).isAfter(DateTime.now())).toList();
+
+                      if (futureAppointments.isEmpty) {
+                        return _buildEmptyBanner(); // 👇 التعديل هنا
+                      }
+
+                      futureAppointments.sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+                      var nextAppt = futureAppointments.first;
+                      
+                      return _buildTimerBanner(nextAppt['date'] as DateTime, (nextAppt['data'] as Map)['doctor_name'] ?? "Doctor");
+                    },
                   ),
 
+                  const SizedBox(height: 25),
+                  const Text("Quick Actions", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 15),
 
-                  // Banner
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: primaryBlue,
-                      borderRadius: BorderRadius.circular(28),
-                      boxShadow: [BoxShadow(color: primaryBlue.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10))],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text("Early protection", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-                              const SizedBox(height: 8),
-                              const Text("Check your health", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                              const SizedBox(height: 18),
-                              ElevatedButton(
-                                onPressed: () {
-                                   Navigator.push(context, MaterialPageRoute(builder: (c) => const DoctorDetailsScreen(doctorName: "Qusai", specialty: "SE")));
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: primaryBlue,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                                child: const Text("Book Now", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.medical_services_rounded, color: Colors.white, size: 40),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-                  const Text("Services", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 10),
-
-                  // Grid Buttons
                   Expanded(
                     child: GridView.count(
-                      physics: const NeverScrollableScrollPhysics(),
                       crossAxisCount: 2,
                       crossAxisSpacing: 20,
                       mainAxisSpacing: 20,
-                      childAspectRatio: 1.2, 
+                      childAspectRatio: 1.1,
                       children: [
-                        _buildSquareBtn(Icons.person_search_rounded, "Find Doctor", Colors.blue, () {
-                            Navigator.push(context, MaterialPageRoute(builder: (c) => const DoctorSearchScreen()));
+                        _buildActionBtn(context, Icons.person_search_rounded, "Find Doctor", Colors.blue, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (c) => const DoctorSearchScreen()));
                         }),
-                        _buildSquareBtn(Icons.smart_toy_rounded, "AI Assistant", Colors.purple, () {
-                            Navigator.push(context, MaterialPageRoute(builder: (c) => const AiChatScreen()));
+                        _buildActionBtn(context, Icons.smart_toy_rounded, "AI Assistant", Colors.purple, () {
+                          Navigator.push(context, MaterialPageRoute(builder: (c) => const AiChatScreen()));
                         }),
-                        _buildSquareBtn(Icons.calendar_month_rounded, "Appointments", Colors.orange, () {
-                            Navigator.push(context, MaterialPageRoute(builder: (c) => const ScheduleScreen()));
-                        }),
-                        _buildSquareBtn(Icons.assignment_rounded, "Records", Colors.teal, () {}),
                       ],
                     ),
                   ),
@@ -274,42 +195,87 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     );
   }
 
-  Widget _buildSquareBtn(IconData icon, String title, Color color, VoidCallback onTap) {
+  // 🕒 بانر المؤقت
+  Widget _buildTimerBanner(DateTime apptDate, String doctorName) {
+    Duration diff = apptDate.difference(DateTime.now());
+    String timeText = diff.inDays > 0 
+        ? "${diff.inDays} Days, ${diff.inHours % 24} Hours" 
+        : "${diff.inHours} Hours, ${diff.inMinutes % 60} Minutes";
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [primaryBlue, primaryBlue.withOpacity(0.8)]),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: primaryBlue.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Upcoming Appointment", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 5),
+          Text(timeText, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 5),
+          Text("with Dr. $doctorName", style: const TextStyle(color: Colors.white, fontSize: 16)),
+        ],
+      ),
+    );
+  }
+
+  // 🔍 بانر الحالة الفارغة (تم تعديل النص)
+  Widget _buildEmptyBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("No upcoming appointments yet.", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.w600)),
+                SizedBox(height: 5),
+                Text("Book Now?", style: TextStyle(color: Colors.black87, fontSize: 20, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+            child: const Icon(Icons.calendar_month_rounded, color: Colors.grey, size: 30),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionBtn(BuildContext context, IconData icon, String title, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24), 
-          border: Border.all(color: Colors.grey.shade200, width: 1.5), 
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.15), 
-              blurRadius: 12, 
-              offset: const Offset(0, 6), 
-            ),
-          ],
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 36),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 38),
             ),
-            const SizedBox(height: 12),
-            Text(
-              title, 
-              style: const TextStyle(
-                fontWeight: FontWeight.w700, 
-                fontSize: 15, 
-                color: Colors.black87
-              )
-            ),
+            const SizedBox(height: 15),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ],
         ),
       ),

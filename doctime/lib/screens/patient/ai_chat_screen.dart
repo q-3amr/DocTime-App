@@ -10,39 +10,60 @@ class AiChatScreen extends StatefulWidget {
 class _AiChatScreenState extends State<AiChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
-  // قائمة الرسائل (وهمية للتجربة)
+  
+  // قائمة الرسائل (بداية المحادثة)
   final List<Map<String, String>> _messages = [
-    {'sender': 'bot', 'text': 'Hello! I am DocTime AI. How can I help you today?'},
+    {'sender': 'bot', 'text': 'Hello! I am DocTime AI. 🤖\nDescribe your symptoms, and I will suggest the right specialist for you.'},
   ];
 
+  bool _isTyping = false;
+
   void _sendMessage() {
-    if (_controller.text.isEmpty) return;
+    if (_controller.text.trim().isEmpty) return;
 
+    // 1. إضافة رسالة المستخدم
     setState(() {
-      // 1. إضافة رسالة المستخدم
-      _messages.add({'sender': 'user', 'text': _controller.text});
-      
-      // 2. محاكاة رد الذكاء الاصطناعي (تأخير بسيط)
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          setState(() {
-            _messages.add({
-              'sender': 'bot', 
-              'text': 'I understand your concern. Based on your symptoms, I recommend booking an appointment with a General Practitioner. Would you like me to find one?'
-            });
-            _scrollToBottom();
-          });
-        }
-      });
+      _messages.add({'sender': 'user', 'text': _controller.text.trim()});
+      _isTyping = true; // البوت بكتب...
+    });
+    
+    _controller.clear();
+    _scrollToBottom();
 
-      _controller.clear();
-      _scrollToBottom();
+    // 2. محاكاة رد الذكاء الاصطناعي (تأخير 1.5 ثانية)
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+          _messages.add({
+            'sender': 'bot', 
+            'text': _getAIResponse(_messages.last['text']!) // دالة الرد الذكي
+          });
+          _scrollToBottom();
+        });
+      }
     });
   }
 
+  // 🧠 دالة الردود (منطق بسيط لـ GP1)
+  String _getAIResponse(String input) {
+    input = input.toLowerCase();
+    if (input.contains('headache') || input.contains('head')) {
+      return "Based on your symptoms (Headache), I recommend seeing a **Neurologist** or a **General Practitioner**. \n\nWould you like to book an appointment now?";
+    } else if (input.contains('heart') || input.contains('pain') || input.contains('chest')) {
+      return "Chest pain can be serious. Please consult a **Cardiologist** immediately. \n\nGo to 'Find Doctor' > 'Cardiologist'.";
+    } else if (input.contains('tooth') || input.contains('teeth')) {
+      return "It seems you have dental issues. A **Dentist** is the right choice for you.";
+    } else if (input.contains('eye') || input.contains('vision')) {
+      return "For vision problems, please visit an **Ophthalmologist**.";
+    } else if (input.contains('skin') || input.contains('rash')) {
+      return "You should consult a **Dermatologist** for skin-related issues.";
+    } else {
+      return "I'm not sure about this symptom yet. Please consult a **General Practitioner** for a checkup.";
+    }
+  }
+
   void _scrollToBottom() {
-    // عشان تنزل الشاشة لآخر رسالة تلقائياً
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -57,96 +78,70 @@ class _AiChatScreenState extends State<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     final Color primaryBlue = const Color(0xFF407CE2);
-    final Color lightBg = const Color(0xFFF5F7FA);
 
     return Scaffold(
       backgroundColor: Colors.white,
-      // 1️⃣ Header (Fixed)
       appBar: AppBar(
+        title: const Text("AI Assistant", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
+        iconTheme: const IconThemeData(color: Colors.black),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(color: Colors.purple.shade50, shape: BoxShape.circle),
-              child: const Icon(Icons.smart_toy_rounded, color: Colors.purple, size: 24),
-            ),
-            const SizedBox(width: 10),
-            const Text("AI Assistant", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 20)),
-          ],
-        ),
       ),
-      
       body: Column(
         children: [
-          // 2️⃣ Chat Body (Scrollable)
+          // مساحة الشات
           Expanded(
-            child: Container(
-              color: lightBg, // خلفية مختلفة للشات
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(20),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final msg = _messages[index];
-                  final isUser = msg['sender'] == 'user';
-                  return _buildMessageBubble(msg['text']!, isUser, primaryBlue);
-                },
-              ),
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(20),
+              itemCount: _messages.length + (_isTyping ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index == _messages.length && _isTyping) {
+                  return const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 10, bottom: 10),
+                      child: Text("AI is typing...", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                    ),
+                  );
+                }
+                final msg = _messages[index];
+                final isUser = msg['sender'] == 'user';
+                return _buildChatBubble(msg['text']!, isUser, primaryBlue);
+              },
             ),
           ),
 
-          // 3️⃣ Input Area (Fixed at bottom)
+          // حقل الإدخال
           Container(
-            padding: const EdgeInsets.all(20), // حشوة كبيرة
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [
-                BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, -5))
-              ],
+              boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))],
             ),
             child: Row(
               children: [
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: lightBg,
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.grey.shade200),
+                  child: TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      hintText: "Type your symptoms...",
+                      filled: true,
+                      fillColor: const Color(0xFFF5F7FA),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                     ),
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: "Ask about symptoms...",
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      ),
-                    ),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-                const SizedBox(width: 15),
-                // زر الإرسال
-                GestureDetector(
-                  onTap: _sendMessage,
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: primaryBlue,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(color: primaryBlue.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 5))
-                      ],
-                    ),
-                    child: const Icon(Icons.send_rounded, color: Colors.white, size: 24),
-                  ),
+                const SizedBox(width: 10),
+                FloatingActionButton(
+                  onPressed: _sendMessage,
+                  backgroundColor: primaryBlue,
+                  elevation: 2,
+                  mini: true,
+                  child: const Icon(Icons.send, color: Colors.white),
                 ),
               ],
             ),
@@ -156,34 +151,25 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
-  // ودجت فقاعة الرسالة (Bubble)
-  Widget _buildMessageBubble(String text, bool isUser, Color primaryColor) {
+  Widget _buildChatBubble(String text, bool isUser, Color color) {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75), // عرض أقصى 75%
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isUser ? primaryColor : Colors.white,
+          color: isUser ? color : const Color(0xFFF5F7FA),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
-            bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(0), // ذيل الفقاعة
+            bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(0),
             bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(20),
           ),
-          boxShadow: [
-            if (!isUser) // ظل بس لرسائل البوت
-              BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))
-          ],
         ),
         child: Text(
           text,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.black87,
-            fontSize: 16,
-            height: 1.4, // تباعد أسطر مريح للقراءة
-          ),
+          style: TextStyle(color: isUser ? Colors.white : Colors.black87, fontSize: 16, height: 1.4),
         ),
       ),
     );
