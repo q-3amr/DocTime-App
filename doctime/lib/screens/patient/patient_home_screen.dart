@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import '../../services/auth_service.dart';
-import '../auth/login_screen.dart';
 import 'doctor_search_screen.dart';
-import 'ai_chat_screen.dart';        
+import 'ai_chat_screen.dart'; 
 import '../common/schedule_screen.dart'; 
-import '../common/profile_screen.dart';  
+import '../common/profile_screen.dart'; 
 import '../common/chats_list_screen.dart'; 
 
 class PatientHomeScreen extends StatefulWidget {
@@ -21,10 +19,10 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   int _selectedIndex = 0; 
 
   final List<Widget> _pages = [
-    const PatientHomeContent(),     
-    const ScheduleScreen(),         
-    const ChatsListScreen(),        
-    const ProfileScreen(),          
+    const PatientHomeContent(), 
+    const ScheduleScreen(), 
+    const ChatsListScreen(), 
+    const ProfileScreen(), 
   ];
 
   @override
@@ -107,7 +105,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header (تم توحيد زر الخروج مع الدكتور)
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -124,13 +122,19 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                           ),
                         ],
                       ),
-                      // 👇 زر الخروج الجديد (نفس ستايل الدكتور)
-                      IconButton(
-                        icon: const Icon(Icons.logout_rounded, color: Colors.redAccent, size: 28),
-                        onPressed: () async {
-                          await AuthService().signOut();
-                          if (context.mounted) Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (c)=>const LoginScreen()), (r)=>false);
-                        },
+                      // 👇 User Photo Replaced Here
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: primaryBlue.withOpacity(0.5), width: 2),
+                          color: Colors.white,
+                        ),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundColor: const Color(0xFFE0E7FF),
+                          child: Icon(Icons.person, color: primaryBlue, size: 28),
+                        ),
                       )
                     ],
                   ),
@@ -156,7 +160,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       }).where((item) => (item['date'] as DateTime).isAfter(DateTime.now())).toList();
 
                       if (futureAppointments.isEmpty) {
-                        return _buildEmptyBanner(); // 👇 التعديل هنا
+                        return _buildEmptyBanner(); 
                       }
 
                       futureAppointments.sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
@@ -195,7 +199,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     );
   }
 
-  // 🕒 بانر المؤقت
+  // 🕒 Timer Banner
   Widget _buildTimerBanner(DateTime apptDate, String doctorName) {
     Duration diff = apptDate.difference(DateTime.now());
     String timeText = diff.inDays > 0 
@@ -223,7 +227,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     );
   }
 
-  // 🔍 بانر الحالة الفارغة (تم تعديل النص)
+  // 🔍 Empty Banner
   Widget _buildEmptyBanner() {
     return Container(
       width: double.infinity,

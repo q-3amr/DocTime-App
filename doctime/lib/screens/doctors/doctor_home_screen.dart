@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../services/auth_service.dart';
-import '../auth/login_screen.dart';
 import '../common/schedule_screen.dart'; 
-import '../common/profile_screen.dart';  
+import '../common/profile_screen.dart'; 
 import 'doctor_requests_screen.dart';
 import 'manage_slots_screen.dart';
-import '../common/chats_list_screen.dart'; // 👈 تأكد من وجود الملف
+import '../common/chats_list_screen.dart'; 
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -102,16 +100,19 @@ class DoctorDashboard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-                        onPressed: () async {
-                           await AuthService().signOut();
-                           if (context.mounted) {
-                             Navigator.of(context).pushAndRemoveUntil(
-                               MaterialPageRoute(builder: (c) => const LoginScreen()), (route) => false
-                             );
-                           }
-                        },
+                      // 👇 User Photo Replaced Here
+                      Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: primaryBlue.withOpacity(0.5), width: 2),
+                          color: Colors.white,
+                        ),
+                        child: CircleAvatar(
+                          radius: 24,
+                          backgroundColor: const Color(0xFFE0E7FF),
+                          child: Icon(Icons.person, color: primaryBlue, size: 28),
+                        ),
                       )
                     ],
                   ),
@@ -175,26 +176,21 @@ class DoctorDashboard extends StatelessWidget {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             crossAxisCount: 2,
-                            crossAxisSpacing: 20, // زدنا المسافات زي المريض
+                            crossAxisSpacing: 20, 
                             mainAxisSpacing: 20,
                             childAspectRatio: 1.1,
                             children: [
-                              // 1️⃣ زر الشات (بدل Total Patients)
                               _buildActionBtn(context, Icons.chat_bubble_rounded, "My Chats", Colors.indigo, () {
                                 Navigator.push(context, MaterialPageRoute(builder: (c) => const ChatsListScreen()));
                               }),
 
-                              // 2️⃣ المواعيد القادمة (Stat)
                               _buildActionBtn(context, Icons.calendar_today_rounded, "$upcomingCount Upcoming", Colors.orange, () {
-                                // ممكن نوديه عالجدول
                               }),
                               
-                              // 3️⃣ زر إدارة الأوقات (تصميم موحد ومريح للعين)
                               _buildActionBtn(context, Icons.access_time_filled_rounded, "Manage Slots", Colors.teal, () {
                                 Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageSlotsScreen()));
                               }),
 
-                              // 4️⃣ المواعيد المكتملة (Stat)
                               _buildActionBtn(context, Icons.check_circle_rounded, "$completedCount Done", Colors.green, () {}),
                             ],
                           ),
@@ -211,16 +207,15 @@ class DoctorDashboard extends StatelessWidget {
     );
   }
 
-  // 🎨 هذا الودجت ماخذ نفس تصميم المريض 100% (ظلال وبوردر)
   Widget _buildActionBtn(BuildContext context, IconData icon, String title, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24), // نفس المريض
-          border: Border.all(color: Colors.grey.shade200), // نفس المريض
-          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))], // نفس المريض
+          borderRadius: BorderRadius.circular(24), 
+          border: Border.all(color: Colors.grey.shade200), 
+          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))], 
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
