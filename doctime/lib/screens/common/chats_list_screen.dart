@@ -58,7 +58,6 @@ class ChatsListScreen extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (context, index) {
               var chatData = docs[index].data() as Map<String, dynamic>;
-              String chatId = docs[index].id;
               
               // 🔍 تحديد الطرف الثاني
               List participants = chatData['participants'];

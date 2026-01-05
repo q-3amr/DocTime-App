@@ -29,7 +29,6 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   @override
   Widget build(BuildContext context) {
     final Color primaryBlue = const Color(0xFF407CE2);
-    final Color lightBg = const Color(0xFFF5F7FA);
 
     return Scaffold(
       backgroundColor: Colors.white,

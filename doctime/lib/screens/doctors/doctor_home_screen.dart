@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:ui'; // Required for Blur
-
-// Ensure these imports are correct for your project structure
 import '../../services/auth_service.dart';
 import '../auth/login_screen.dart';
 import '../common/schedule_screen.dart'; 
 import '../common/profile_screen.dart';  
 import 'doctor_requests_screen.dart';
 import 'manage_slots_screen.dart';
-import '../common/chats_list_screen.dart'; 
+import '../common/chats_list_screen.dart'; // 👈 تأكد من وجود الملف
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -23,9 +20,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _selectedIndex = 0; 
   final User? user = FirebaseAuth.instance.currentUser;
 
-  // Your primary blue color
-  final Color primaryBlue = const Color(0xFF407CE2);
-
   final List<Widget> _pages = [
     const DoctorDashboard(),        
     const ScheduleScreen(),         
@@ -36,43 +30,26 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: false, // Set to false for standard bottom bar behavior
+      backgroundColor: Colors.white,
       body: IndexedStack(index: _selectedIndex, children: _pages),
-      
-      // --- Standard Default Bottom Bar ---
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade200)), 
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05), 
-              blurRadius: 10, 
-              offset: const Offset(0, -5)
-            )
-          ],
+          border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.white,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          
-          selectedItemColor: primaryBlue,
+          selectedItemColor: const Color(0xFF407CE2),
           unselectedItemColor: Colors.grey.shade400,
-          
-          // Using standard labels or hidden based on your preference. 
-          // Kept hidden here for cleaner look, change to true if you want text.
-          showSelectedLabels: false, 
-          showUnselectedLabels: false, 
-          
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
-          
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded, size: 28), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_month_rounded, size: 28), label: "Schedule"),
-            BottomNavigationBarItem(icon: Icon(Icons.notifications_active_rounded, size: 28), label: "Requests"),
-            BottomNavigationBarItem(icon: Icon(Icons.person_rounded, size: 28), label: "Profile"),
+            BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: "Dashboard"),
+            BottomNavigationBarItem(icon: Icon(Icons.calendar_month_rounded), label: "Schedule"),
+            BottomNavigationBarItem(icon: Icon(Icons.notifications_active_rounded), label: "Requests"),
+            BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: "Profile"),
           ],
         ),
       ),
@@ -91,256 +68,140 @@ class DoctorDashboard extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // 1. Rich Background (Gradient + Blobs)
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF2F6FF), // Light Blue
-                  Color(0xFFE8F1FF), // Bluish White
-                  Color(0xFFF5F3FF), // Faint Purple
-                ],
+                begin: Alignment.topCenter, 
+                end: Alignment.bottomCenter, 
+                colors: [primaryBlue.withOpacity(0.15), Colors.white],
+                stops: const [0.0, 0.4], 
               ),
             ),
           ),
           
-          // Decorative Blob 1
-          Positioned(
-            top: -100,
-            right: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: primaryBlue.withOpacity(0.15),
-              ),
-            ),
-          ),
-          // Decorative Blob 2
-          Positioned(
-            bottom: 100,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.purpleAccent.withOpacity(0.1),
-              ),
-            ),
-          ),
-          // Blur Effect
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: Container(color: Colors.transparent),
-          ),
-
-          // 2. Main Content
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
-                  // --- Header: Text Left, Picture Right ---
+                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Welcome Text & Name
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Welcome back,",
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                            ),
-                            const SizedBox(height: 4),
-                            FutureBuilder<DocumentSnapshot>(
-                              future: FirebaseFirestore.instance.collection('doctors').doc(user?.uid).get(),
-                              builder: (context, snapshot) {
-                                // Loading State
-                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                  return Container(
-                                    width: 100, height: 24, 
-                                    decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(4))
-                                  );
-                                }
-                                String name = "Doctor";
-                                if (snapshot.hasData && snapshot.data != null && snapshot.data!.exists) {
-                                  name = snapshot.data!.get('name') ?? "Doctor";
-                                }
-                                return Text(
-                                  "Dr. $name",
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blueGrey.shade800,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Welcome back,", style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                          FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance.collection('doctors').doc(user?.uid).get(),
+                            builder: (context, snapshot) {
+                              String name = snapshot.data?['name'] ?? "Doctor";
+                              return Text("Dr. $name", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900));
+                            },
+                          ),
+                        ],
                       ),
-
-                      // User Picture (Replaces Logo)
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-                        ),
-                        child: CircleAvatar(
-                          radius: 26,
-                          backgroundColor: const Color(0xFFE0E7FF),
-                          child: Icon(Icons.person, color: primaryBlue, size: 30),
-                        ),
-                      ),
+                      IconButton(
+                        icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                        onPressed: () async {
+                           await AuthService().signOut();
+                           if (context.mounted) {
+                             Navigator.of(context).pushAndRemoveUntil(
+                               MaterialPageRoute(builder: (c) => const LoginScreen()), (route) => false
+                             );
+                           }
+                        },
+                      )
                     ],
                   ),
 
                   const SizedBox(height: 30),
 
-                  // --- Notification Banner (Glassmorphism) ---
+                  // Stats & Data
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('appointments')
                         .where('doctor_id', isEqualTo: user?.uid)
                         .snapshots(),
                     builder: (context, snapshot) {
-                      // Loading State for Banner
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-                      int pendingCount = 0;
-                      if (snapshot.hasData) {
-                        var docs = snapshot.data!.docs;
-                        pendingCount = docs.where((d) => d['status'] == 'pending').length;
-                      }
+                      var docs = snapshot.data!.docs;
+                      int pendingCount = docs.where((d) => d['status'] == 'pending').length;
+                      int completedCount = docs.where((d) => d['status'] == 'completed').length;
+                      int upcomingCount = docs.where((d) => d['status'] == 'accepted').length;
 
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [primaryBlue, const Color(0xFF2E5BFF)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(color: primaryBlue.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                      return Column(
+                        children: [
+                          // Banner
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: primaryBlue,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [BoxShadow(color: primaryBlue.withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 8))],
+                            ),
+                            child: Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text("Pending Requests", style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 5),
+                                      Text("$pendingCount Pending", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+                                      const SizedBox(height: 10),
+                                      const Text("Tap 'Requests' below to approve.", style: TextStyle(color: Colors.white, fontSize: 12)),
+                                    ],
                                   ),
-                                  child: const Text("Pending Requests", style: TextStyle(color: Colors.white, fontSize: 12)),
                                 ),
-                                const SizedBox(height: 10),
-                                Text("$pendingCount", style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white, height: 1)),
-                                const SizedBox(height: 4),
-                                const Text("Waiting for approval", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                                  child: const Icon(Icons.notifications_active, color: Colors.white, size: 30),
+                                )
                               ],
                             ),
-                            Container(
-                              height: 60,
-                              width: 60,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.notifications_active_rounded, color: Colors.white, size: 30),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // --- Quick Actions Grid ---
-                  Text(
-                    "Quick Actions",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey.shade800),
-                  ),
-                  const SizedBox(height: 15),
-
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance.collection('appointments').where('doctor_id', isEqualTo: user?.uid).snapshots(),
-                    builder: (context, snapshot) {
-                       // Loading check to prevent white screen/crash
-                       if (!snapshot.hasData) {
-                         return const Center(child: CircularProgressIndicator());
-                       }
-
-                       var docs = snapshot.data!.docs;
-                       int upcomingCount = docs.where((d) => d['status'] == 'accepted').length;
-                       int completedCount = docs.where((d) => d['status'] == 'completed').length;
-                      
-                      return GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 1.1,
-                        children: [
-                          _buildGlassCard(
-                            context,
-                            Icons.chat_bubble_rounded,
-                            "My Chats",
-                            "Messages",
-                            const Color(0xFF6C63FF),
-                            () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ChatsListScreen())),
                           ),
-                          _buildGlassCard(
-                            context,
-                            Icons.calendar_month_rounded,
-                            "$upcomingCount Upcoming",
-                            "Schedule",
-                            const Color(0xFFFFA726),
-                            () {},
-                          ),
-                          _buildGlassCard(
-                            context,
-                            Icons.tune_rounded,
-                            "Availability",
-                            "Manage Slots",
-                            const Color(0xFF26A69A),
-                            () => Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageSlotsScreen())),
-                          ),
-                          _buildGlassCard(
-                            context,
-                            Icons.history_rounded,
-                            "$completedCount Done",
-                            "History",
-                            const Color(0xFFEC407A),
-                            () {},
+
+                          const SizedBox(height: 25),
+                          const Align(alignment: Alignment.centerLeft, child: Text("Quick Dashboard", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                          const SizedBox(height: 15),
+
+                          // Grid Cards (Unified Design)
+                          GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 20, // زدنا المسافات زي المريض
+                            mainAxisSpacing: 20,
+                            childAspectRatio: 1.1,
+                            children: [
+                              // 1️⃣ زر الشات (بدل Total Patients)
+                              _buildActionBtn(context, Icons.chat_bubble_rounded, "My Chats", Colors.indigo, () {
+                                Navigator.push(context, MaterialPageRoute(builder: (c) => const ChatsListScreen()));
+                              }),
+
+                              // 2️⃣ المواعيد القادمة (Stat)
+                              _buildActionBtn(context, Icons.calendar_today_rounded, "$upcomingCount Upcoming", Colors.orange, () {
+                                // ممكن نوديه عالجدول
+                              }),
+                              
+                              // 3️⃣ زر إدارة الأوقات (تصميم موحد ومريح للعين)
+                              _buildActionBtn(context, Icons.access_time_filled_rounded, "Manage Slots", Colors.teal, () {
+                                Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageSlotsScreen()));
+                              }),
+
+                              // 4️⃣ المواعيد المكتملة (Stat)
+                              _buildActionBtn(context, Icons.check_circle_rounded, "$completedCount Done", Colors.green, () {}),
+                            ],
                           ),
                         ],
                       );
-                    }
+                    },
                   ),
-                  const SizedBox(height: 40), 
                 ],
               ),
             ),
@@ -350,40 +211,27 @@ class DoctorDashboard extends StatelessWidget {
     );
   }
 
-  // Glass Card Widget
-  Widget _buildGlassCard(BuildContext context, IconData icon, String title, String subtitle, Color color, VoidCallback onTap) {
+  // 🎨 هذا الودجت ماخذ نفس تصميم المريض 100% (ظلال وبوردر)
+  Widget _buildActionBtn(BuildContext context, IconData icon, String title, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.6), // Glass effect
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.8), width: 1.5),
-          boxShadow: [
-            BoxShadow(color: color.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5)),
-          ],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24), // نفس المريض
+          border: Border.all(color: Colors.grey.shade200), // نفس المريض
+          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))], // نفس المريض
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 28),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              child: Icon(icon, color: color, size: 34),
             ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blueGrey.shade800),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-            ),
+            const SizedBox(height: 15),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
           ],
         ),
       ),
