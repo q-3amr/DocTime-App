@@ -34,6 +34,28 @@ class _SignupScreenState extends State<SignupScreen> {
       );
       return;
     }
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.trim().isEmpty ||
+        nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill all required fields!'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return; // وقف التنفيذ هون ولا تكمل تسجيل
+    }
+    if (isDoctor) {
+      if (specialtyController.text.trim().isEmpty || locationController.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill all doctor fields!'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return; // وقف التنفيذ هون ولا تكمل تسجيل
+      }
+    }
 
     setState(() => isLoading = true);
     try {
@@ -257,6 +279,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 20),
 
                 // الفوتر
+                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

@@ -20,6 +20,15 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isObscure = true;
 
   void handleLogin() async {
+    if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter both email and password!'),
+          backgroundColor: Colors.red, // لون أحمر عشان ينتبه
+        ),
+      );
+      return; // ⛔ وقف الشغل هون ولا تكمل
+    }
     setState(() => isLoading = true);
     try {
       // 1. تسجيل الدخول
