@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -23,11 +24,11 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isLoading = false;
   bool isObscurePass = true;
   bool isObscureConfirm = true;
-  bool isDoctor = false; // 👈 هاد اللي بغير شكل الشاشة
+  bool isDoctor = false; 
 
-  // 2. دالة التسجيل
+  // 2. دالة التسجيل (تم التعديل لحل مشكلة الشاشة السوداء)
   void handleSignup() async {
-    // فحص تطابق الباسوورد
+    // فحوصات الأمان (Validation)
     if (passwordController.text != confirmPassController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Passwords do not match!'), backgroundColor: Colors.red),
@@ -38,53 +39,94 @@ class _SignupScreenState extends State<SignupScreen> {
         passwordController.text.trim().isEmpty ||
         nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all required fields!'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Please fill all required fields!'), backgroundColor: Colors.red),
       );
-      return; // وقف التنفيذ هون ولا تكمل تسجيل
+      return;
     }
     if (isDoctor) {
       if (specialtyController.text.trim().isEmpty || locationController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill all doctor fields!'),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('Please fill all doctor fields!'), backgroundColor: Colors.red),
         );
-        return; // وقف التنفيذ هون ولا تكمل تسجيل
+        return; 
       }
     }
 
     setState(() => isLoading = true);
+    
     try {
-      await AuthService().signUp(
+      // 1️⃣ إنشاء المستخدم في Authentication
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
-        name: nameController.text.trim(),
-        role: isDoctor ? 'doctor' : 'patient', // تحديد الدور
-        specialty: isDoctor ? specialtyController.text.trim() : null,
-        location: isDoctor ? locationController.text.trim() : null,
       );
+
+      String uid = userCredential.user!.uid;
+
+      // 2️⃣ تجهيز البيانات حسب النوع (دكتور أو مريض)
+      String collectionName = isDoctor ? 'doctors' : 'users';
       
-      // إذا نجح، بنرجع لصفحة اللوجين عشان يدخل
+      Map<String, dynamic> userData = {
+        'uid': uid,
+        'name': nameController.text.trim(),
+        'email': emailController.text.trim(),
+        'role': isDoctor ? 'doctor' : 'patient',
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+
+      if (isDoctor) {
+        userData['specialty'] = specialtyController.text.trim();
+        userData['location'] = locationController.text.trim();
+        userData['bio'] = ''; // حقل فاضي عشان ما يعطي Error بالبروفايل
+      }
+
+      // 3️⃣ حفظ البيانات في Firestore (أهم نقطة: AWAIT)
+      // لازم نستنى هاي الخطوة تخلص قبل ما نعمل أي شي
+      await FirebaseFirestore.instance.collection(collectionName).doc(uid).set(userData);
+
+      // 4️⃣ بعد ما تأكدنا إنو الحفظ تم، بنطلع من الصفحة
       if (mounted) {
-        Navigator.pop(context);
+        // بنعمل تسجيل خروج عشان نضمن إنو اليوزر يدخل من صفحة اللوجين وتتحمل بياناته صح
+        await FirebaseAuth.instance.signOut();
+
+        setState(() => isLoading = false);
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
+        
+        // الرسالة بتطلع للمستخدم وهو في صفحة اللوجين
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created! Please login.'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Account created successfully! Please Login with your new account.'), 
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
         );
       }
+
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
+        String message = "An error occurred";
+        if (e.code == 'email-already-in-use') {
+          message = "The email is already in use.";
+        } else if (e.code == 'weak-password') {
+          message = "The password is too weak.";
+        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // نفس ألوان اللوجين بالملي
     final Color primaryBlue = const Color(0xFF407CE2);
     final Color labelColor = const Color(0xFF374151);
     final Color borderColor = const Color(0xFFD1D5DB);
@@ -98,19 +140,16 @@ class _SignupScreenState extends State<SignupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // العنوان الكبير (بدون صورة عشان نوفر مساحة)
                 Text(
                   "Sign up",
                   style: TextStyle(
                     fontSize: 36,
-                    fontWeight: FontWeight.w900, // Extra Bold
+                    fontWeight: FontWeight.w900,
                     color: primaryBlue,
                     letterSpacing: 1.2,
                   ),
                 ),
-                
                 const SizedBox(height: 10),
-                
                 Text(
                   "Create your new account",
                   style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600),
@@ -118,7 +157,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 30),
 
-                // 1. الاسم الكامل
                 _buildField(
                   label: "Full Name",
                   controller: nameController,
@@ -131,7 +169,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 20),
 
-                // 2. الإيميل
                 _buildField(
                   label: "Email Address",
                   controller: emailController,
@@ -144,7 +181,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 20),
 
-                // 3. الباسوورد
                 _buildField(
                   label: "Password",
                   controller: passwordController,
@@ -160,7 +196,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 20),
 
-                // 4. تأكيد الباسوورد
                 _buildField(
                   label: "Confirm Password",
                   controller: confirmPassController,
@@ -176,7 +211,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 25),
 
-                // 🛑 سويتش: التسجيل كطبيب
+                // سويتش الدكتور
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                   decoration: BoxDecoration(
@@ -206,27 +241,20 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ),
 
-                // 👇 هاي الحقول بتطلع بس لما يكبس السويتش
-                // 👇 بداية كود الأنيميشن (Slide Down)
-                // 👇 بداية الأنيميشن الجديد (ناعم وفخم)
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500), // سرعة الظهور
-                  reverseDuration: const Duration(milliseconds: 300), // سرعة الاختفاء
-                  switchInCurve: Curves.easeInOut, // نعومة الحركة
+                  duration: const Duration(milliseconds: 500),
+                  reverseDuration: const Duration(milliseconds: 300),
+                  switchInCurve: Curves.easeInOut,
                   switchOutCurve: Curves.easeInOut,
                   transitionBuilder: (Widget child, Animation<double> animation) {
                     return SizeTransition(
                       sizeFactor: animation,
-                      axisAlignment: -1.0, // -1 يعني ابدأ الفرد من فوق
-                      child: FadeTransition(
-                        opacity: animation, // دمجنا الشفافية مع الحجم
-                        child: child,
-                      ),
+                      axisAlignment: -1.0,
+                      child: FadeTransition(opacity: animation, child: child),
                     );
                   },
                   child: isDoctor
                       ? Column(
-                          // 🔑 المفتاح (Key) ضروري جداً عشان الـ Switcher يفرق بينهم
                           key: const ValueKey('doctor_fields'),
                           children: [
                             const SizedBox(height: 20),
@@ -243,7 +271,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             _buildField(
                               label: "Location",
                               controller: locationController,
-                              hint: "e.g. Amman, Jordan",
+                              hint: "e.g. Amman, Irbid",
                               icon: Icons.location_on_outlined,
                               borderColor: borderColor,
                               primaryBlue: primaryBlue,
@@ -251,9 +279,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                           ],
                         )
-                      : const SizedBox.shrink(key: ValueKey('empty')), // لما يكون مسكر
+                      : const SizedBox.shrink(key: ValueKey('empty')),
                 ),
-                // 👆 نهاية الأنيميشن
+                
                 const SizedBox(height: 30),
 
                 // زر التسجيل
@@ -278,15 +306,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 20),
 
-                // الفوتر
-                
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text("Already have an account? ", style: TextStyle(color: labelColor, fontSize: 15, fontWeight: FontWeight.w600)),
                     GestureDetector(
                       onTap: () {
-                        // 👇 الحل الصح: بنعمل Push لصفحة اللوجين
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -313,7 +338,6 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  // Widget مساعد عشان نختصر الكود وما نكرره
   Widget _buildField({
     required String label,
     required TextEditingController controller,
@@ -334,7 +358,7 @@ class _SignupScreenState extends State<SignupScreen> {
           style: TextStyle(
             color: labelColor,
             fontSize: 16,
-            fontWeight: FontWeight.bold, // نفس سماكة اللوجين
+            fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 10),
@@ -348,19 +372,14 @@ class _SignupScreenState extends State<SignupScreen> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
             filled: true,
             fillColor: Colors.grey.shade50,
-            
-            // الحدود السميكة (2.0)
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: borderColor, width: 2.0),
             ),
-            
-            // الحدود النشطة (2.5)
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: primaryBlue, width: 2.5),
             ),
-
             suffixIcon: isPass 
               ? IconButton(
                   icon: Icon(
