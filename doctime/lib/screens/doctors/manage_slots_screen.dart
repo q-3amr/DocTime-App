@@ -28,34 +28,81 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
 
   void _loadSlotsForDate(DateTime date) async {
     setState(() => _isLoading = true);
-    var doc = await FirebaseFirestore.instance
-        .collection('doctors')
-        .doc(user!.uid)
-        .collection('availability')
-        .doc(_getDateKey(date))
-        .get();
+    try {
+      var doc = await FirebaseFirestore.instance
+          .collection('doctors')
+          .doc(user!.uid)
+          .collection('availability')
+          .doc(_getDateKey(date))
+          .get();
 
-    if (mounted) {
-      setState(() {
-        _mySlots = doc.exists ? List<String>.from(doc['slots']) : [];
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _mySlots = doc.exists ? List<String>.from(doc['slots']) : [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // 👇👇 هون التعديل الوحيد (Logic) 👇👇
   void _addSlot() async {
-    TimeOfDay? time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 9, minute: 0));
+    TimeOfDay? time = await showTimePicker(
+      context: context, 
+      initialTime: const TimeOfDay(hour: 9, minute: 0)
+    );
+    
     if (time != null) {
+      // 1️⃣ دمج التاريخ المختار مع الوقت المختار
+      final DateTime now = DateTime.now();
+      final DateTime slotDateTime = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+        time.hour,
+        time.minute,
+      );
+
+      // 2️⃣ التحقق: هل الوقت في الماضي؟
+      if (slotDateTime.isBefore(now)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot add a time in the past!'), 
+            backgroundColor: Colors.red
+          ),
+        );
+        return; // وقف وما تضيف
+      }
+
+      // 3️⃣ التحقق: هل الوقت قريب جداً؟ (أقل من 20 دقيقة)
+      if (slotDateTime.isBefore(now.add(const Duration(minutes: 20)))) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please give at least 20 min notice.'), 
+            backgroundColor: Colors.orange
+          ),
+        );
+        return; // وقف وما تضيف
+      }
+
+      // إذا مرق من الفحوصات، كمل زي ما كنت كاتب
       String hourStr = "${time.hourOfPeriod}:${time.minute.toString().padLeft(2, '0')}";
       String amPm = time.period == DayPeriod.am ? "AM" : "PM";
-      String slotString = "$hourStr $amPm"; // صيغة موحدة: 9:00 AM
+      String slotString = "$hourStr $amPm"; 
 
       if (!_mySlots.contains(slotString)) {
         setState(() => _mySlots.add(slotString));
         _saveSlots();
+      } else {
+         ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Slot already exists!'), backgroundColor: Colors.red),
+        );
       }
     }
   }
+  // 👆👆 نهاية التعديل 👆👆
 
   void _removeSlot(String slot) {
     setState(() => _mySlots.remove(slot));
