@@ -19,14 +19,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool isObscure = true;
 
-  // 👇 دالة الدخول المعدلة (بسيطة وواضحة)
 void handleLogin() async {
-    // 1. فحص الحقول الفارغة
     if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter both email and password!'),
-          backgroundColor: Colors.red,
+          content: Text('Please enter both Email and Password!'),
+          backgroundColor: Color.fromARGB(255, 220, 53, 69),
         ),
       );
       return;
@@ -35,7 +33,6 @@ void handleLogin() async {
     setState(() => isLoading = true);
     
     try {
-      // 2. تسجيل الدخول باستخدام Firebase مباشرة عشان نمسك الخطأ صح
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
@@ -44,19 +41,16 @@ void handleLogin() async {
       User? user = FirebaseAuth.instance.currentUser;
 
       if (user != null && mounted) {
-        // 3. فحص الداتا بيس: دكتور ولا مريض؟
         DocumentSnapshot docSnap = await FirebaseFirestore.instance
             .collection('doctors')
             .doc(user.uid)
             .get();
 
         if (docSnap.exists) {
-          // 👨‍⚕️ دكتور
           Map<String, dynamic>? data = docSnap.data() as Map<String, dynamic>?;
           bool isVerified = data?['isVerified'] ?? false; 
 
           if (isVerified) {
-             // ✅ موثق
              if(mounted) {
                Navigator.pushReplacement(
                  context, 
@@ -64,7 +58,6 @@ void handleLogin() async {
                );
              }
           } else {
-             // ❌ غير موثق
              await AuthService().signOut();
              if (mounted) {
                showDialog(
@@ -80,7 +73,6 @@ void handleLogin() async {
              }
           }
         } else {
-          // 👤 مريض
           if(mounted) {
             Navigator.pushReplacement(
               context, 
@@ -91,13 +83,12 @@ void handleLogin() async {
       }
 
     } on FirebaseAuthException catch (e) {
-      // 👇 هون التعديل: هسه الكود رح يدخل هون أكيد
       String message = "Login failed. Please try again.";
 
       if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
         message = "Incorrect email or password.";
       } else if (e.code == 'invalid-email') {
-        message = "Invalid email format."; // رح تطلع لما تكتب sdf
+        message = "Invalid email format.";
       } else if (e.code == 'network-request-failed') {
         message = "No internet connection.";
       } else if (e.code == 'user-disabled') {
@@ -108,17 +99,16 @@ void handleLogin() async {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color.fromARGB(255, 220, 53, 69),
           )
         );
       }
     } catch (e) {
-      // أي خطأ ثاني غير متوقع بنعرضه زي ما هو عشان نعرف شو هو
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error: ${e.toString()}"), // خليه يعرض نص الخطأ بدل رسالة عامة
-            backgroundColor: Colors.red,
+            content: Text("Error: ${e.toString()}"), 
+            backgroundColor: const Color.fromARGB(255, 220, 53, 69),
           )
         );
       }

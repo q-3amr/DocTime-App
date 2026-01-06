@@ -10,7 +10,7 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  int _buttonIndex = 0; // 0: Upcoming, 1: History (Completed/Expired/Cancelled)
+  int _buttonIndex = 0; // 0: Upcoming, 1: History
   final User? user = FirebaseAuth.instance.currentUser;
   bool isDoctor = false;
   bool isLoading = true;
@@ -29,7 +29,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  // 🛠️ حل مشكلة Timestamp
   DateTime _parseDate(dynamic dateData) {
     if (dateData is Timestamp) return dateData.toDate();
     if (dateData is String) return DateTime.tryParse(dateData) ?? DateTime.now();
@@ -37,8 +36,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   String _formatDate(DateTime date) {
-    // تنسيق يدوي بسيط وجميل (YYYY-MM-DD)
     return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  bool _isExpired(DateTime appointmentDate) {
+    return DateTime.now().isAfter(appointmentDate.add(const Duration(minutes: 20)));
   }
 
   void _cancelAppointment(String docId) async {
@@ -46,7 +48,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Cancel Appointment?"),
-        content: const Text("Are you sure you want to cancel this appointment?"),
+        content: const Text("Are you sure you want to cancel?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("No")),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yes, Cancel", style: TextStyle(color: Colors.red))),
@@ -60,7 +62,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     }
   }
 
-  // 🗑️ حذف من السجل (للمريض فقط)
+  void _completeAppointment(String docId) async {
+    bool confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Complete Appointment?"),
+        content: const Text("Is the session done/patient arrived?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("No")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yes, Complete", style: TextStyle(color: Colors.green))),
+        ],
+      ),
+    ) ?? false;
+
+    if (confirm) {
+      await FirebaseFirestore.instance.collection('appointments').doc(docId).update({'status': 'completed'});
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Marked as Completed")));
+    }
+  }
+
   void _deleteAppointment(String docId) async {
     bool confirm = await showDialog(
       context: context,
@@ -112,29 +132,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
                   
                   var docs = snapshot.data!.docs;
-                  var now = DateTime.now();
-
-                  // 🧠 الفلتر الذكي
+                  
                   var filteredDocs = docs.where((doc) {
                     var data = doc.data() as Map<String, dynamic>;
                     String status = data['status'];
                     DateTime date = _parseDate(data['date']);
-                    bool isPast = date.isBefore(now);
+                    
+                    bool expiredTime = _isExpired(date);
 
                     if (_buttonIndex == 0) {
-                      // Upcoming: لازم تكون accepted + مستقبلية
-                      return status == 'accepted' && !isPast;
+                      return status == 'accepted' && !expiredTime;
                     } else {
-                      // History: مكتملة OR ملغية OR (مقبولة بس راحت عليها - Expired)
-                      return status == 'completed' || status == 'cancelled' || status == 'rejected' || (status == 'accepted' && isPast);
+                      return status == 'completed' || status == 'cancelled' || status == 'rejected' || (status == 'accepted' && expiredTime);
                     }
                   }).toList();
 
-                  // ترتيب حسب التاريخ
                   filteredDocs.sort((a, b) {
                     DateTime dateA = _parseDate((a.data() as Map)['date']);
                     DateTime dateB = _parseDate((b.data() as Map)['date']);
-                    return _buttonIndex == 0 ? dateA.compareTo(dateB) : dateB.compareTo(dateA); // Upcoming: الأقرب، History: الأحدث
+                    return _buttonIndex == 0 ? dateA.compareTo(dateB) : dateB.compareTo(dateA);
                   });
 
                   if (filteredDocs.isEmpty) {
@@ -177,24 +193,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     var data = doc.data() as Map<String, dynamic>;
     String name = isDoctor ? (data['patient_name'] ?? "Patient") : (data['doctor_name'] ?? "Doctor");
     DateTime dateObj = _parseDate(data['date']);
-    String dateStr = _formatDate(dateObj); // استخدام الدالة للإصلاح
+    String dateStr = _formatDate(dateObj);
     String timeStr = "${dateObj.hour > 12 ? dateObj.hour - 12 : (dateObj.hour == 0 ? 12 : dateObj.hour)}:${dateObj.minute.toString().padLeft(2, '0')} ${dateObj.hour >= 12 ? 'PM' : 'AM'}";
     
-    bool isPast = dateObj.isBefore(DateTime.now());
+    bool expiredTime = _isExpired(dateObj);
     String status = data['status'];
     String displayStatus = status;
     Color statusColor = Colors.green;
 
-    if (status == 'accepted' && !isPast) {
+    if (status == 'accepted' && !expiredTime) {
       displayStatus = "Upcoming";
       statusColor = Colors.blue;
-    } else if (status == 'accepted' && isPast) {
+    } else if (status == 'accepted' && expiredTime) {
       displayStatus = "Expired";
       statusColor = Colors.orange;
     } else if (status == 'cancelled') {
       displayStatus = "Cancelled";
       statusColor = Colors.red;
-    } else {
+    } else if (status == 'completed') {
       displayStatus = "Completed";
       statusColor = Colors.green;
     }
@@ -220,11 +236,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   Text(displayStatus, style: TextStyle(color: statusColor, fontSize: 12, fontWeight: FontWeight.bold)),
                 ]),
               ),
-              // زر الإلغاء (للمواعيد القادمة)
+              
               if (!isDoctor && displayStatus == "Upcoming")
                 IconButton(icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent), onPressed: () => _cancelAppointment(doc.id)),
-              // زر الحذف (للسجل)
-              if (!isDoctor && _buttonIndex == 1)
+
+              if (isDoctor && displayStatus == "Upcoming")
+                IconButton(
+                  icon: const Icon(Icons.check_circle_outline, color: Colors.green, size: 28),
+                  onPressed: () => _completeAppointment(doc.id),
+                  tooltip: "Mark as Completed",
+                ),
+
+              if (_buttonIndex == 1)
                 IconButton(icon: const Icon(Icons.delete_outline, color: Colors.grey), onPressed: () => _deleteAppointment(doc.id)),
             ],
           ),
@@ -233,11 +256,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             children: [
               const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
               const SizedBox(width: 5),
-              Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold)), // التاريخ الصحيح
+              Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold)),
               const Spacer(),
               const Icon(Icons.access_time, size: 16, color: Colors.grey),
               const SizedBox(width: 5),
-              Text(timeStr, style: const TextStyle(fontWeight: FontWeight.bold)), // الوقت الصحيح
+              Text(timeStr, style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
           )
         ],

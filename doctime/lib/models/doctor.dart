@@ -19,7 +19,7 @@ class DoctorModel {
     this.isVerified = false,
   });
 
-  // من Firebase ➜ إلى الموديل
+  // from Firebase to the model
   factory DoctorModel.fromMap(Map<String, dynamic> map, String documentId) {
     return DoctorModel(
       id: documentId,
@@ -33,7 +33,7 @@ class DoctorModel {
     );
   }
 
-  // من الموديل ➜ إلى Map نخزنها في Firestore
+  // from model to firebase
   Map<String, dynamic> toMap() {
     return {
       'name': name,

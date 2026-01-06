@@ -12,17 +12,35 @@ class DoctorRequestsScreen extends StatefulWidget {
 class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   final User? user = FirebaseAuth.instance.currentUser;
 
-  // دالة لقبول الطلب
+  // 🛠️ دالة تحويل البيانات لتاريخ حقيقي
+  DateTime _parseDate(dynamic dateData) {
+    if (dateData is Timestamp) return dateData.toDate();
+    if (dateData is String) return DateTime.tryParse(dateData) ?? DateTime.now();
+    return DateTime.now();
+  }
+
+  // 🎨 دالة تنسيق التاريخ والوقت بالشكل اللي طلبته
+  String _formatDateTime(DateTime date) {
+    // تنسيق التاريخ: 2025-01-07
+    String datePart = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    
+    // تنسيق الوقت: 11:42 PM
+    int hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    String amPm = date.hour >= 12 ? 'PM' : 'AM';
+    String timePart = "$hour:${date.minute.toString().padLeft(2, '0')} $amPm";
+
+    return "$datePart | $timePart";
+  }
+
   Future<void> _acceptRequest(String docId) async {
     await FirebaseFirestore.instance.collection('appointments').doc(docId).update({
-      'status': 'accepted', // نغير الحالة لمقبول
+      'status': 'accepted',
     });
   }
 
-  // دالة لرفض الطلب
   Future<void> _declineRequest(String docId) async {
     await FirebaseFirestore.instance.collection('appointments').doc(docId).update({
-      'status': 'declined', // نغير الحالة لمرفوض
+      'status': 'declined', // تأكد إنها declined أو rejected حسب ما انت معتمد بالداتابيز
     });
   }
 
@@ -49,22 +67,18 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            // 1️⃣ StreamBuilder لجلب البيانات الحقيقية
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                // بنجيب بس المواعيد اللي حالتها "pending" وتابعة لهذا الدكتور
                 stream: FirebaseFirestore.instance
                     .collection('appointments')
                     .where('doctor_id', isEqualTo: user?.uid)
                     .where('status', isEqualTo: 'pending')
                     .snapshots(),
                 builder: (context, snapshot) {
-                  // حالة التحميل
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  // حالة لا يوجد بيانات
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return Center(
                       child: Column(
@@ -80,15 +94,20 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
 
                   var requests = snapshot.data!.docs;
 
-                  // 2️⃣ عرض القائمة
                   return ListView.builder(
                     itemCount: requests.length,
                     itemBuilder: (context, index) {
                       var req = requests[index];
+                      var data = req.data() as Map<String, dynamic>;
+
+                      // ✅ هون التعديل: تحويل وتنسيق التاريخ قبل تمريره للكارد
+                      DateTime dateObj = _parseDate(data['date']);
+                      String formattedString = _formatDateTime(dateObj);
+
                       return _buildRequestCard(
-                        name: req['patient_name'],
-                        date: req['date'].toString().substring(0, 10), // تاريخ مختصر
-                        docId: req.id, // آيدي المستند عشان التعديل
+                        name: data['patient_name'] ?? 'Unknown',
+                        date: formattedString, // صار يبعث التاريخ والوقت مرتبين
+                        docId: req.id,
                         primaryColor: primaryBlue
                       );
                     },
@@ -102,7 +121,6 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
     );
   }
 
-  // ودجت كرت الطلب
   Widget _buildRequestCard({required String name, required String date, required String docId, required Color primaryColor}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -121,7 +139,6 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
       ),
       child: Column(
         children: [
-          // معلومات المريض
           Row(
             children: [
               Container(
@@ -142,9 +159,10 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                     const SizedBox(height: 5),
                     Row(
                       children: [
-                        Icon(Icons.calendar_today_rounded, size: 16, color: Colors.grey.shade500),
+                        Icon(Icons.access_time_filled_rounded, size: 16, color: Colors.grey.shade500), // غيرت الأيقونة لساعة عشان تناسب الوقت
                         const SizedBox(width: 6),
-                        Text(date, style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+                        // التاريخ والوقت رح ينعرضوا هون
+                        Text(date, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13)),
                       ],
                     ),
                   ],
@@ -155,13 +173,11 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
 
           const SizedBox(height: 20),
 
-          // أزرار القبول والرفض الحقيقية
           Row(
             children: [
-              // زر الرفض
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _declineRequest(docId), // 👇 ربطنا الرفض
+                  onPressed: () => _declineRequest(docId),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade50,
                     foregroundColor: Colors.red,
@@ -173,10 +189,9 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                 ),
               ),
               const SizedBox(width: 15),
-              // زر القبول
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _acceptRequest(docId), // 👇 ربطنا القبول
+                  onPressed: () => _acceptRequest(docId),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,

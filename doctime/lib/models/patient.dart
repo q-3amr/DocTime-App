@@ -2,8 +2,8 @@ class PatientModel {
   final String uid;
   final String email;
   final String name;
-  final String role; // رح تكون دائماً "patient"
-  final String? profileImage; // عشان لقدام بس يحط صورة
+  final String role;
+  final String? profileImage;
 
   PatientModel({
     required this.uid,
@@ -13,18 +13,16 @@ class PatientModel {
     this.profileImage,
   });
 
-  // 1. تحويل البيانات لـ Map (عشان نرفعها عالفايربيس)
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
       'email': email,
       'name': name,
       'role': role,
-      'profileImage': profileImage ?? '', // إذا ما في صورة بنبعث نص فاضي
+      'profileImage': profileImage ?? '',
     };
   }
 
-  // 2. قراءة البيانات من الفايربيس (عشان نعرضها بالتطبيق)
   factory PatientModel.fromMap(Map<String, dynamic> map) {
     return PatientModel(
       uid: map['uid'] ?? '',

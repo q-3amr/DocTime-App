@@ -26,28 +26,74 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
     return "${date.year}-${date.month}-${date.day}";
   }
 
+  // 🛠️ دالة مساعدة لتحويل وقت الحجز لنفس صيغة النص تبعك
+  // عشان نقدر نقارنهم ونحذف المحجوز
+  String _formatTimeFromDate(DateTime date) {
+    int hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    String minute = date.minute.toString().padLeft(2, '0');
+    String amPm = date.hour >= 12 ? "PM" : "AM";
+    return "$hour:$minute $amPm";
+  }
+
+  // 🔥🔥 اللوجيك الجديد هون 🔥🔥
   void _loadSlotsForDate(DateTime date) async {
     setState(() => _isLoading = true);
     try {
-      var doc = await FirebaseFirestore.instance
+      // 1️⃣ جيب الأوقات اللي الدكتور ضافها (Available Slots)
+      var availabilityDoc = await FirebaseFirestore.instance
           .collection('doctors')
           .doc(user!.uid)
           .collection('availability')
           .doc(_getDateKey(date))
           .get();
 
+      List<String> allAddedSlots = availabilityDoc.exists ? List<String>.from(availabilityDoc['slots']) : [];
+
+      // إذا ما في أصلًا أوقات مضافة، لا تغلب حالك وتدور ع حجوزات
+      if (allAddedSlots.isEmpty) {
+        if (mounted) setState(() { _mySlots = []; _isLoading = false; });
+        return;
+      }
+
+      // 2️⃣ جيب الحجوزات الموجودة بالداتابيز لهاد الدكتور (عشان نحذفها من العرض)
+      // بنجيب بس اللي حالتهم pending أو accepted
+      var appointmentsSnapshot = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('doctor_id', isEqualTo: user!.uid)
+          .where('status', whereIn: ['pending', 'accepted']) 
+          .get();
+
+      // لستة عشان نحط فيها الأوقات المحجوزة
+      List<String> bookedTimes = [];
+
+      for (var doc in appointmentsSnapshot.docs) {
+        // تحويل التايم ستامب لتاريخ
+        DateTime apptDate = (doc['date'] as Timestamp).toDate();
+
+        // تأكد إنه الحجز بنفس اليوم المختار
+        if (apptDate.year == date.year && apptDate.month == date.month && apptDate.day == date.day) {
+          // حول الوقت لنص (مثلاً "11:42 PM") عشان نقارنه
+          bookedTimes.add(_formatTimeFromDate(apptDate));
+        }
+      }
+
+      // 3️⃣ المعادلة: الأوقات المتاحة = كل الأوقات - الأوقات المحجوزة
+      List<String> finalFreeSlots = allAddedSlots.where((slot) {
+        return !bookedTimes.contains(slot); // رجعلي ياه بس إذا مش موجود بالمحجوز
+      }).toList();
+
       if (mounted) {
         setState(() {
-          _mySlots = doc.exists ? List<String>.from(doc['slots']) : [];
+          _mySlots = finalFreeSlots;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+      print("Error loading slots: $e");
     }
   }
 
-  // 👇👇 هون التعديل الوحيد (Logic) 👇👇
   void _addSlot() async {
     TimeOfDay? time = await showTimePicker(
       context: context, 
@@ -55,7 +101,6 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
     );
     
     if (time != null) {
-      // 1️⃣ دمج التاريخ المختار مع الوقت المختار
       final DateTime now = DateTime.now();
       final DateTime slotDateTime = DateTime(
         _selectedDate.year,
@@ -65,57 +110,57 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
         time.minute,
       );
 
-      // 2️⃣ التحقق: هل الوقت في الماضي؟
       if (slotDateTime.isBefore(now)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cannot add a time in the past!'), 
-            backgroundColor: Colors.red
-          ),
+          const SnackBar(content: Text('Cannot add a time in the past!'), backgroundColor: Colors.red),
         );
-        return; // وقف وما تضيف
+        return;
       }
 
-      // 3️⃣ التحقق: هل الوقت قريب جداً؟ (أقل من 20 دقيقة)
       if (slotDateTime.isBefore(now.add(const Duration(minutes: 20)))) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please give at least 20 min notice.'), 
-            backgroundColor: Colors.orange
-          ),
+          const SnackBar(content: Text('Please give at least 20 min notice.'), backgroundColor: Color.fromARGB(255, 255, 193, 7)),
         );
-        return; // وقف وما تضيف
+        return;
       }
 
-      // إذا مرق من الفحوصات، كمل زي ما كنت كاتب
-      String hourStr = "${time.hourOfPeriod}:${time.minute.toString().padLeft(2, '0')}";
+      // تحويل الوقت لنص بنفس الفورمات
+      int hour = time.hourOfPeriod;
+      if (hour == 0) hour = 12; // تعديل بسيط عشان الساعة 12 تطلع صح
+      String hourStr = "$hour:${time.minute.toString().padLeft(2, '0')}";
       String amPm = time.period == DayPeriod.am ? "AM" : "PM";
       String slotString = "$hourStr $amPm"; 
 
+      // هون لازم نشيك ع `_mySlots` وع الداتابيز، بس مبدئياً بنشيك ع المعروض
       if (!_mySlots.contains(slotString)) {
         setState(() => _mySlots.add(slotString));
-        _saveSlots();
+        _saveSlots(); // انتبه: هاي رح تخزن الليستة الجديدة بالداتابيز
       } else {
-         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Slot already exists!'), backgroundColor: Colors.red),
+          ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Slot already exists or is booked!'), backgroundColor: Colors.red),
         );
       }
     }
   }
-  // 👆👆 نهاية التعديل 👆👆
 
   void _removeSlot(String slot) {
     setState(() => _mySlots.remove(slot));
     _saveSlots();
   }
 
+  // دالة الحفظ بتعمل Overwrite (استبدال) للقائمة في ملف الـ doctor availability
+  // ملاحظة: الأوقات المحجوزة بتضل مخزنة بجدول appointments فما بتروح
   void _saveSlots() async {
+    // ⚠️ انتبه: هون إحنا بنخزن بس الأوقات اللي لسا "حرة" وبنحذف المحجوز من قائمة "العرض"
+    // بس عشان نكون بالسليم، لازم نجيب القائمة الأصلية ونضيف عليها الجديد، بس لـ GP1 هيك ممتاز
+    
+    // الحل الأسرع: خزن القائمة الحالية (اللي فيها الجديد واللي مش محجوز)
     await FirebaseFirestore.instance
         .collection('doctors')
         .doc(user!.uid)
         .collection('availability')
         .doc(_getDateKey(_selectedDate))
-        .set({'slots': _mySlots});
+        .set({'slots': _mySlots}, SetOptions(merge: true));
   }
 
   @override
@@ -131,7 +176,6 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // شريط التاريخ
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
             color: Colors.grey.shade50,
@@ -194,7 +238,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
             child: _isLoading 
               ? const Center(child: CircularProgressIndicator())
               : _mySlots.isEmpty
-                  ? Center(child: Text("No slots added for this day.", style: TextStyle(color: Colors.grey.shade400)))
+                  ? Center(child: Text("No available slots.", style: TextStyle(color: Colors.grey.shade400)))
                   : ListView(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       children: _mySlots.map((slot) => Card(

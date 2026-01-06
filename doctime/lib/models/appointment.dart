@@ -16,8 +16,6 @@ class AppointmentModel {
     required this.status,
     this.notes,
   });
-
-  // من Firebase للتطبيق
   factory AppointmentModel.fromMap(Map<String, dynamic> map, String documentId) {
     return AppointmentModel(
       id: documentId,
@@ -29,8 +27,6 @@ class AppointmentModel {
       notes: map['notes'],
     );
   }
-
-  // من التطبيق لـ Firebase
   Map<String, dynamic> toMap() {
     return {
       'doctorId': doctorId,
