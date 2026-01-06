@@ -19,53 +19,59 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool isObscure = true;
 
-  void handleLogin() async {
+  // 👇 دالة الدخول المعدلة (بسيطة وواضحة)
+void handleLogin() async {
+    // 1. فحص الحقول الفارغة
     if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter both email and password!'),
-          backgroundColor: Colors.red, // لون أحمر عشان ينتبه
+          backgroundColor: Colors.red,
         ),
       );
-      return; // ⛔ وقف الشغل هون ولا تكمل
+      return;
     }
+    
     setState(() => isLoading = true);
+    
     try {
-      // 1. تسجيل الدخول
-      await AuthService().signIn(
-        emailController.text.trim(),
-        passwordController.text.trim(),
+      // 2. تسجيل الدخول باستخدام Firebase مباشرة عشان نمسك الخطأ صح
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
       );
 
       User? user = FirebaseAuth.instance.currentUser;
 
       if (user != null && mounted) {
-        // 2. فحص هل هو دكتور؟
+        // 3. فحص الداتا بيس: دكتور ولا مريض؟
         DocumentSnapshot docSnap = await FirebaseFirestore.instance
             .collection('doctors')
             .doc(user.uid)
             .get();
 
         if (docSnap.exists) {
-          // 👨‍⚕️ طلع دكتور
-          Map<String, dynamic> data = docSnap.data() as Map<String, dynamic>;
-          bool isVerified = data['isVerified'] ?? false; 
+          // 👨‍⚕️ دكتور
+          Map<String, dynamic>? data = docSnap.data() as Map<String, dynamic>?;
+          bool isVerified = data?['isVerified'] ?? false; 
 
           if (isVerified) {
-             // ✅ موثق: وديه فوراً على شاشة الدكتور (تم التعديل هنا)
-             Navigator.pushReplacement(
-               context, 
-               MaterialPageRoute(builder: (c) => const DoctorHomeScreen())
-             );
+             // ✅ موثق
+             if(mounted) {
+               Navigator.pushReplacement(
+                 context, 
+                 MaterialPageRoute(builder: (c) => const DoctorHomeScreen())
+               );
+             }
           } else {
-             // ❌ مش موثق: اطرده
+             // ❌ غير موثق
              await AuthService().signOut();
              if (mounted) {
                showDialog(
                  context: context,
                  builder: (context) => AlertDialog(
                    title: const Text("Pending Approval"),
-                   content: const Text("Your account is currently under review by the admin. Please wait for approval."),
+                   content: const Text("Your account is currently under review."),
                    actions: [
                      TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))
                    ],
@@ -74,21 +80,52 @@ class _LoginScreenState extends State<LoginScreen> {
              }
           }
         } else {
-          // 👤 طلع مريض -> وديه على شاشة المريض
-          Navigator.pushReplacement(
-            context, 
-            MaterialPageRoute(builder: (c) => const PatientHomeScreen())
-          );
+          // 👤 مريض
+          if(mounted) {
+            Navigator.pushReplacement(
+              context, 
+              MaterialPageRoute(builder: (c) => const PatientHomeScreen())
+            );
+          }
         }
       }
 
+    } on FirebaseAuthException catch (e) {
+      // 👇 هون التعديل: هسه الكود رح يدخل هون أكيد
+      String message = "Login failed. Please try again.";
+
+      if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        message = "Incorrect email or password.";
+      } else if (e.code == 'invalid-email') {
+        message = "Invalid email format."; // رح تطلع لما تكتب sdf
+      } else if (e.code == 'network-request-failed') {
+        message = "No internet connection.";
+      } else if (e.code == 'user-disabled') {
+        message = "This user has been disabled.";
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          )
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      // أي خطأ ثاني غير متوقع بنعرضه زي ما هو عشان نعرف شو هو
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: ${e.toString()}"), // خليه يعرض نص الخطأ بدل رسالة عامة
+            backgroundColor: Colors.red,
+          )
+        );
+      }
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
   }
-
   @override
   Widget build(BuildContext context) {
     final Color primaryBlue = const Color(0xFF407CE2);
