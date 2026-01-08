@@ -58,11 +58,12 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
     // إذا الدكتور مش محدد أوقات لهذا اليوم
     if (!availabilityDoc.exists || availabilityDoc['slots'] == null) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _availableSlots = [];
           _isLoadingSlots = false;
         });
+      }
       return;
     }
 
