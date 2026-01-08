@@ -16,7 +16,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPassController = TextEditingController();
-  
+
   // حقول الدكتور الإضافية
   final TextEditingController specialtyController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
@@ -24,14 +24,17 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isLoading = false;
   bool isObscurePass = true;
   bool isObscureConfirm = true;
-  bool isDoctor = false; 
+  bool isDoctor = false;
 
   // 2. دالة التسجيل (تم التعديل لحل مشكلة الشاشة السوداء)
   void handleSignup() async {
     // فحوصات الأمان (Validation)
     if (passwordController.text != confirmPassController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passwords do not match!'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Passwords do not match!'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -39,33 +42,41 @@ class _SignupScreenState extends State<SignupScreen> {
         passwordController.text.trim().isEmpty ||
         nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all required fields!'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please fill all required fields!'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
     if (isDoctor) {
-      if (specialtyController.text.trim().isEmpty || locationController.text.trim().isEmpty) {
+      if (specialtyController.text.trim().isEmpty ||
+          locationController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill all doctor fields!'), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text('Please fill all doctor fields!'),
+            backgroundColor: Colors.red,
+          ),
         );
-        return; 
+        return;
       }
     }
 
     setState(() => isLoading = true);
-    
+
     try {
       // 1️⃣ إنشاء المستخدم في Authentication
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
 
       String uid = userCredential.user!.uid;
 
       // 2️⃣ تجهيز البيانات حسب النوع (دكتور أو مريض)
       String collectionName = isDoctor ? 'doctors' : 'users';
-      
+
       Map<String, dynamic> userData = {
         'uid': uid,
         'name': nameController.text.trim(),
@@ -82,7 +93,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
       // 3️⃣ حفظ البيانات في Firestore (أهم نقطة: AWAIT)
       // لازم نستنى هاي الخطوة تخلص قبل ما نعمل أي شي
-      await FirebaseFirestore.instance.collection(collectionName).doc(uid).set(userData);
+      await FirebaseFirestore.instance
+          .collection(collectionName)
+          .doc(uid)
+          .set(userData);
 
       // 4️⃣ بعد ما تأكدنا إنو الحفظ تم، بنطلع من الصفحة
       if (mounted) {
@@ -90,22 +104,23 @@ class _SignupScreenState extends State<SignupScreen> {
         await FirebaseAuth.instance.signOut();
 
         setState(() => isLoading = false);
-        
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
-        
+
         // الرسالة بتطلع للمستخدم وهو في صفحة اللوجين
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Account created successfully! Please Login with your new account.'), 
+            content: Text(
+              'Account created successfully! Please Login with your new account.',
+            ),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 4),
           ),
         );
       }
-
     } on FirebaseAuthException catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
@@ -115,12 +130,16 @@ class _SignupScreenState extends State<SignupScreen> {
         } else if (e.code == 'weak-password') {
           message = "The password is too weak.";
         }
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }
@@ -136,7 +155,10 @@ class _SignupScreenState extends State<SignupScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 20.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -152,7 +174,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 10),
                 Text(
                   "Create your new account",
-                  style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
 
                 const SizedBox(height: 30),
@@ -191,7 +216,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   labelColor: labelColor,
                   isPass: true,
                   isObscure: isObscurePass,
-                  onEyeTap: () => setState(() => isObscurePass = !isObscurePass),
+                  onEyeTap: () =>
+                      setState(() => isObscurePass = !isObscurePass),
                 ),
 
                 const SizedBox(height: 20),
@@ -206,22 +232,34 @@ class _SignupScreenState extends State<SignupScreen> {
                   labelColor: labelColor,
                   isPass: true,
                   isObscure: isObscureConfirm,
-                  onEyeTap: () => setState(() => isObscureConfirm = !isObscureConfirm),
+                  onEyeTap: () =>
+                      setState(() => isObscureConfirm = !isObscureConfirm),
                 ),
 
                 const SizedBox(height: 25),
 
                 // سويتش الدكتور
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 15,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDoctor ? primaryBlue.withOpacity(0.1) : Colors.grey.shade50,
+                    color: isDoctor
+                        ? primaryBlue.withOpacity(0.1)
+                        : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isDoctor ? primaryBlue : borderColor, width: 2),
+                    border: Border.all(
+                      color: isDoctor ? primaryBlue : borderColor,
+                      width: 2,
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.medical_services, color: isDoctor ? primaryBlue : Colors.grey),
+                      Icon(
+                        Icons.medical_services,
+                        color: isDoctor ? primaryBlue : Colors.grey,
+                      ),
                       const SizedBox(width: 10),
                       Text(
                         "Register as a Doctor",
@@ -234,7 +272,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       const Spacer(),
                       Switch(
                         value: isDoctor,
-                        activeColor: primaryBlue,
+                        activeThumbColor: primaryBlue,
                         onChanged: (val) => setState(() => isDoctor = val),
                       ),
                     ],
@@ -246,13 +284,17 @@ class _SignupScreenState extends State<SignupScreen> {
                   reverseDuration: const Duration(milliseconds: 300),
                   switchInCurve: Curves.easeInOut,
                   switchOutCurve: Curves.easeInOut,
-                  transitionBuilder: (Widget child, Animation<double> animation) {
-                    return SizeTransition(
-                      sizeFactor: animation,
-                      axisAlignment: -1.0,
-                      child: FadeTransition(opacity: animation, child: child),
-                    );
-                  },
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                        return SizeTransition(
+                          sizeFactor: animation,
+                          axisAlignment: -1.0,
+                          child: FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          ),
+                        );
+                      },
                   child: isDoctor
                       ? Column(
                           key: const ValueKey('doctor_fields'),
@@ -281,7 +323,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         )
                       : const SizedBox.shrink(key: ValueKey('empty')),
                 ),
-                
+
                 const SizedBox(height: 30),
 
                 // زر التسجيل
@@ -293,14 +335,21 @@ class _SignupScreenState extends State<SignupScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryBlue,
                       elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                    child: isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          "Sign Up",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1),
-                        ),
+                    child: isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            "Sign Up",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 1,
+                            ),
+                          ),
                   ),
                 ),
 
@@ -309,12 +358,21 @@ class _SignupScreenState extends State<SignupScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Already have an account? ", style: TextStyle(color: labelColor, fontSize: 15, fontWeight: FontWeight.w600)),
+                    Text(
+                      "Already have an account? ",
+                      style: TextStyle(
+                        color: labelColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     GestureDetector(
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
                         );
                       },
                       child: Text(
@@ -368,8 +426,15 @@ class _SignupScreenState extends State<SignupScreen> {
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14, fontWeight: FontWeight.normal),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+            hintStyle: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 18,
+              vertical: 18,
+            ),
             filled: true,
             fillColor: Colors.grey.shade50,
             enabledBorder: OutlineInputBorder(
@@ -380,16 +445,18 @@ class _SignupScreenState extends State<SignupScreen> {
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: primaryBlue, width: 2.5),
             ),
-            suffixIcon: isPass 
-              ? IconButton(
-                  icon: Icon(
-                    isObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                    color: Colors.grey.shade600,
-                    size: 26,
-                  ),
-                  onPressed: onEyeTap,
-                )
-              : Icon(icon, color: Colors.grey.shade400, size: 24),
+            suffixIcon: isPass
+                ? IconButton(
+                    icon: Icon(
+                      isObscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.grey.shade600,
+                      size: 26,
+                    ),
+                    onPressed: onEyeTap,
+                  )
+                : Icon(icon, color: Colors.grey.shade400, size: 24),
           ),
         ),
       ],
