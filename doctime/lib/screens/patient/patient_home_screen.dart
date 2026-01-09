@@ -3,10 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'doctor_search_screen.dart';
-import 'ai_chat_screen.dart'; 
-import '../common/schedule_screen.dart'; 
-import '../common/profile_screen.dart'; 
-import '../common/chats_list_screen.dart'; 
+import 'ai_chat_screen.dart';
+import '../common/schedule_screen.dart';
+import '../common/profile_screen.dart';
+import '../common/chats_list_screen.dart';
 
 class PatientHomeScreen extends StatefulWidget {
   const PatientHomeScreen({super.key});
@@ -16,13 +16,13 @@ class PatientHomeScreen extends StatefulWidget {
 }
 
 class _PatientHomeScreenState extends State<PatientHomeScreen> {
-  int _selectedIndex = 0; 
+  int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const PatientHomeContent(), 
-    const ScheduleScreen(), 
-    const ChatsListScreen(), 
-    const ProfileScreen(), 
+    const PatientHomeContent(),
+    const ScheduleScreen(),
+    const ChatsListScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -33,7 +33,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
+          border: Border(
+            top: BorderSide(color: Colors.grey.shade100, width: 1),
+          ),
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.white,
@@ -44,10 +46,22 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_today_rounded), label: "My Bookings"),
-            BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline_rounded), label: "Messages"),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline_rounded), label: "Profile"),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: "Home",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today_rounded),
+              label: "My Bookings",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline_rounded),
+              label: "Messages",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              label: "Profile",
+            ),
           ],
         ),
       ),
@@ -86,6 +100,106 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     return DateTime.tryParse(dateData.toString()) ?? DateTime.now();
   }
 
+  // Helper method to get user document with migration support
+  Future<DocumentSnapshot> _getUserDocument() async {
+    if (user?.uid == null) {
+      // Return empty snapshot if no user
+      return await FirebaseFirestore.instance
+          .collection('users')
+          .doc('dummy')
+          .get();
+    }
+
+    // 1. Check new unified 'users' collection
+    var doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get();
+
+    if (doc.exists && doc.data()?['name'] != null) {
+      return doc;
+    }
+
+    // 2. Check old 'doctors' collection (for doctors from before refactor)
+    var oldDoctorDoc = await FirebaseFirestore.instance
+        .collection('doctors')
+        .doc(user!.uid)
+        .get();
+
+    if (oldDoctorDoc.exists) {
+      // Migrate doctor to new structure
+      var data = oldDoctorDoc.data();
+      if (data != null) {
+        Map<String, dynamic> newData = {
+          'email': user!.email ?? '',
+          'name': data['name'] ?? 'Doctor',
+          'role': 'doctor',
+          'profileImage': data['imageUrl'] ?? '',
+          'specialty': data['specialty'] ?? '',
+          'location': data['location'] ?? '',
+          'rating': data['rating'] ?? 0.0,
+          'about': data['about'] ?? '',
+          'isVerified': data['isVerified'] ?? false,
+        };
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .set(newData);
+        return await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .get();
+      }
+    }
+
+    // 3. Check old 'users' collection with old structure (for patients)
+    var oldUserDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get();
+
+    if (oldUserDoc.exists) {
+      var data = oldUserDoc.data();
+      if (data != null && data['name'] != null) {
+        // Already has name, just ensure it has all required fields
+        Map<String, dynamic> newData = {
+          'email': data['email'] ?? user!.email ?? '',
+          'name': data['name'] ?? 'Patient',
+          'role': data['role'] ?? 'patient',
+          'profileImage': data['profileImage'] ?? '',
+        };
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .set(newData, SetOptions(merge: true));
+        return await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user!.uid)
+            .get();
+      }
+    }
+
+    // 4. If not found anywhere, create a basic document with email from FirebaseAuth
+    if (user!.email != null) {
+      Map<String, dynamic> newUserData = {
+        'email': user!.email!,
+        'name': user!.displayName ?? user!.email!.split('@')[0],
+        'role': 'patient',
+        'profileImage': '',
+      };
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .set(newUserData);
+      return await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user!.uid)
+          .get();
+    }
+
+    return doc; // Return the empty doc
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,8 +208,10 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topCenter, end: Alignment.bottomCenter, 
-                colors: [primaryBlue.withOpacity(0.15), Colors.white], stops: const [0.0, 0.4], 
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [primaryBlue.withOpacity(0.15), Colors.white],
+                stops: const [0.0, 0.4],
               ),
             ),
           ),
@@ -112,12 +228,57 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Hello,", style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+                          Text(
+                            "Hello,",
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 16,
+                            ),
+                          ),
                           FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance.collection('users').doc(user?.uid).get(),
+                            future: _getUserDocument(),
                             builder: (context, snapshot) {
-                              String name = snapshot.data?['name'] ?? "Patient";
-                              return Text(name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900));
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Text(
+                                  "Patient",
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                );
+                              }
+                              if (!snapshot.hasData ||
+                                  snapshot.data == null ||
+                                  !snapshot.data!.exists) {
+                                return const Text(
+                                  "Patient",
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                );
+                              }
+                              final data = snapshot.data!.data();
+                              if (data == null) {
+                                return const Text(
+                                  "Patient",
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                );
+                              }
+                              String name =
+                                  (data as Map<String, dynamic>)['name'] ??
+                                  "Patient";
+                              return Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              );
                             },
                           ),
                         ],
@@ -127,15 +288,22 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: primaryBlue.withOpacity(0.5), width: 2),
+                          border: Border.all(
+                            color: primaryBlue.withOpacity(0.5),
+                            width: 2,
+                          ),
                           color: Colors.white,
                         ),
                         child: CircleAvatar(
                           radius: 24,
                           backgroundColor: const Color(0xFFE0E7FF),
-                          child: Icon(Icons.person, color: primaryBlue, size: 28),
+                          child: Icon(
+                            Icons.person,
+                            color: primaryBlue,
+                            size: 28,
+                          ),
                         ),
-                      )
+                      ),
                     ],
                   ),
 
@@ -152,26 +320,43 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       if (!snapshot.hasData) return _buildEmptyBanner();
 
                       var docs = snapshot.data!.docs;
-                      var futureAppointments = docs.map((doc) {
-                        return {
-                          'data': doc.data(),
-                          'date': _parseDate((doc.data() as Map)['date'])
-                        };
-                      }).where((item) => (item['date'] as DateTime).isAfter(DateTime.now())).toList();
+                      var futureAppointments = docs
+                          .map((doc) {
+                            return {
+                              'data': doc.data(),
+                              'date': _parseDate((doc.data() as Map)['date']),
+                            };
+                          })
+                          .where(
+                            (item) => (item['date'] as DateTime).isAfter(
+                              DateTime.now(),
+                            ),
+                          )
+                          .toList();
 
                       if (futureAppointments.isEmpty) {
-                        return _buildEmptyBanner(); 
+                        return _buildEmptyBanner();
                       }
 
-                      futureAppointments.sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+                      futureAppointments.sort(
+                        (a, b) => (a['date'] as DateTime).compareTo(
+                          b['date'] as DateTime,
+                        ),
+                      );
                       var nextAppt = futureAppointments.first;
-                      
-                      return _buildTimerBanner(nextAppt['date'] as DateTime, (nextAppt['data'] as Map)['doctor_name'] ?? "Doctor");
+
+                      return _buildTimerBanner(
+                        nextAppt['date'] as DateTime,
+                        (nextAppt['data'] as Map)['doctor_name'] ?? "Doctor",
+                      );
                     },
                   ),
 
                   const SizedBox(height: 25),
-                  const Text("Quick Actions", style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                  const Text(
+                    "Quick Actions",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 15),
 
                   Expanded(
@@ -181,12 +366,34 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       mainAxisSpacing: 20,
                       childAspectRatio: 1.1,
                       children: [
-                        _buildActionBtn(context, Icons.person_search_rounded, "Find Doctor", Colors.blue, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (c) => const DoctorSearchScreen()));
-                        }),
-                        _buildActionBtn(context, Icons.smart_toy_rounded, "AI Assistant", Colors.purple, () {
-                          Navigator.push(context, MaterialPageRoute(builder: (c) => const AiChatScreen()));
-                        }),
+                        _buildActionBtn(
+                          context,
+                          Icons.person_search_rounded,
+                          "Find Doctor",
+                          Colors.blue,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (c) => const DoctorSearchScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _buildActionBtn(
+                          context,
+                          Icons.smart_toy_rounded,
+                          "AI Assistant",
+                          Colors.purple,
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (c) => const AiChatScreen(),
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -202,26 +409,51 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
   // 🕒 Timer Banner
   Widget _buildTimerBanner(DateTime apptDate, String doctorName) {
     Duration diff = apptDate.difference(DateTime.now());
-    String timeText = diff.inDays > 0 
-        ? "${diff.inDays} Days, ${diff.inHours % 24} Hours" 
+    String timeText = diff.inDays > 0
+        ? "${diff.inDays} Days, ${diff.inHours % 24} Hours"
         : "${diff.inHours} Hours, ${diff.inMinutes % 60} Minutes";
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [primaryBlue, primaryBlue.withOpacity(0.8)]),
+        gradient: LinearGradient(
+          colors: [primaryBlue, primaryBlue.withOpacity(0.8)],
+        ),
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [BoxShadow(color: primaryBlue.withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10))],
+        boxShadow: [
+          BoxShadow(
+            color: primaryBlue.withOpacity(0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Upcoming Appointment", style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
+          const Text(
+            "Upcoming Appointment",
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 5),
-          Text(timeText, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
+          Text(
+            timeText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
           const SizedBox(height: 5),
-          Text("with Dr. $doctorName", style: const TextStyle(color: Colors.white, fontSize: 16)),
+          Text(
+            "with Dr. $doctorName",
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
         ],
       ),
     );
@@ -236,7 +468,13 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
         color: Colors.white,
         border: Border.all(color: Colors.grey.shade200),
         borderRadius: BorderRadius.circular(28),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -244,23 +482,50 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("No upcoming appointments yet.", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.w600)),
+                Text(
+                  "No upcoming appointments yet.",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 SizedBox(height: 5),
-                Text("Book Now?", style: TextStyle(color: Colors.black87, fontSize: 20, fontWeight: FontWeight.w900)),
+                Text(
+                  "Book Now?",
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-            child: const Icon(Icons.calendar_month_rounded, color: Colors.grey, size: 30),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.calendar_month_rounded,
+              color: Colors.grey,
+              size: 30,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionBtn(BuildContext context, IconData icon, String title, Color color, VoidCallback onTap) {
+  Widget _buildActionBtn(
+    BuildContext context,
+    IconData icon,
+    String title,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -268,18 +533,30 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, color: color, size: 38),
             ),
             const SizedBox(height: 15),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
           ],
         ),
       ),

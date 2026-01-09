@@ -42,35 +42,46 @@ void handleLogin() async {
 
       if (user != null && mounted) {
         DocumentSnapshot docSnap = await FirebaseFirestore.instance
-            .collection('doctors')
+            .collection('users')
             .doc(user.uid)
             .get();
 
         if (docSnap.exists) {
           Map<String, dynamic>? data = docSnap.data() as Map<String, dynamic>?;
-          bool isVerified = data?['isVerified'] ?? false; 
+          String role = data?['role'] ?? 'patient';
+          
+          if (role == 'doctor') {
+            bool isVerified = data?['isVerified'] ?? false; 
 
-          if (isVerified) {
-             if(mounted) {
-               Navigator.pushReplacement(
-                 context, 
-                 MaterialPageRoute(builder: (c) => const DoctorHomeScreen())
-               );
-             }
+            if (isVerified) {
+               if(mounted) {
+                 Navigator.pushReplacement(
+                   context, 
+                   MaterialPageRoute(builder: (c) => const DoctorHomeScreen())
+                 );
+               }
+            } else {
+               await AuthService().signOut();
+               if (mounted) {
+                 showDialog(
+                   context: context,
+                   builder: (context) => AlertDialog(
+                     title: const Text("Pending Approval"),
+                     content: const Text("Your account is currently under review."),
+                     actions: [
+                       TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))
+                     ],
+                   ),
+                 );
+               }
+            }
           } else {
-             await AuthService().signOut();
-             if (mounted) {
-               showDialog(
-                 context: context,
-                 builder: (context) => AlertDialog(
-                   title: const Text("Pending Approval"),
-                   content: const Text("Your account is currently under review."),
-                   actions: [
-                     TextButton(onPressed: () => Navigator.pop(context), child: const Text("OK"))
-                   ],
-                 ),
-               );
-             }
+            if(mounted) {
+              Navigator.pushReplacement(
+                context, 
+                MaterialPageRoute(builder: (c) => const PatientHomeScreen())
+              );
+            }
           }
         } else {
           if(mounted) {

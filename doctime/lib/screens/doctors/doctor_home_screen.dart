@@ -92,7 +92,7 @@
                           children: [
                             Text("Welcome back,", style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
                             FutureBuilder<DocumentSnapshot>(
-                              future: FirebaseFirestore.instance.collection('doctors').doc(user?.uid).get(),
+                              future: FirebaseFirestore.instance.collection('users').doc(user?.uid).get(),
                               builder: (context, snapshot) {
                                 String name = snapshot.data?['name'] ?? "Doctor";
                                 return Text("Dr. $name", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900));

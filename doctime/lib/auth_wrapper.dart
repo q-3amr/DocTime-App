@@ -19,13 +19,17 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.hasData && snapshot.data != null) {
           User user = snapshot.data!;
           return FutureBuilder<DocumentSnapshot>(
-            future: FirebaseFirestore.instance.collection('doctors').doc(user.uid).get(),
+            future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
             builder: (context, roleSnapshot) {
               if (roleSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(body: Center(child: CircularProgressIndicator()));
               }
               if (roleSnapshot.hasData && roleSnapshot.data!.exists) {
-                return const DoctorHomeScreen(); // Must be Updated to DoctorHomeScreen
+                final userData = roleSnapshot.data!.data() as Map<String, dynamic>?;
+                final role = userData?['role'] as String?;
+                if (role == 'doctor') {
+                  return const DoctorHomeScreen();
+                }
               }
               return const PatientHomeScreen();
             },

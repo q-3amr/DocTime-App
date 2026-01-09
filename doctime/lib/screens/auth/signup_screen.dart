@@ -74,27 +74,27 @@ class _SignupScreenState extends State<SignupScreen> {
 
       String uid = userCredential.user!.uid;
 
-      // 2️⃣ تجهيز البيانات حسب النوع (دكتور أو مريض)
-      String collectionName = isDoctor ? 'doctors' : 'users';
-
+      // 2️⃣ تجهيز البيانات حسب النوع (دكتور أو مريض) - استخدام unified structure
       Map<String, dynamic> userData = {
-        'uid': uid,
-        'name': nameController.text.trim(),
         'email': emailController.text.trim(),
+        'name': nameController.text.trim(),
         'role': isDoctor ? 'doctor' : 'patient',
+        'profileImage': '',
         'createdAt': FieldValue.serverTimestamp(),
       };
 
       if (isDoctor) {
         userData['specialty'] = specialtyController.text.trim();
         userData['location'] = locationController.text.trim();
-        userData['bio'] = ''; // حقل فاضي عشان ما يعطي Error بالبروفايل
+        userData['rating'] = 0.0;
+        userData['about'] = 'New Doctor';
+        userData['isVerified'] = false; // أهم اشي: يدخل غير موثق
       }
 
-      // 3️⃣ حفظ البيانات في Firestore (أهم نقطة: AWAIT)
+      // 3️⃣ حفظ البيانات في Firestore - جميع المستخدمين في 'users' collection
       // لازم نستنى هاي الخطوة تخلص قبل ما نعمل أي شي
       await FirebaseFirestore.instance
-          .collection(collectionName)
+          .collection('users')
           .doc(uid)
           .set(userData);
 

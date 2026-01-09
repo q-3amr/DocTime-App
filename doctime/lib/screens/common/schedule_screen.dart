@@ -24,8 +24,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   void _checkRole() async {
     if (user != null) {
-      var doc = await FirebaseFirestore.instance.collection('doctors').doc(user!.uid).get();
-      if (mounted) setState(() { isDoctor = doc.exists; isLoading = false; });
+      var doc = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
+      if (doc.exists) {
+        var data = doc.data() as Map<String, dynamic>?;
+        String role = data?['role'] ?? 'patient';
+        if (mounted) setState(() { isDoctor = role == 'doctor'; isLoading = false; });
+      } else {
+        if (mounted) setState(() { isDoctor = false; isLoading = false; });
+      }
     }
   }
 

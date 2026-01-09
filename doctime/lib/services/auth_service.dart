@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/doctor.dart';
-import '../models/patient.dart';
+import '../models/user.dart';
 
 class AuthService {
   final FirebaseAuth auth = FirebaseAuth.instance;
@@ -40,29 +39,24 @@ class AuthService {
       
       User? user = result.user;
       if (user == null) return;
-      if (role == 'doctor') {
-        DoctorModel newDoctor = DoctorModel(
-          id: user.uid,
-          name: name,
-          specialty: specialty ?? 'General',
-          location: location ?? 'Amman',
-          imageUrl: '', // صورة فاضية مبدئياً
-          rating: 0.0,
-          about: 'New Doctor',
-          isVerified: false, // أهم اشي: يدخل غير موثق
-        );
-        await firestore.collection('doctors').doc(user.uid).set(newDoctor.toMap());
-      } 
-      else {
-        PatientModel newPatient = PatientModel(
-          uid: user.uid,
-          email: email,
-          name: name,
-          role: 'patient',
-          profileImage: '',
-        );
-        await firestore.collection('users').doc(user.uid).set(newPatient.toMap());
-      }
+      
+      // Create unified UserModel
+      UserModel newUser = UserModel(
+        id: user.uid,
+        email: email,
+        name: name,
+        role: role,
+        profileImage: '',
+        // Doctor-specific fields (only if role is doctor)
+        specialty: role == 'doctor' ? (specialty ?? 'General') : null,
+        location: role == 'doctor' ? (location ?? 'Amman') : null,
+        rating: role == 'doctor' ? 0.0 : null,
+        about: role == 'doctor' ? 'New Doctor' : null,
+        isVerified: role == 'doctor' ? false : null, // أهم اشي: يدخل غير موثق
+      );
+      
+      // Store all users in 'users' collection
+      await firestore.collection('users').doc(user.uid).set(newUser.toMap());
 
     } on FirebaseAuthException catch (e) {
       throw e.message ?? "Registration failed";

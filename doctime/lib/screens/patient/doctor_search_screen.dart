@@ -52,7 +52,11 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
           // 2️⃣ قائمة الدكاترة من Firestore
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('doctors').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .where('role', isEqualTo: 'doctor')
+                  .where('isVerified', isEqualTo: true)
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:doctime/models/doctor.dart';
+import 'package:doctime/models/user.dart';
 import 'package:doctime/services/database_service.dart';
 
 class DoctorsListScreen extends StatelessWidget {
@@ -11,7 +11,7 @@ class DoctorsListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Available Doctors')),
-      body: StreamBuilder<List<DoctorModel>>(
+      body: StreamBuilder<List<UserModel>>(
         stream: db.streamDoctors(),
         builder: (context, snapshot) {
           // لسه بقرأ البيانات
@@ -41,10 +41,10 @@ class DoctorsListScreen extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: doctor.imageUrl.isNotEmpty
-                        ? NetworkImage(doctor.imageUrl)
+                    backgroundImage: (doctor.profileImage != null && doctor.profileImage!.isNotEmpty)
+                        ? NetworkImage(doctor.profileImage!)
                         : null,
-                    child: doctor.imageUrl.isEmpty
+                    child: (doctor.profileImage == null || doctor.profileImage!.isEmpty)
                         ? const Icon(Icons.person)
                         : null,
                   ),
@@ -53,10 +53,10 @@ class DoctorsListScreen extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    '${doctor.specialty} • ${doctor.location}\nRating: ${doctor.rating.toStringAsFixed(1)}',
+                    '${doctor.specialty ?? 'General'} • ${doctor.location ?? 'Unknown'}\nRating: ${doctor.rating?.toStringAsFixed(1) ?? '0.0'}',
                   ),
                   isThreeLine: true,
-                  trailing: doctor.isVerified
+                  trailing: (doctor.isVerified == true)
                       ? const Icon(Icons.verified, color: Colors.green)
                       : null,
                   onTap: () {

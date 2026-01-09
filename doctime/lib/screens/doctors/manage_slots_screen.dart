@@ -41,7 +41,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
     try {
       // 1️⃣ جيب الأوقات اللي الدكتور ضافها (Available Slots)
       var availabilityDoc = await FirebaseFirestore.instance
-          .collection('doctors')
+          .collection('users')
           .doc(user!.uid)
           .collection('availability')
           .doc(_getDateKey(date))
@@ -156,7 +156,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
     
     // الحل الأسرع: خزن القائمة الحالية (اللي فيها الجديد واللي مش محجوز)
     await FirebaseFirestore.instance
-        .collection('doctors')
+        .collection('users')
         .doc(user!.uid)
         .collection('availability')
         .doc(_getDateKey(_selectedDate))

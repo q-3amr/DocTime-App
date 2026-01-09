@@ -138,10 +138,8 @@ class ChatsListScreen extends StatelessWidget {
     );
   }
 
-  // دالة ذكية بتدور بالـ doctors وبالـ users
+  // دالة ذكية بتدور بالـ users collection
   Future<DocumentSnapshot> _getOtherUserData(String uid) async {
-    var doc = await FirebaseFirestore.instance.collection('doctors').doc(uid).get();
-    if (doc.exists) return doc;
     return await FirebaseFirestore.instance.collection('users').doc(uid).get();
   }
 }

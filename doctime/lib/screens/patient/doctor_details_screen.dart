@@ -50,7 +50,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
     // 1️⃣ جلب الأوقات التي حددها الدكتور
     var availabilityDoc = await FirebaseFirestore.instance
-        .collection('doctors')
+        .collection('users')
         .doc(widget.doctorId)
         .collection('availability')
         .doc(_getDateKey(date))

@@ -29,30 +29,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _loadUserData() async {
     if (user == null) return;
     try {
-      var docRef = FirebaseFirestore.instance.collection('doctors').doc(user!.uid);
-      var docSnap = await docRef.get();
+      var docSnap = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
 
       if (docSnap.exists) {
+        var data = docSnap.data();
+        String role = data?['role'] ?? 'patient';
         if (mounted) {
           setState(() {
-            isDoctor = true;
-            _nameController.text = docSnap.data()?['name'] ?? "";
-            _bioController.text = docSnap.data()?['bio'] ?? "";
-            _specialtyController.text = docSnap.data()?['specialty'] ?? "";
+            isDoctor = role == 'doctor';
+            _nameController.text = data?['name'] ?? "";
+            _bioController.text = data?['about'] ?? "";
+            _specialtyController.text = data?['specialty'] ?? "";
             isLoading = false;
           });
         }
       } else {
-        var patientSnap = await FirebaseFirestore.instance.collection('users').doc(user!.uid).get();
-        if (patientSnap.exists) {
-          if (mounted) {
-            setState(() {
-              isDoctor = false;
-              _nameController.text = patientSnap.data()?['name'] ?? "";
-              isLoading = false;
-            });
-          }
-        }
+        if (mounted) setState(() => isLoading = false);
       }
     } catch (e) {
       if (mounted) setState(() => isLoading = false);
@@ -66,17 +58,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => isLoading = true); 
 
     try {
-      String collection = isDoctor ? 'doctors' : 'users';
       Map<String, dynamic> data = {
         'name': _nameController.text.trim(),
       };
 
       if (isDoctor) {
-        data['bio'] = _bioController.text.trim();
+        data['about'] = _bioController.text.trim();
         data['specialty'] = _specialtyController.text.trim();
       }
 
-      await FirebaseFirestore.instance.collection(collection).doc(user!.uid).update(data);
+      await FirebaseFirestore.instance.collection('users').doc(user!.uid).update(data);
       
       if (mounted) {
          setState(() => isLoading = false);
@@ -100,8 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       // Optional: Delete user data from Firestore first
-      String collection = isDoctor ? 'doctors' : 'users';
-      await FirebaseFirestore.instance.collection(collection).doc(user!.uid).delete();
+      await FirebaseFirestore.instance.collection('users').doc(user!.uid).delete();
 
       // Delete Authentication User
       await user!.delete();
