@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../auth/login_screen.dart'; // Ensure this path is correct
+import '../../auth_wrapper.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -98,7 +98,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (c) => const LoginScreen()), 
+          MaterialPageRoute(builder: (context) => const AuthWrapper()), 
           (route) => false
         );
       }
@@ -123,9 +123,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _logout() async {
     await FirebaseAuth.instance.signOut();
     if (mounted) {
+      // Navigate to root (AuthWrapper will automatically show GuestHomeScreen)
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (c) => const LoginScreen()), 
-        (route) => false
+        MaterialPageRoute(builder: (context) => const AuthWrapper()),
+        (route) => false,
       );
     }
   }

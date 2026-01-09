@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../common/chat_screen.dart';
+import '../auth/login_screen.dart';
 
 class DoctorDetailsScreen extends StatefulWidget {
   final String doctorName;
@@ -122,6 +123,12 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
   // إرسال الطلب
   void _bookAppointment() async {
+    // Check if user is logged in
+    if (user == null) {
+      _showLoginDialog();
+      return;
+    }
+
     if (_selectedTimeSlot == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a time slot first!")),
@@ -173,6 +180,38 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
+  }
+
+  void _showLoginDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Login Required"),
+        content: const Text(
+          "Please login to book an appointment. You can browse doctors without an account, but booking requires login.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Login"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

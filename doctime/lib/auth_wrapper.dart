@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/auth_service.dart';
-import 'screens/auth/welcome_screen.dart'; 
+import 'screens/guest/guest_home_screen.dart';
 import 'screens/patient/patient_home_screen.dart'; 
 import 'screens/doctors/doctor_home_screen.dart'; 
 
@@ -35,7 +35,7 @@ class AuthWrapper extends StatelessWidget {
             },
           );
         }
-        return const WelcomeScreen();
+        return const GuestHomeScreen();
       },
     );
   }

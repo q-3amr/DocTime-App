@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'doctor_details_screen.dart';
 
 class DoctorSearchScreen extends StatefulWidget {
@@ -11,6 +12,7 @@ class DoctorSearchScreen extends StatefulWidget {
 
 class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   String searchQuery = ""; // لتخزين كلمة البحث
+  final User? currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
@@ -66,8 +68,13 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   return const Center(child: Text("No doctors found."));
                 }
 
-                // فلترة القائمة حسب البحث
+                // فلترة القائمة حسب البحث واستبعاد الدكتور الحالي
                 var filteredDocs = snapshot.data!.docs.where((doc) {
+                  // استبعاد الدكتور الحالي إذا كان مسجل دخول
+                  if (currentUser != null && doc.id == currentUser!.uid) {
+                    return false;
+                  }
+                  // فلترة حسب البحث
                   String name = doc['name'].toString().toLowerCase();
                   String spec = doc['specialty'].toString().toLowerCase();
                   return name.contains(searchQuery) || spec.contains(searchQuery);

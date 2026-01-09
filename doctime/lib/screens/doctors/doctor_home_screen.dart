@@ -5,7 +5,8 @@
   import '../common/profile_screen.dart'; 
   import 'doctor_requests_screen.dart';
   import 'manage_slots_screen.dart';
-  import '../common/chats_list_screen.dart'; 
+  import '../common/chats_list_screen.dart';
+  import '../patient/doctor_search_screen.dart'; 
 
   class DoctorHomeScreen extends StatefulWidget {
     const DoctorHomeScreen({super.key});
@@ -100,7 +101,7 @@
                             ),
                           ],
                         ),
-                        // 👇 User Photo Replaced Here
+                        // 👇 User Photo
                         Container(
                           padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
@@ -113,7 +114,7 @@
                             backgroundColor: const Color(0xFFE0E7FF),
                             child: Icon(Icons.person, color: primaryBlue, size: 28),
                           ),
-                        )
+                        ),
                       ],
                     ),
 
@@ -130,8 +131,8 @@
 
                         var docs = snapshot.data!.docs;
                         int pendingCount = docs.where((d) => d['status'] == 'pending').length;
-                        int completedCount = docs.where((d) => d['status'] == 'completed').length;
                         int upcomingCount = docs.where((d) => d['status'] == 'accepted').length;
+                        int completedCount = docs.where((d) => d['status'] == 'completed').length;
 
                         return Column(
                           children: [
@@ -171,6 +172,59 @@
                             const Align(alignment: Alignment.centerLeft, child: Text("Quick Dashboard", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
                             const SizedBox(height: 15),
 
+                            // Completed Appointments Card
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.green.shade200, width: 1.5),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.shade100,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.check_circle_rounded,
+                                      color: Colors.green.shade700,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "$completedCount",
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.green.shade800,
+                                          ),
+                                        ),
+                                        Text(
+                                          "Completed Appointments",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.green.shade700,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
                             // Grid Cards (Unified Design)
                             GridView.count(
                               shrinkWrap: true,
@@ -191,7 +245,9 @@
                                   Navigator.push(context, MaterialPageRoute(builder: (c) => const ManageSlotsScreen()));
                                 }),
 
-                                _buildActionBtn(context, Icons.check_circle_rounded, "$completedCount Done", Colors.green, () {}),
+                                _buildActionBtn(context, Icons.person_search_rounded, "Find Doctor", Colors.blue, () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (c) => const DoctorSearchScreen()));
+                                }),
                               ],
                             ),
                           ],
