@@ -50,8 +50,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   DateTime _parseDate(dynamic dateData) {
     if (dateData is Timestamp) return dateData.toDate();
-    if (dateData is String)
+    if (dateData is String) {
       return DateTime.tryParse(dateData) ?? DateTime.now();
+    }
     return DateTime.now();
   }
 
@@ -94,10 +95,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           .collection('appointments')
           .doc(docId)
           .update({'status': 'cancelled'});
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text("Appointment Canceled")));
+      }
     }
   }
 
@@ -130,10 +132,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           .collection('appointments')
           .doc(docId)
           .update({'status': 'completed'});
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text("Marked as Completed")));
+      }
     }
   }
 
@@ -171,8 +174,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading)
+    if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -211,8 +215,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     )
                     .snapshots(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData)
+                  if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
+                  }
 
                   var docs = snapshot.data!.docs;
 
