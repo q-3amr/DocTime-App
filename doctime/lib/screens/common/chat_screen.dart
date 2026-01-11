@@ -3,10 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatScreen extends StatefulWidget {
-  final String receiverId;   
-  final String receiverName; 
+  final String receiverId;
+  final String receiverName;
 
-  const ChatScreen({super.key, required this.receiverId, required this.receiverName});
+  const ChatScreen({
+    super.key,
+    required this.receiverId,
+    required this.receiverName,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -30,7 +34,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_messageController.text.trim().isEmpty) return;
 
     String msg = _messageController.text.trim();
-    _messageController.clear(); 
+    _messageController.clear();
 
     String currentUserId = _auth.currentUser!.uid;
     String chatRoomId = getChatRoomId(currentUserId, widget.receiverId);
@@ -41,21 +45,18 @@ class _ChatScreenState extends State<ChatScreen> {
         .doc(chatRoomId)
         .collection('messages')
         .add({
-      'senderId': currentUserId,
-      'receiverId': widget.receiverId,
-      'message': msg,
-      'timestamp': now,
-    });
+          'senderId': currentUserId,
+          'receiverId': widget.receiverId,
+          'message': msg,
+          'timestamp': now,
+        });
 
     await _firestore.collection('chats').doc(chatRoomId).set({
-      'participants': [currentUserId, widget.receiverId], 
+      'participants': [currentUserId, widget.receiverId],
       'lastMessage': msg,
       'lastMessageTime': now,
-      'users': {
-        currentUserId: true,
-        widget.receiverId: true,
-      }
-    }, SetOptions(merge: true)); 
+      'users': {currentUserId: true, widget.receiverId: true},
+    }, SetOptions(merge: true));
   }
 
   @override
@@ -64,19 +65,28 @@ class _ChatScreenState extends State<ChatScreen> {
     String chatRoomId = getChatRoomId(currentUserId, widget.receiverId);
 
     return Scaffold(
-      backgroundColor: Colors.white, 
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0, 
+        elevation: 0,
         centerTitle: true,
-        title: Text(widget.receiverName, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
+        title: Text(
+          widget.receiverName,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey.shade100, height: 1), 
+          child: Container(color: Colors.grey.shade100, height: 1),
         ),
       ),
       body: Column(
@@ -87,17 +97,22 @@ class _ChatScreenState extends State<ChatScreen> {
                   .collection('chats')
                   .doc(chatRoomId)
                   .collection('messages')
-                  .orderBy('timestamp', descending: true) 
+                  .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (snapshot.hasError) return const Center(child: Text("Error loading messages"));
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                if (snapshot.hasError)
+                  return const Center(child: Text("Error loading messages"));
+                if (!snapshot.hasData)
+                  return const Center(child: CircularProgressIndicator());
 
                 var docs = snapshot.data!.docs;
 
                 return ListView.builder(
-                  reverse: true, 
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  reverse: true,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 20,
+                  ),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     var data = docs[index].data() as Map<String, dynamic>;
@@ -115,55 +130,56 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // 💬 ويدجت الفقاعة (تم توحيد الظلال مع الهوم سكرين)
   Widget _buildChatBubble(String text, bool isMe) {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8), 
+        margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: isMe ? primaryBlue : Colors.white, 
-          
+          color: isMe ? primaryBlue : Colors.white,
+
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
             bottomLeft: Radius.circular(isMe ? 20 : 0),
             bottomRight: Radius.circular(isMe ? 0 : 20),
           ),
-          
-          // 👇 البوردر: رمادي فاتح للمستقبل فقط (زي مربعات الهوم)
+
           border: isMe ? null : Border.all(color: Colors.grey.shade200),
-          
-          // 👇 الظل: نفس القيم المستخدمة في الهوم سكرين بالظبط
+
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1), // نفس الهوم
-              blurRadius: 10,                      // نفس الهوم
-              offset: const Offset(0, 5),          // نفس الهوم
-            )
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
           ],
         ),
         child: Text(
-          text, 
+          text,
           style: TextStyle(
-            color: isMe ? Colors.white : Colors.black87, 
+            color: isMe ? Colors.white : Colors.black87,
             fontSize: 16,
-            fontWeight: FontWeight.w600 
-          )
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
 
-  // ✍️ ويدجت الإدخال (تم توحيد الظلال)
   Widget _buildInputArea() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white, 
-        // ظل خفيف يفصل المنطقة عن الشات
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -171,23 +187,21 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: Colors.white, 
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(30),
-                // 👇 بوردر رمادي فاتح
-                border: Border.all(color: Colors.grey.shade200), 
-                // 👇 نفس ظل الهوم سكرين
+                border: Border.all(color: Colors.grey.shade200),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1), 
-                    blurRadius: 10, 
-                    offset: const Offset(0, 5)
-                  )
+                    color: Colors.grey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
                 ],
               ),
               child: TextField(
                 controller: _messageController,
                 decoration: const InputDecoration(
-                  hintText: "Write a message...", 
+                  hintText: "Write a message...",
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -195,25 +209,28 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(width: 15),
-          
-          // زر الإرسال
+
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: primaryBlue.withOpacity(0.4), 
-                  blurRadius: 15, 
-                  offset: const Offset(0, 8)
-                )
-              ]
+                  color: primaryBlue.withOpacity(0.4),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: CircleAvatar(
               radius: 26,
               backgroundColor: primaryBlue,
               child: IconButton(
-                icon: const Icon(Icons.send_rounded, color: Colors.white, size: 22), 
-                onPressed: _sendMessage
+                icon: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                onPressed: _sendMessage,
               ),
             ),
           ),

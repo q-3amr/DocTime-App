@@ -4,8 +4,6 @@ class UserModel {
   final String name;
   final String role; // 'doctor' or 'patient'
   final String? profileImage;
-
-  // Doctor-specific fields (nullable)
   final String? specialty;
   final double? rating;
   final String? location;
@@ -26,13 +24,8 @@ class UserModel {
     this.isVerified,
   });
 
-  // Check if user is a doctor
   bool get isDoctor => role == 'doctor';
-
-  // Check if user is a patient
   bool get isPatient => role == 'patient';
-
-  // Factory constructor from Firebase document
   factory UserModel.fromMap(Map<String, dynamic> map, String documentId) {
     return UserModel(
       id: documentId,
@@ -57,8 +50,6 @@ class UserModel {
       'role': role,
       'profileImage': profileImage ?? '',
     };
-
-    // Only include doctor fields if user is a doctor
     if (isDoctor) {
       map['specialty'] = specialty ?? '';
       map['rating'] = rating ?? 0.0;

@@ -175,7 +175,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // 2. العنوان
                         Text(
                           "Log in",
                           style: TextStyle(
@@ -188,7 +187,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 30),
 
-                        // 3. الحقول
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -319,7 +317,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 20),
 
-                        // زر الدخول
                         SizedBox(
                           width: double.infinity,
                           height: 60,
@@ -350,7 +347,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const Spacer(),
 
-                        // الفوتر
                         Padding(
                           padding: const EdgeInsets.only(bottom: 20),
                           child: Row(

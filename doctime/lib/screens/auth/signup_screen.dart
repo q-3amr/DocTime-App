@@ -11,14 +11,12 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  // 1. المفاتيح والتحكم
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPassController = TextEditingController();
 
-  // حقول الدكتور الإضافية
-  String? selectedSpecialty; // Changed from controller to dropdown value
+  String? selectedSpecialty;
   final TextEditingController locationController = TextEditingController();
 
   bool isLoading = false;
@@ -26,7 +24,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isObscureConfirm = true;
   bool isDoctor = false;
 
-  // List of medical specialties
   final List<String> specialties = [
     'General Medicine',
     'Dentistry',
@@ -42,9 +39,7 @@ class _SignupScreenState extends State<SignupScreen> {
     'Ophthalmology',
   ];
 
-  // 2. دالة التسجيل (تم التعديل لحل مشكلة الشاشة السوداء)
   void handleSignup() async {
-    // فحوصات الأمان (Validation)
     if (passwordController.text != confirmPassController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -66,8 +61,7 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
     if (isDoctor) {
-      if (selectedSpecialty == null ||
-          locationController.text.trim().isEmpty) {
+      if (selectedSpecialty == null || locationController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please fill all doctor fields!'),
@@ -81,7 +75,6 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => isLoading = true);
 
     try {
-      // 1️⃣ إنشاء المستخدم في Authentication
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: emailController.text.trim(),
@@ -90,7 +83,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
       String uid = userCredential.user!.uid;
 
-      // 2️⃣ تجهيز البيانات حسب النوع (دكتور أو مريض) - استخدام unified structure
       Map<String, dynamic> userData = {
         'email': emailController.text.trim(),
         'name': nameController.text.trim(),
@@ -104,29 +96,20 @@ class _SignupScreenState extends State<SignupScreen> {
         userData['location'] = locationController.text.trim();
         userData['rating'] = 0.0;
         userData['about'] = 'New Doctor';
-        userData['isVerified'] = false; // أهم اشي: يدخل غير موثق
+        userData['isVerified'] = false;
       }
 
-      // 3️⃣ حفظ البيانات في Firestore - جميع المستخدمين في 'users' collection
-      // لازم نستنى هاي الخطوة تخلص قبل ما نعمل أي شي
       await FirebaseFirestore.instance
           .collection('users')
           .doc(uid)
           .set(userData);
 
-      // 4️⃣ بعد ما تأكدنا إنو الحفظ تم، بنطلع من الصفحة
       if (mounted) {
-        // بنعمل تسجيل خروج عشان نضمن إنو اليوزر يدخل من صفحة اللوجين وتتحمل بياناته صح
         await FirebaseAuth.instance.signOut();
 
+        if (!mounted) return;
         setState(() => isLoading = false);
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-
-        // الرسالة بتطلع للمستخدم وهو في صفحة اللوجين
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -135,6 +118,12 @@ class _SignupScreenState extends State<SignupScreen> {
             backgroundColor: Colors.green,
             duration: Duration(seconds: 4),
           ),
+        );
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -254,7 +243,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 25),
 
-                // سويتش الدكتور
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 15,
@@ -338,7 +326,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 30),
 
-                // زر التسجيل
                 SizedBox(
                   width: double.infinity,
                   height: 60,
@@ -441,10 +428,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 padding: const EdgeInsets.only(left: 18),
                 child: Text(
                   'Select your specialty',
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                 ),
               ),
               isExpanded: true,

@@ -59,6 +59,20 @@
   class DoctorDashboard extends StatelessWidget {
     const DoctorDashboard({super.key});
 
+    // Helper function to parse date from Firestore
+    static DateTime _parseDate(dynamic dateData) {
+      if (dateData is Timestamp) return dateData.toDate();
+      if (dateData is String) return DateTime.tryParse(dateData) ?? DateTime.now();
+      return DateTime.now();
+    }
+
+    // Helper function to check if appointment is expired (more than 20 minutes past)
+    static bool _isExpired(DateTime appointmentDate) {
+      return DateTime.now().isAfter(
+        appointmentDate.add(const Duration(minutes: 20)),
+      );
+    }
+
     @override
     Widget build(BuildContext context) {
       final User? user = FirebaseAuth.instance.currentUser;
@@ -131,7 +145,14 @@
 
                         var docs = snapshot.data!.docs;
                         int pendingCount = docs.where((d) => d['status'] == 'pending').length;
-                        int upcomingCount = docs.where((d) => d['status'] == 'accepted').length;
+                        
+                        // Count only non-expired accepted appointments (matching Schedule screen logic)
+                        int upcomingCount = docs.where((d) {
+                          if (d['status'] != 'accepted') return false;
+                          DateTime date = _parseDate(d['date']);
+                          return !_isExpired(date);
+                        }).length;
+                        
                         int completedCount = docs.where((d) => d['status'] == 'completed').length;
 
                         return Column(
