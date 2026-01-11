@@ -3,7 +3,7 @@ class AppointmentModel {
   final String doctorId;
   final String patientId;
   final String patientName;
-  final DateTime dateTime;
+  final DateTime appointmentDateTime;
   final String status; // 'pending', 'confirmed', 'completed', 'cancelled'
   final String? notes; //patient notes for the appointment
 
@@ -12,17 +12,22 @@ class AppointmentModel {
     required this.doctorId,
     required this.patientId,
     required this.patientName,
-    required this.dateTime,
+    required this.appointmentDateTime,
     required this.status,
     this.notes,
   });
-  factory AppointmentModel.fromMap(Map<String, dynamic> map, String documentId) {
+  factory AppointmentModel.fromMap(
+    Map<String, dynamic> map,
+    String documentId,
+  ) {
     return AppointmentModel(
       id: documentId,
       doctorId: map['doctorId'] ?? '',
       patientId: map['patientId'] ?? '',
       patientName: map['patientName'] ?? 'Unknown',
-      dateTime: DateTime.parse(map['dateTime']), // convert from text to DateTime
+      appointmentDateTime: DateTime.parse(
+        map['dateTime'],
+      ), // convert from text to DateTime
       status: map['status'] ?? 'pending',
       notes: map['notes'],
     );
@@ -32,7 +37,8 @@ class AppointmentModel {
       'doctorId': doctorId,
       'patientId': patientId,
       'patientName': patientName,
-      'dateTime': dateTime.toIso8601String(), // store the date as text
+      'dateTime': appointmentDateTime
+          .toIso8601String(), // store the date as text
       'notes': notes,
     };
   }
