@@ -392,6 +392,10 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   color: primaryBlue,
                 ),
                 onPressed: () {
+                  if (user == null) {
+                    _showLoginDialog();
+                    return;
+                  }
                   Navigator.push(
                     context,
                     MaterialPageRoute(
