@@ -14,24 +14,20 @@ class DoctorsListScreen extends StatelessWidget {
       body: StreamBuilder<List<UserModel>>(
         stream: db.streamDoctors(),
         builder: (context, snapshot) {
-          // لسه بقرأ البيانات
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // صار خطأ
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           final doctors = snapshot.data ?? [];
 
-          // مافي دكاترة
           if (doctors.isEmpty) {
             return const Center(child: Text('No doctors found.'));
           }
 
-          // في بيانات ✅
           return ListView.builder(
             itemCount: doctors.length,
             itemBuilder: (context, index) {
@@ -41,10 +37,14 @@ class DoctorsListScreen extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: (doctor.profileImage != null && doctor.profileImage!.isNotEmpty)
+                    backgroundImage:
+                        (doctor.profileImage != null &&
+                            doctor.profileImage!.isNotEmpty)
                         ? NetworkImage(doctor.profileImage!)
                         : null,
-                    child: (doctor.profileImage == null || doctor.profileImage!.isEmpty)
+                    child:
+                        (doctor.profileImage == null ||
+                            doctor.profileImage!.isEmpty)
                         ? const Icon(Icons.person)
                         : null,
                   ),
@@ -59,9 +59,7 @@ class DoctorsListScreen extends StatelessWidget {
                   trailing: (doctor.isVerified == true)
                       ? const Icon(Icons.verified, color: Colors.green)
                       : null,
-                  onTap: () {
-                    // لاحقاً بنفتح صفحة تفاصيل الدكتور
-                  },
+                  onTap: () {},
                 ),
               );
             },

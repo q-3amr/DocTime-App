@@ -1,13 +1,10 @@
-// ignore_for_file: unused_import
-
-import 'package:doctime/screens/doctors/doctor_home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'auth_wrapper.dart'; 
+import 'auth_wrapper.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // تهيئة Firebase
+
   await Firebase.initializeApp();
 
   runApp(const MyApp());
@@ -19,15 +16,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // بشيل شريطة Debug الحمراء
+      debugShowCheckedModeBanner: false,
       title: 'DocTime',
       theme: ThemeData(
         useMaterial3: true,
-        // غيرت اللون للأزرق (لون طبي) بدال الأحمر، بس بتقدر ترجعه اذا بدك
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue), 
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      
-      home: const AuthWrapper(), 
+
+      home: const AuthWrapper(),
     );
   }
 }

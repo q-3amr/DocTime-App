@@ -25,14 +25,13 @@ class AiChatScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // AI Robot Icon
               Icon(
                 Icons.smart_toy_outlined,
                 size: 120,
                 color: primaryBlue.withOpacity(0.3),
               ),
               const SizedBox(height: 40),
-              
+
               // Title
               const Text(
                 "AI Assistant Feature",
@@ -44,8 +43,7 @@ class AiChatScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              
-              // Simple Description
+
               const Text(
                 "This feature will be implemented in Graduation Project 2",
                 style: TextStyle(
@@ -56,10 +54,13 @@ class AiChatScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
-              
+
               // GP2 Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: primaryBlue,
                   borderRadius: BorderRadius.circular(25),

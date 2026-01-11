@@ -35,12 +35,10 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
     _generateSlotsForDate(_selectedDate);
   }
 
-  // Helper للحصول على مفتاح التاريخ
   String _getDateKey(DateTime date) {
     return "${date.year}-${date.month}-${date.day}";
   }
 
-  // 📅 جلب الأوقات من Availability Collection تبع الدكتور
   void _generateSlotsForDate(DateTime date) async {
     setState(() {
       _isLoadingSlots = true;
@@ -49,7 +47,6 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
     List<String> availableSlots = [];
 
-    // 1️⃣ جلب الأوقات التي حددها الدكتور
     var availabilityDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(widget.doctorId)
@@ -57,7 +54,6 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         .doc(_getDateKey(date))
         .get();
 
-    // إذا الدكتور مش محدد أوقات لهذا اليوم
     if (!availabilityDoc.exists || availabilityDoc['slots'] == null) {
       if (mounted) {
         setState(() {
@@ -70,7 +66,6 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
     List<String> doctorSlots = List<String>.from(availabilityDoc['slots']);
 
-    // 2️⃣ جلب المواعيد المحجوزة في هذا اليوم
     var appointmentsSnap = await FirebaseFirestore.instance
         .collection('appointments')
         .where('doctor_id', isEqualTo: widget.doctorId)
@@ -81,19 +76,18 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       DateTime apptDate;
       var rawDate = doc['date'];
 
-      // التعامل مع Timestamp و String لتجنب الأخطاء
       if (rawDate is Timestamp) {
         apptDate = rawDate.toDate();
-      } else if (rawDate is String)
+      } else if (rawDate is String) {
         apptDate = DateTime.tryParse(rawDate) ?? DateTime.now();
-      else
+      } else {
         continue;
+      }
 
       if (apptDate.year == date.year &&
           apptDate.month == date.month &&
           apptDate.day == date.day) {
         if (doc['status'] != 'cancelled' && doc['status'] != 'rejected') {
-          // تحويل وقت الحجز لنفس صيغة الـ Slots للمقارنة
           String hourStr =
               "${apptDate.hour > 12 ? apptDate.hour - 12 : (apptDate.hour == 0 ? 12 : apptDate.hour)}";
           String minuteStr = apptDate.minute == 0 ? "00" : "${apptDate.minute}";
@@ -102,16 +96,11 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         }
       }
     }
-
-    // 3️⃣ الفلترة: عرض فقط ما حدده الدكتور ولم يُحجز
     for (String slot in doctorSlots) {
       if (!takenTimes.contains(slot)) {
         availableSlots.add(slot);
       }
     }
-
-    // ترتيب الأوقات (اختياري)
-    // availableSlots.sort(...);
 
     if (mounted) {
       setState(() {
@@ -121,9 +110,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
     }
   }
 
-  // إرسال الطلب
   void _bookAppointment() async {
-    // Check if user is logged in
     if (user == null) {
       _showLoginDialog();
       return;
@@ -136,8 +123,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       return;
     }
 
-    // تحويل السترينغ لتاريخ حقيقي للتخزين
-    List<String> parts = _selectedTimeSlot!.split(' '); // ["10:30", "AM"]
+    List<String> parts = _selectedTimeSlot!.split(' ');
     List<String> timeParts = parts[0].split(':');
     int hour = int.parse(timeParts[0]);
     int minute = int.parse(timeParts[1]);

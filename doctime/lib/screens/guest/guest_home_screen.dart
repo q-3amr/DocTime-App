@@ -77,7 +77,6 @@ class GuestHomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // Welcome Banner
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
@@ -129,10 +128,7 @@ class GuestHomeScreen extends StatelessWidget {
                   const SizedBox(height: 25),
                   const Text(
                     "Quick Actions",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 15),
 
@@ -165,7 +161,9 @@ class GuestHomeScreen extends StatelessWidget {
                           () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text("DocTime - Your Medical Appointment App"),
+                                content: Text(
+                                  "DocTime - Your Medical Appointment App",
+                                ),
                               ),
                             );
                           },
@@ -218,10 +216,7 @@ class GuestHomeScreen extends StatelessWidget {
             const SizedBox(height: 15),
             Text(
               title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ],
         ),

@@ -11,21 +11,23 @@ class DoctorRequestsScreen extends StatefulWidget {
 
 class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   final User? user = FirebaseAuth.instance.currentUser;
-
-  // 🛠️ دالة تحويل البيانات لتاريخ حقيقي
   DateTime _parseDate(dynamic dateData) {
-    if (dateData is Timestamp) return dateData.toDate();
-    if (dateData is String) return DateTime.tryParse(dateData) ?? DateTime.now();
+    if (dateData is Timestamp) {
+      return dateData.toDate();
+    }
+    if (dateData is String) {
+      return DateTime.tryParse(dateData) ?? DateTime.now();
+    }
     return DateTime.now();
   }
 
-  // 🎨 دالة تنسيق التاريخ والوقت بالشكل اللي طلبته
   String _formatDateTime(DateTime date) {
-    // تنسيق التاريخ: 2025-01-07
-    String datePart = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-    
-    // تنسيق الوقت: 11:42 PM
-    int hour = date.hour > 12 ? date.hour - 12 : (date.hour == 0 ? 12 : date.hour);
+    String datePart =
+        "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
+    int hour = date.hour > 12
+        ? date.hour - 12
+        : (date.hour == 0 ? 12 : date.hour);
     String amPm = date.hour >= 12 ? 'PM' : 'AM';
     String timePart = "$hour:${date.minute.toString().padLeft(2, '0')} $amPm";
 
@@ -33,15 +35,17 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   }
 
   Future<void> _acceptRequest(String docId) async {
-    await FirebaseFirestore.instance.collection('appointments').doc(docId).update({
-      'status': 'accepted',
-    });
+    await FirebaseFirestore.instance
+        .collection('appointments')
+        .doc(docId)
+        .update({'status': 'accepted'});
   }
 
   Future<void> _declineRequest(String docId) async {
-    await FirebaseFirestore.instance.collection('appointments').doc(docId).update({
-      'status': 'declined', // تأكد إنها declined أو rejected حسب ما انت معتمد بالداتابيز
-    });
+    await FirebaseFirestore.instance
+        .collection('appointments')
+        .doc(docId)
+        .update({'status': 'declined'});
   }
 
   @override
@@ -55,12 +59,19 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Pending Requests", 
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 20)
+          "Pending Requests",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+          ),
         ),
       ),
       body: Padding(
@@ -84,9 +95,20 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.inbox_rounded, size: 80, color: Colors.grey.shade300),
+                          Icon(
+                            Icons.inbox_rounded,
+                            size: 80,
+                            color: Colors.grey.shade300,
+                          ),
                           const SizedBox(height: 15),
-                          Text("No pending requests", style: TextStyle(color: Colors.grey.shade500, fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(
+                            "No pending requests",
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -100,15 +122,14 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                       var req = requests[index];
                       var data = req.data() as Map<String, dynamic>;
 
-                      // ✅ هون التعديل: تحويل وتنسيق التاريخ قبل تمريره للكارد
                       DateTime dateObj = _parseDate(data['date']);
                       String formattedString = _formatDateTime(dateObj);
 
                       return _buildRequestCard(
                         name: data['patient_name'] ?? 'Unknown',
-                        date: formattedString, // صار يبعث التاريخ والوقت مرتبين
+                        date: formattedString,
                         docId: req.id,
-                        primaryColor: primaryBlue
+                        primaryColor: primaryBlue,
                       );
                     },
                   );
@@ -121,7 +142,12 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
     );
   }
 
-  Widget _buildRequestCard({required String name, required String date, required String docId, required Color primaryColor}) {
+  Widget _buildRequestCard({
+    required String name,
+    required String date,
+    required String docId,
+    required Color primaryColor,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
@@ -131,7 +157,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -143,7 +169,10 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.blue.shade100, width: 2)),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.blue.shade100, width: 2),
+                ),
                 child: const CircleAvatar(
                   radius: 28,
                   backgroundColor: Colors.blue,
@@ -155,14 +184,30 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                     const SizedBox(height: 5),
                     Row(
                       children: [
-                        Icon(Icons.access_time_filled_rounded, size: 16, color: Colors.grey.shade500), // غيرت الأيقونة لساعة عشان تناسب الوقت
+                        Icon(
+                          Icons.access_time_filled_rounded,
+                          size: 16,
+                          color: Colors.grey.shade500,
+                        ),
                         const SizedBox(width: 6),
-                        // التاريخ والوقت رح ينعرضوا هون
-                        Text(date, style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(
+                          date,
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -182,10 +227,15 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                     backgroundColor: Colors.red.shade50,
                     foregroundColor: Colors.red,
                     padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text("Decline", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  child: const Text(
+                    "Decline",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
                 ),
               ),
               const SizedBox(width: 15),
@@ -196,11 +246,16 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                     backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     elevation: 5,
-                    shadowColor: primaryColor.withOpacity(0.4),
+                    shadowColor: primaryColor.withValues(alpha: 0.4),
                   ),
-                  child: const Text("Accept", style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                  child: const Text(
+                    "Accept",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  ),
                 ),
               ),
             ],

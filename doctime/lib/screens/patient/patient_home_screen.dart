@@ -138,9 +138,9 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                           StreamBuilder<DocumentSnapshot>(
                             stream: user?.uid != null
                                 ? FirebaseFirestore.instance
-                                    .collection('users')
-                                    .doc(user!.uid)
-                                    .snapshots()
+                                      .collection('users')
+                                      .doc(user!.uid)
+                                      .snapshots()
                                 : null,
                             builder: (context, snapshot) {
                               if (snapshot.connectionState ==
@@ -188,7 +188,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                           ),
                         ],
                       ),
-                      // 👇 User Photo Replaced Here
                       Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
@@ -214,7 +213,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
 
                   const SizedBox(height: 30),
 
-                  // Logic: Timer vs Empty State
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('appointments')
@@ -311,7 +309,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     );
   }
 
-  // 🕒 Timer Banner
   Widget _buildTimerBanner(DateTime apptDate, String doctorName) {
     Duration diff = apptDate.difference(DateTime.now());
     String timeText = diff.inDays > 0
@@ -364,7 +361,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     );
   }
 
-  // 🔍 Empty Banner
   Widget _buildEmptyBanner() {
     return Container(
       width: double.infinity,
