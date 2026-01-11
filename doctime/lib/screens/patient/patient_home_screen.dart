@@ -100,106 +100,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     return DateTime.tryParse(dateData.toString()) ?? DateTime.now();
   }
 
-  // Helper method to get user document with migration support
-  Future<DocumentSnapshot> _getUserDocument() async {
-    if (user?.uid == null) {
-      // Return empty snapshot if no user
-      return await FirebaseFirestore.instance
-          .collection('users')
-          .doc('dummy')
-          .get();
-    }
-
-    // 1. Check new unified 'users' collection
-    var doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .get();
-
-    if (doc.exists && doc.data()?['name'] != null) {
-      return doc;
-    }
-
-    // 2. Check old 'doctors' collection (for doctors from before refactor)
-    var oldDoctorDoc = await FirebaseFirestore.instance
-        .collection('doctors')
-        .doc(user!.uid)
-        .get();
-
-    if (oldDoctorDoc.exists) {
-      // Migrate doctor to new structure
-      var data = oldDoctorDoc.data();
-      if (data != null) {
-        Map<String, dynamic> newData = {
-          'email': user!.email ?? '',
-          'name': data['name'] ?? 'Doctor',
-          'role': 'doctor',
-          'profileImage': data['imageUrl'] ?? '',
-          'specialty': data['specialty'] ?? '',
-          'location': data['location'] ?? '',
-          'rating': data['rating'] ?? 0.0,
-          'about': data['about'] ?? '',
-          'isVerified': data['isVerified'] ?? false,
-        };
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user!.uid)
-            .set(newData);
-        return await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user!.uid)
-            .get();
-      }
-    }
-
-    // 3. Check old 'users' collection with old structure (for patients)
-    var oldUserDoc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .get();
-
-    if (oldUserDoc.exists) {
-      var data = oldUserDoc.data();
-      if (data != null && data['name'] != null) {
-        // Already has name, just ensure it has all required fields
-        Map<String, dynamic> newData = {
-          'email': data['email'] ?? user!.email ?? '',
-          'name': data['name'] ?? 'Patient',
-          'role': data['role'] ?? 'patient',
-          'profileImage': data['profileImage'] ?? '',
-        };
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user!.uid)
-            .set(newData, SetOptions(merge: true));
-        return await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user!.uid)
-            .get();
-      }
-    }
-
-    // 4. If not found anywhere, create a basic document with email from FirebaseAuth
-    if (user!.email != null) {
-      Map<String, dynamic> newUserData = {
-        'email': user!.email!,
-        'name': user!.displayName ?? user!.email!.split('@')[0],
-        'role': 'patient',
-        'profileImage': '',
-      };
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .set(newUserData);
-      return await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .get();
-    }
-
-    return doc; // Return the empty doc
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -235,8 +135,13 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                               fontSize: 16,
                             ),
                           ),
-                          FutureBuilder<DocumentSnapshot>(
-                            future: _getUserDocument(),
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: user?.uid != null
+                                ? FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user!.uid)
+                                    .snapshots()
+                                : null,
                             builder: (context, snapshot) {
                               if (snapshot.connectionState ==
                                   ConnectionState.waiting) {
