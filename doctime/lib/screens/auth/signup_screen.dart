@@ -18,13 +18,29 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController confirmPassController = TextEditingController();
 
   // حقول الدكتور الإضافية
-  final TextEditingController specialtyController = TextEditingController();
+  String? selectedSpecialty; // Changed from controller to dropdown value
   final TextEditingController locationController = TextEditingController();
 
   bool isLoading = false;
   bool isObscurePass = true;
   bool isObscureConfirm = true;
   bool isDoctor = false;
+
+  // List of medical specialties
+  final List<String> specialties = [
+    'General Medicine',
+    'Dentistry',
+    'Cardiology',
+    'Psychiatry',
+    'Nutrition',
+    'Urology',
+    'Dermatology',
+    'Gynecology & Obstetrics',
+    'Orthopedics',
+    'Pediatrics',
+    'Internal Medicine',
+    'Ophthalmology',
+  ];
 
   // 2. دالة التسجيل (تم التعديل لحل مشكلة الشاشة السوداء)
   void handleSignup() async {
@@ -50,7 +66,7 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
     if (isDoctor) {
-      if (specialtyController.text.trim().isEmpty ||
+      if (selectedSpecialty == null ||
           locationController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -84,7 +100,7 @@ class _SignupScreenState extends State<SignupScreen> {
       };
 
       if (isDoctor) {
-        userData['specialty'] = specialtyController.text.trim();
+        userData['specialty'] = selectedSpecialty!;
         userData['location'] = locationController.text.trim();
         userData['rating'] = 0.0;
         userData['about'] = 'New Doctor';
@@ -300,14 +316,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           key: const ValueKey('doctor_fields'),
                           children: [
                             const SizedBox(height: 20),
-                            _buildField(
-                              label: "Specialty",
-                              controller: specialtyController,
-                              hint: "e.g. Cardiologist",
-                              icon: Icons.work_outline,
+                            _buildSpecialtyDropdown(
+                              labelColor: labelColor,
                               borderColor: borderColor,
                               primaryBlue: primaryBlue,
-                              labelColor: labelColor,
                             ),
                             const SizedBox(height: 20),
                             _buildField(
@@ -393,6 +405,81 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSpecialtyDropdown({
+    required Color labelColor,
+    required Color borderColor,
+    required Color primaryBlue,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Specialty",
+          style: TextStyle(
+            color: labelColor,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selectedSpecialty != null ? primaryBlue : borderColor,
+              width: selectedSpecialty != null ? 2.5 : 2.0,
+            ),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: selectedSpecialty,
+              hint: Padding(
+                padding: const EdgeInsets.only(left: 18),
+                child: Text(
+                  'Select your specialty',
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              isExpanded: true,
+              icon: Padding(
+                padding: const EdgeInsets.only(right: 18),
+                child: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Colors.grey.shade600,
+                  size: 28,
+                ),
+              ),
+              borderRadius: BorderRadius.circular(16),
+              dropdownColor: Colors.white,
+              elevation: 8,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+              items: specialties.map((String specialty) {
+                return DropdownMenuItem<String>(
+                  value: specialty,
+                  child: Text(specialty),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedSpecialty = newValue;
+                });
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
