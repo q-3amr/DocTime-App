@@ -18,7 +18,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _specialtyController = TextEditingController();
-  // 1. ضفنا هدول الاثنين جداد
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -30,7 +29,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadUserData() async {
     if (user == null) return;
-    // بنعبي الإيميل من الـ Auth مباشرة لأنه أدق
     _emailController.text = user!.email ?? "";
 
     try {
@@ -59,7 +57,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // دالة مساعدة لإظهار رسالة الخطأ أو النجاح
   void _showMessage(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -75,10 +72,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => isLoading = true);
 
     try {
-      // 1. تحديث البيانات العادية في Firestore
       Map<String, dynamic> data = {
         'name': _nameController.text.trim(),
-        // بنحدث الإيميل في الداتابيس كمان عشان يضل متطابق
         'email': _emailController.text.trim(),
       };
 
@@ -92,14 +87,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .doc(user!.uid)
           .update(data);
 
-      // 2. تحديث الإيميل في Authentication إذا تغير
       if (_emailController.text.trim() != user!.email) {
-        // ملاحظة: هاي ممكن تطلب تسجيل دخول جديد إذا صارله زمان فايت
         await user!.verifyBeforeUpdateEmail(_emailController.text.trim());
         _showMessage("Verification email sent to new address. Please verify.");
       }
 
-      // 3. تحديث الباسورد إذا انكتب واحد جديد
       if (_passwordController.text.isNotEmpty) {
         if (_passwordController.text.length < 6) {
           throw FirebaseAuthException(
@@ -115,12 +107,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (mounted) {
         setState(() => isLoading = false);
-        _passwordController.clear(); // بنفضي حقل الباسورد بعد الحفظ
+        _passwordController.clear();
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) setState(() => isLoading = false);
 
-      // التعامل مع خطأ "لازم تسجل دخول من جديد"
       if (e.code == 'requires-recent-login') {
         _showMessage(
           "Security Alert: Please Log out and Log in again to update sensitive info (Email/Password).",
@@ -135,7 +126,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ... (خلي دالة _deleteAccount و _logout و _showDeleteConfirmDialog زي ما هم)
   void _deleteAccount() async {
     if (user == null) return;
 
@@ -246,7 +236,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildTextField("Full Name", _nameController, Icons.person),
             const SizedBox(height: 15),
 
-            // خانة الإيميل
             _buildTextField(
               "Email Address",
               _emailController,
@@ -255,12 +244,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 15),
 
-            // خانة الباسورد
+            // التعديل هنا: استخدمنا helperText
             _buildTextField(
-              "New Password (Leave empty to keep current)",
+              "New Password", // العنوان صار قصير
               _passwordController,
               Icons.lock,
               isPassword: true,
+              helperText: "Leave empty to keep current", // الملاحظة صارت تحت
             ),
             const SizedBox(height: 15),
 
@@ -278,7 +268,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 40),
 
-            // ... (باقي الأزرار زي Delete و Save خليهم زي ما هم)
             SizedBox(
               width: double.infinity,
               height: 55,
@@ -337,22 +326,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // عدلنا الدالة هاي عشان تدعم الباسورد والـ InputType
+  // التعديل هنا: ضفنا متغير helperText
   Widget _buildTextField(
     String label,
     TextEditingController controller,
     IconData icon, {
     int maxLines = 1,
-    bool isPassword = false, // جديد
-    TextInputType keyboardType = TextInputType.text, // جديد
+    bool isPassword = false,
+    TextInputType keyboardType = TextInputType.text,
+    String? helperText, // إضافة المتغير الاختياري
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      obscureText: isPassword, // عشان نخفي الباسورد
+      obscureText: isPassword,
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
+        helperText: helperText, // عرضه تحت الخانة
+        helperStyle: const TextStyle(color: Colors.grey, fontSize: 12),
         prefixIcon: Icon(icon, color: Colors.grey),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
