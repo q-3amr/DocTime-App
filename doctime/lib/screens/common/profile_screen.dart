@@ -17,9 +17,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-  final TextEditingController _specialtyController = TextEditingController();
+  // حذفنا _specialtyController واستبدلناه بالمتغير تحت
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  // 1. نفس القائمة من شاشة التسجيل
+  final List<String> specialties = [
+    'General Medicine',
+    'Dentistry',
+    'Cardiology',
+    'Psychiatry',
+    'Nutrition',
+    'Urology',
+    'Dermatology',
+    'Gynecology & Obstetrics',
+    'Orthopedics',
+    'Pediatrics',
+    'Internal Medicine',
+    'Ophthalmology',
+  ];
+
+  // 2. متغير لتخزين التخصص المختار
+  String? _selectedSpecialty;
 
   @override
   void initState() {
@@ -40,12 +60,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (docSnap.exists) {
         var data = docSnap.data();
         String role = data?['role'] ?? 'patient';
+
+        // جلب التخصص من الداتابيس
+        String? dbSpecialty = data?['specialty'];
+
+        // التأكد من أن التخصص الموجود في الداتابيس موجود ضمن القائمة تبعتنا
+        // إذا كان مش موجود (بسبب خطأ إملائي قديم)، بنخليه null عشان الدكتور يختار الصح
+        if (dbSpecialty != null && !specialties.contains(dbSpecialty)) {
+          dbSpecialty = null;
+        }
+
         if (mounted) {
           setState(() {
             isDoctor = role == 'doctor';
             _nameController.text = data?['name'] ?? "";
             _bioController.text = data?['about'] ?? "";
-            _specialtyController.text = data?['specialty'] ?? "";
+            // تعيين القيمة للمتغير الجديد
+            _selectedSpecialty = dbSpecialty;
             isLoading = false;
           });
         }
@@ -78,8 +109,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       };
 
       if (isDoctor) {
+        // التحقق من اختيار التخصص
+        if (_selectedSpecialty == null) {
+          throw "Please select a specialty";
+        }
+
         data['about'] = _bioController.text.trim();
-        data['specialty'] = _specialtyController.text.trim();
+        // الحفظ من المتغير المختار
+        data['specialty'] = _selectedSpecialty;
       }
 
       await FirebaseFirestore.instance
@@ -114,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (e.code == 'requires-recent-login') {
         _showMessage(
-          "Security Alert: Please Log out and Log in again to update sensitive info (Email/Password).",
+          "Security Alert: Please Log out and Log in again to update sensitive info.",
           isError: true,
         );
       } else {
@@ -127,6 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _deleteAccount() async {
+    // ... (نفس كود الحذف القديم)
     if (user == null) return;
 
     try {
@@ -177,6 +215,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showDeleteConfirmDialog() {
+    // ... (نفس الدالة)
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -244,18 +283,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 15),
 
-            // التعديل هنا: استخدمنا helperText
             _buildTextField(
-              "New Password", // العنوان صار قصير
+              "New Password",
               _passwordController,
               Icons.lock,
               isPassword: true,
-              helperText: "Leave empty to keep current", // الملاحظة صارت تحت
+              helperText: "Leave empty to keep current",
             ),
             const SizedBox(height: 15),
 
             if (isDoctor) ...[
-              _buildTextField("Specialty", _specialtyController, Icons.work),
+              // 3. استبدلنا التيكست فيلد بالدروب داون
+              _buildSpecialtyDropdown(),
+
               const SizedBox(height: 15),
               _buildTextField(
                 "About (Bio)",
@@ -326,7 +366,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // التعديل هنا: ضفنا متغير helperText
+  // 4. دالة بناء القائمة المنسدلة (بتصميم مشابه للـ TextField)
+  Widget _buildSpecialtyDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedSpecialty,
+      items: specialties.map((String value) {
+        return DropdownMenuItem<String>(value: value, child: Text(value));
+      }).toList(),
+      onChanged: (newValue) {
+        setState(() {
+          _selectedSpecialty = newValue;
+        });
+      },
+      decoration: InputDecoration(
+        labelText: "Specialty",
+        prefixIcon: const Icon(Icons.work, color: Colors.grey),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+    );
+  }
+
   Widget _buildTextField(
     String label,
     TextEditingController controller,
@@ -334,7 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     int maxLines = 1,
     bool isPassword = false,
     TextInputType keyboardType = TextInputType.text,
-    String? helperText, // إضافة المتغير الاختياري
+    String? helperText,
   }) {
     return TextField(
       controller: controller,
@@ -343,7 +408,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        helperText: helperText, // عرضه تحت الخانة
+        helperText: helperText,
         helperStyle: const TextStyle(color: Colors.grey, fontSize: 12),
         prefixIcon: Icon(icon, color: Colors.grey),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
