@@ -21,6 +21,15 @@ class ChatsListScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.black,
+                ),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         automaticallyImplyLeading: false,
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -84,6 +93,11 @@ class ChatsListScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                     );
+                  }
+
+                  // If user document doesn't exist, don't show this chat
+                  if (!userSnap.data!.exists) {
+                    return const SizedBox.shrink();
                   }
 
                   var userData = userSnap.data!.data() as Map<String, dynamic>?;
