@@ -191,42 +191,39 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   ),
                   dropdownColor: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  items:
-                      [
-                        'By Specialty',
-                        'By Nearest',
-                        'By Top Rated',
-                      ].map((String filter) {
-                        return DropdownMenuItem<String>(
-                          value: filter,
-                          child: Row(
-                            children: [
-                              Text(filter),
-                              if (filter != 'By Specialty') ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.shade100,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'GP2',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange.shade800,
-                                    ),
-                                  ),
+                  items: ['By Specialty', 'By Nearest', 'By Top Rated'].map((
+                    String filter,
+                  ) {
+                    return DropdownMenuItem<String>(
+                      value: filter,
+                      child: Row(
+                        children: [
+                          Text(filter),
+                          if (filter != 'By Specialty') ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'GP2',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange.shade800,
                                 ),
-                              ],
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }).toList(),
                   onChanged: (String? newValue) {
                     if (newValue == 'By Nearest' ||
                         newValue == 'By Top Rated') {

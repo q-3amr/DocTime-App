@@ -52,10 +52,11 @@ void main() {
 
       final map = user.toMap();
 
-      expect(map['id'], 'test-id');
+      expect(map.containsKey('id'), false);
       expect(map['email'], 'test@test.com');
       expect(map['name'], 'Test User');
       expect(map['role'], 'patient');
+      expect(map['profileImage'], '');
     });
 
     test('UserModel should create from map correctly', () {
