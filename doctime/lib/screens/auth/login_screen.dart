@@ -157,7 +157,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const SizedBox(height: 30),
 
-                        // 1. الصورة
                         Container(
                           height: 250,
                           width: double.infinity,

@@ -112,7 +112,6 @@ class DoctorDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -144,7 +143,6 @@ class DoctorDashboard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      // 👇 User Photo
                       Container(
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
@@ -196,7 +194,6 @@ class DoctorDashboard extends StatelessWidget {
 
                       return Column(
                         children: [
-                          // Banner
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),

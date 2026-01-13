@@ -17,12 +17,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-  // حذفنا _specialtyController واستبدلناه بالمتغير تحت
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // 1. نفس القائمة من شاشة التسجيل
   final List<String> specialties = [
     'General Medicine',
     'Dentistry',
@@ -38,7 +36,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     'Ophthalmology',
   ];
 
-  // 2. متغير لتخزين التخصص المختار
   String? _selectedSpecialty;
 
   @override
@@ -61,11 +58,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         var data = docSnap.data();
         String role = data?['role'] ?? 'patient';
 
-        // جلب التخصص من الداتابيس
         String? dbSpecialty = data?['specialty'];
 
-        // التأكد من أن التخصص الموجود في الداتابيس موجود ضمن القائمة تبعتنا
-        // إذا كان مش موجود (بسبب خطأ إملائي قديم)، بنخليه null عشان الدكتور يختار الصح
         if (dbSpecialty != null && !specialties.contains(dbSpecialty)) {
           dbSpecialty = null;
         }
@@ -75,7 +69,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             isDoctor = role == 'doctor';
             _nameController.text = data?['name'] ?? "";
             _bioController.text = data?['about'] ?? "";
-            // تعيين القيمة للمتغير الجديد
             _selectedSpecialty = dbSpecialty;
             isLoading = false;
           });
@@ -109,13 +102,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       };
 
       if (isDoctor) {
-        // التحقق من اختيار التخصص
         if (_selectedSpecialty == null) {
           throw "Please select a specialty";
         }
 
         data['about'] = _bioController.text.trim();
-        // الحفظ من المتغير المختار
         data['specialty'] = _selectedSpecialty;
       }
 
@@ -164,7 +155,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _deleteAccount() async {
-    // ... (نفس كود الحذف القديم)
     if (user == null) return;
 
     try {
@@ -215,7 +205,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showDeleteConfirmDialog() {
-    // ... (نفس الدالة)
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -293,7 +282,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 15),
 
             if (isDoctor) ...[
-              // 3. استبدلنا التيكست فيلد بالدروب داون
               _buildSpecialtyDropdown(),
 
               const SizedBox(height: 15),
@@ -366,7 +354,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // 4. دالة بناء القائمة المنسدلة (بتصميم مشابه للـ TextField)
   Widget _buildSpecialtyDropdown() {
     return DropdownButtonFormField<String>(
       value: _selectedSpecialty,

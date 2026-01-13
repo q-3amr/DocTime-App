@@ -17,16 +17,11 @@ void main() {
     });
 
     test('currentUser should return null when not logged in', () {
-      // Note: This test requires Firebase to be initialized
-      // In a real scenario, you would mock Firebase
       expect(authService.currentUser, isNull);
     });
 
     test('authStateChanges should return a stream', () {
       expect(authService.authStateChanges, isA<Stream<User?>>());
     });
-
-    // Note: Actual signIn, signUp, and signOut tests would require
-    // Firebase emulator or mocking. These are examples of test structure.
   });
 }

@@ -10,7 +10,7 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  int _buttonIndex = 0; // 0: Upcoming, 1: History
+  int _buttonIndex = 0;
   final User? user = FirebaseAuth.instance.currentUser;
   bool isDoctor = false;
   bool isLoading = true;

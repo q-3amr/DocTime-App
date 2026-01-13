@@ -194,8 +194,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   items:
                       [
                         'By Specialty',
-                        'By Nearest', // GP2
-                        'By Top Rated', // GP2
+                        'By Nearest',
+                        'By Top Rated',
                       ].map((String filter) {
                         return DropdownMenuItem<String>(
                           value: filter,
@@ -230,7 +230,6 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   onChanged: (String? newValue) {
                     if (newValue == 'By Nearest' ||
                         newValue == 'By Top Rated') {
-                      // Show coming soon message
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('$newValue will be available in GP2'),

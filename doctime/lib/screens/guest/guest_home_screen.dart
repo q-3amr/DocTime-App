@@ -29,7 +29,6 @@ class GuestHomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -53,7 +52,6 @@ class GuestHomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      // Login Button
                       TextButton(
                         onPressed: () {
                           Navigator.push(

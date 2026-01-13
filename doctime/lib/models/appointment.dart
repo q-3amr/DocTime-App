@@ -4,8 +4,8 @@ class AppointmentModel {
   final String patientId;
   final String patientName;
   final DateTime appointmentDateTime;
-  final String status; // 'pending', 'confirmed', 'completed', 'cancelled'
-  final String? notes; //patient notes for the appointment
+  final String status;
+  final String? notes;
 
   AppointmentModel({
     required this.id,
@@ -27,7 +27,7 @@ class AppointmentModel {
       patientName: map['patientName'] ?? 'Unknown',
       appointmentDateTime: DateTime.parse(
         map['dateTime'],
-      ), // convert from text to DateTime
+      ),
       status: map['status'] ?? 'pending',
       notes: map['notes'],
     );
@@ -38,7 +38,7 @@ class AppointmentModel {
       'patientId': patientId,
       'patientName': patientName,
       'dateTime': appointmentDateTime
-          .toIso8601String(), // store the date as text
+          .toIso8601String(),
       'notes': notes,
     };
   }

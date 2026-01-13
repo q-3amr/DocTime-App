@@ -95,7 +95,6 @@ class ChatsListScreen extends StatelessWidget {
                     );
                   }
 
-                  // If user document doesn't exist, don't show this chat
                   if (!userSnap.data!.exists) {
                     return const SizedBox.shrink();
                   }

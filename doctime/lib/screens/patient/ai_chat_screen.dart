@@ -32,7 +32,6 @@ class AiChatScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // Title
               const Text(
                 "AI Assistant Feature",
                 style: TextStyle(
@@ -55,7 +54,6 @@ class AiChatScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // GP2 Badge
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

@@ -11,10 +11,8 @@ void main() {
         ),
       );
 
-      // Wait for loading to complete
       await tester.pumpAndSettle();
 
-      // Verify profile fields are present
       expect(find.text('My Profile'), findsOneWidget);
       expect(find.text('Full Name'), findsOneWidget);
       expect(find.text('Email Address'), findsOneWidget);
@@ -30,7 +28,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify action buttons
       expect(find.text('Save Changes'), findsOneWidget);
       expect(find.text('Delete Account'), findsOneWidget);
     });
@@ -44,7 +41,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Verify logout icon is present
       expect(find.byIcon(Icons.logout), findsOneWidget);
     });
 
@@ -57,12 +53,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Tap delete account button
       final deleteButton = find.text('Delete Account');
       await tester.tap(deleteButton);
       await tester.pumpAndSettle();
 
-      // Verify confirmation dialog appears
       expect(find.text('Delete Account'), findsWidgets);
       expect(find.text('Are you sure?'), findsOneWidget);
     });
