@@ -23,7 +23,8 @@ void main() {
       final loginButton = find.text('Login');
       expect(loginButton, findsOneWidget);
 
-      await tester.tap(loginButton);
+      await tester.ensureVisible(loginButton);
+      await tester.tap(loginButton, warnIfMissed: false);
       await tester.pump();
     });
 
@@ -48,7 +49,8 @@ void main() {
 
       final signUpLink = find.text('Sign up');
       if (signUpLink.evaluate().isNotEmpty) {
-        await tester.tap(signUpLink);
+        await tester.ensureVisible(signUpLink);
+        await tester.tap(signUpLink, warnIfMissed: false);
         await tester.pumpAndSettle();
       }
     });
