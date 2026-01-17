@@ -75,11 +75,11 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => isLoading = true);
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: emailController.text.trim(),
-            password: passwordController.text.trim(),
-          );
+      UserCredential userCredential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
 
       String uid = userCredential.user!.uid;
 
@@ -184,9 +184,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 const SizedBox(height: 30),
-
                 _buildField(
                   label: "Full Name",
                   controller: nameController,
@@ -196,9 +194,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   primaryBlue: primaryBlue,
                   labelColor: labelColor,
                 ),
-
                 const SizedBox(height: 20),
-
                 _buildField(
                   label: "Email Address",
                   controller: emailController,
@@ -208,9 +204,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   primaryBlue: primaryBlue,
                   labelColor: labelColor,
                 ),
-
                 const SizedBox(height: 20),
-
                 _buildField(
                   label: "Password",
                   controller: passwordController,
@@ -224,9 +218,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   onEyeTap: () =>
                       setState(() => isObscurePass = !isObscurePass),
                 ),
-
                 const SizedBox(height: 20),
-
                 _buildField(
                   label: "Confirm Password",
                   controller: confirmPassController,
@@ -240,9 +232,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   onEyeTap: () =>
                       setState(() => isObscureConfirm = !isObscureConfirm),
                 ),
-
                 const SizedBox(height: 25),
-
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 15,
@@ -276,13 +266,19 @@ class _SignupScreenState extends State<SignupScreen> {
                       const Spacer(),
                       Switch(
                         value: isDoctor,
-                        activeThumbColor: primaryBlue,
+                        thumbColor: WidgetStateProperty.resolveWith<Color>(
+                          (Set<WidgetState> states) {
+                            if (states.contains(WidgetState.selected)) {
+                              return primaryBlue;
+                            }
+                            return Colors.white;
+                          },
+                        ),
                         onChanged: (val) => setState(() => isDoctor = val),
                       ),
                     ],
                   ),
                 ),
-
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 500),
                   reverseDuration: const Duration(milliseconds: 300),
@@ -290,15 +286,15 @@ class _SignupScreenState extends State<SignupScreen> {
                   switchOutCurve: Curves.easeInOut,
                   transitionBuilder:
                       (Widget child, Animation<double> animation) {
-                        return SizeTransition(
-                          sizeFactor: animation,
-                          axisAlignment: -1.0,
-                          child: FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          ),
-                        );
-                      },
+                    return SizeTransition(
+                      sizeFactor: animation,
+                      axisAlignment: -1.0,
+                      child: FadeTransition(
+                        opacity: animation,
+                        child: child,
+                      ),
+                    );
+                  },
                   child: isDoctor
                       ? Column(
                           key: const ValueKey('doctor_fields'),
@@ -323,9 +319,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         )
                       : const SizedBox.shrink(key: ValueKey('empty')),
                 ),
-
                 const SizedBox(height: 30),
-
                 SizedBox(
                   width: double.infinity,
                   height: 60,
@@ -351,9 +345,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
