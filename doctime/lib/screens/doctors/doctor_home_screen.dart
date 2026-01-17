@@ -105,7 +105,6 @@ class DoctorDashboard extends StatelessWidget {
               ),
             ),
           ),
-
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -115,33 +114,46 @@ class DoctorDashboard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Welcome back,",
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 16,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Welcome back,",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user?.uid)
-                                .get(),
-                            builder: (context, snapshot) {
-                              String name = snapshot.data?['name'] ?? "Doctor";
-                              return Text(
-                                "Dr. $name",
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                            FutureBuilder<DocumentSnapshot>(
+                              future: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user?.uid)
+                                  .get(),
+                              builder: (context, snapshot) {
+                                String fullName =
+                                    snapshot.data?['name'] ?? "Doctor";
+
+                                // Format name: if more than 2 parts, show only first 2
+                                List<String> nameParts =
+                                    fullName.trim().split(' ');
+                                String displayName = nameParts.length > 2
+                                    ? '${nameParts[0]} ${nameParts[1]}'
+                                    : fullName;
+
+                                return Text(
+                                  "Dr. $displayName",
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.all(2),
@@ -165,9 +177,7 @@ class DoctorDashboard extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 30),
-
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('appointments')
@@ -178,9 +188,8 @@ class DoctorDashboard extends StatelessWidget {
                         return const Center(child: CircularProgressIndicator());
                       }
                       var docs = snapshot.data!.docs;
-                      int pendingCount = docs
-                          .where((d) => d['status'] == 'pending')
-                          .length;
+                      int pendingCount =
+                          docs.where((d) => d['status'] == 'pending').length;
 
                       int upcomingCount = docs.where((d) {
                         if (d['status'] != 'accepted') return false;
@@ -188,9 +197,8 @@ class DoctorDashboard extends StatelessWidget {
                         return !_isExpired(date);
                       }).length;
 
-                      int completedCount = docs
-                          .where((d) => d['status'] == 'completed')
-                          .length;
+                      int completedCount =
+                          docs.where((d) => d['status'] == 'completed').length;
 
                       return Column(
                         children: [
@@ -257,7 +265,6 @@ class DoctorDashboard extends StatelessWidget {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 25),
                           const Align(
                             alignment: Alignment.centerLeft,
@@ -270,7 +277,6 @@ class DoctorDashboard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 15),
-
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
@@ -327,9 +333,7 @@ class DoctorDashboard extends StatelessWidget {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 20),
-
                           GridView.count(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -352,7 +356,6 @@ class DoctorDashboard extends StatelessWidget {
                                   );
                                 },
                               ),
-
                               _buildActionBtn(
                                 context,
                                 Icons.calendar_today_rounded,
@@ -360,7 +363,6 @@ class DoctorDashboard extends StatelessWidget {
                                 Colors.orange,
                                 () {},
                               ),
-
                               _buildActionBtn(
                                 context,
                                 Icons.access_time_filled_rounded,
@@ -375,7 +377,6 @@ class DoctorDashboard extends StatelessWidget {
                                   );
                                 },
                               ),
-
                               _buildActionBtn(
                                 context,
                                 Icons.person_search_rounded,

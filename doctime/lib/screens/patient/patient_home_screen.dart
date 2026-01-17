@@ -124,68 +124,86 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Hello,",
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 16,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Hello,",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          StreamBuilder<DocumentSnapshot>(
-                            stream: user?.uid != null
-                                ? FirebaseFirestore.instance
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: user?.uid != null
+                                  ? FirebaseFirestore.instance
                                       .collection('users')
                                       .doc(user!.uid)
                                       .snapshots()
-                                : null,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Text(
-                                  "Patient",
-                                  style: TextStyle(
+                                  : null,
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Text(
+                                    "Patient",
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                  );
+                                }
+                                if (!snapshot.hasData ||
+                                    snapshot.data == null ||
+                                    !snapshot.data!.exists) {
+                                  return const Text(
+                                    "Patient",
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                  );
+                                }
+                                final data = snapshot.data!.data();
+                                if (data == null) {
+                                  return const Text(
+                                    "Patient",
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
+                                  );
+                                }
+                                String fullName =
+                                    (data as Map<String, dynamic>)['name'] ??
+                                        "Patient";
+
+                                // Format name: if more than 2 parts, show only first 2
+                                List<String> nameParts =
+                                    fullName.trim().split(' ');
+                                String displayName = nameParts.length > 2
+                                    ? '${nameParts[0]} ${nameParts[1]}'
+                                    : fullName;
+
+                                return Text(
+                                  displayName,
+                                  style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
                                 );
-                              }
-                              if (!snapshot.hasData ||
-                                  snapshot.data == null ||
-                                  !snapshot.data!.exists) {
-                                return const Text(
-                                  "Patient",
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                );
-                              }
-                              final data = snapshot.data!.data();
-                              if (data == null) {
-                                return const Text(
-                                  "Patient",
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                );
-                              }
-                              String name =
-                                  (data as Map<String, dynamic>)['name'] ??
-                                  "Patient";
-                              return Text(
-                                name,
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.all(2),
@@ -209,9 +227,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 30),
-
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('appointments')
@@ -253,14 +269,12 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       );
                     },
                   ),
-
                   const SizedBox(height: 25),
                   const Text(
                     "Quick Actions",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 15),
-
                   Expanded(
                     child: GridView.count(
                       crossAxisCount: 2,

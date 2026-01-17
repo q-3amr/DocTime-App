@@ -156,7 +156,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const SizedBox(height: 30),
-
                         Container(
                           height: 250,
                           width: double.infinity,
@@ -171,9 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 20),
-
                         Text(
                           "Log in",
                           style: TextStyle(
@@ -183,9 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             letterSpacing: 1.2,
                           ),
                         ),
-
                         const SizedBox(height: 30),
-
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -234,9 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 20),
-
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -297,7 +290,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ],
                         ),
-
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
@@ -305,41 +297,61 @@ class _LoginScreenState extends State<LoginScreen> {
                               if (emailController.text.trim().isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Please enter your email address first'),
-                                    backgroundColor: Color.fromARGB(255, 220, 53, 69),
+                                    content: Text(
+                                        'Please enter your email address first'),
+                                    backgroundColor:
+                                        Color.fromARGB(255, 220, 53, 69),
                                   ),
                                 );
                                 return;
                               }
-                              
+
                               try {
-                                await FirebaseAuth.instance.sendPasswordResetEmail(
+                                await FirebaseAuth.instance
+                                    .sendPasswordResetEmail(
                                   email: emailController.text.trim(),
                                 );
-                                
+
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Password reset email sent! Check your inbox.'),
+                                      content: Text(
+                                        'If this email exists, a password reset link has been sent. Please check your inbox.',
+                                      ),
                                       backgroundColor: Colors.green,
-                                      duration: Duration(seconds: 4),
+                                      duration: Duration(seconds: 5),
                                     ),
                                   );
                                 }
                               } on FirebaseAuthException catch (e) {
                                 String message = 'Failed to send reset email';
-                                
-                                if (e.code == 'user-not-found') {
+
+                                if (e.code == 'invalid-email') {
+                                  message = 'Invalid email format';
+                                } else if (e.code == 'network-request-failed') {
+                                  message = 'No internet connection';
+                                } else if (e.code == 'user-not-found') {
+                                  // Some Firebase versions still return this
                                   message = 'No account found with this email';
-                                } else if (e.code == 'invalid-email') {
-                                  message = 'Invalid email address';
                                 }
-                                
+
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(message),
-                                      backgroundColor: const Color.fromARGB(255, 220, 53, 69),
+                                      backgroundColor: const Color.fromARGB(
+                                          255, 220, 53, 69),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'An error occurred. Please try again.'),
+                                      backgroundColor:
+                                          Color.fromARGB(255, 220, 53, 69),
                                     ),
                                   );
                                 }
@@ -356,9 +368,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 20),
-
                         SizedBox(
                           width: double.infinity,
                           height: 60,
@@ -386,9 +396,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                           ),
                         ),
-
                         const Spacer(),
-
                         Padding(
                           padding: const EdgeInsets.only(bottom: 20),
                           child: Row(
