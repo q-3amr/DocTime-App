@@ -301,7 +301,50 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () async {
+                              if (emailController.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please enter your email address first'),
+                                    backgroundColor: Color.fromARGB(255, 220, 53, 69),
+                                  ),
+                                );
+                                return;
+                              }
+                              
+                              try {
+                                await FirebaseAuth.instance.sendPasswordResetEmail(
+                                  email: emailController.text.trim(),
+                                );
+                                
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Password reset email sent! Check your inbox.'),
+                                      backgroundColor: Colors.green,
+                                      duration: Duration(seconds: 4),
+                                    ),
+                                  );
+                                }
+                              } on FirebaseAuthException catch (e) {
+                                String message = 'Failed to send reset email';
+                                
+                                if (e.code == 'user-not-found') {
+                                  message = 'No account found with this email';
+                                } else if (e.code == 'invalid-email') {
+                                  message = 'Invalid email address';
+                                }
+                                
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(message),
+                                      backgroundColor: const Color.fromARGB(255, 220, 53, 69),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
                             child: Text(
                               "Forgot Password?",
                               style: TextStyle(

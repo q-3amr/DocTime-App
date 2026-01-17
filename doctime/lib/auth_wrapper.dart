@@ -31,6 +31,34 @@ class AuthWrapper extends StatelessWidget {
                   body: Center(child: CircularProgressIndicator()),
                 );
               }
+              if (roleSnapshot.hasError) {
+                return Scaffold(
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error loading user data',
+                          style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          roleSnapshot.error.toString(),
+                          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => AuthService().signOut(),
+                          child: const Text('Sign Out'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
               if (roleSnapshot.hasData && roleSnapshot.data!.exists) {
                 final userData =
                     roleSnapshot.data!.data() as Map<String, dynamic>?;

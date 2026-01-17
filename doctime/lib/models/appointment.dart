@@ -37,8 +37,8 @@ class AppointmentModel {
       'doctorId': doctorId,
       'patientId': patientId,
       'patientName': patientName,
-      'dateTime': appointmentDateTime
-          .toIso8601String(),
+      'dateTime': appointmentDateTime.toIso8601String(),
+      'status': status,
       'notes': notes,
     };
   }
