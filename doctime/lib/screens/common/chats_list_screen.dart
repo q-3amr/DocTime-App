@@ -1,52 +1,73 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT WAS CHANGED IN THIS FILE:
+//
+// 1. CHATS STREAM REPLACED:
+//    BEFORE: StreamBuilder<QuerySnapshot> from FirebaseFirestore.instance directly:
+//      .collection('chats').where('participants', arrayContains: uid).snapshots()
+//    NOW: DatabaseService().streamChats(uid)
+//
+// 2. USER FETCH REPLACED + TYPE IMPROVED:
+//    BEFORE: private _getOtherUserData(uid) calling Firestore directly, returning
+//    a DocumentSnapshot. FutureBuilder<DocumentSnapshot> then cast it to Map.
+//    NOW: DatabaseService().getUserById(uid) returns UserModel?.
+//    FutureBuilder<UserModel?> — access .name directly, no Map casting.
+//
+// 3. kPrimaryBlue FROM CONSTANTS:
+//    BEFORE: primaryBlue was a local Color variable.
+//    NOW: kPrimaryBlue imported from utils/constants.dart.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../screens/common/chat_screen.dart';
+import '../../services/database_service.dart'; // replaces direct Firestore calls
+import '../../models/user.dart'; // FutureBuilder now uses UserModel? instead of DocumentSnapshot
+import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
+import 'chat_screen.dart';
 
 class ChatsListScreen extends StatelessWidget {
   const ChatsListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final db = DatabaseService();
     final User? currentUser = FirebaseAuth.instance.currentUser;
-    final Color primaryBlue = const Color(0xFF407CE2);
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          "Messages",
+          'Messages',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        leading: Navigator.canPop(context)
-            ? IconButton(
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Colors.black,
-                ),
-                onPressed: () => Navigator.pop(context),
-              )
-            : null,
+        leading:
+            Navigator.canPop(context)
+                ? IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: Colors.black,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                )
+                : null,
         automaticallyImplyLeading: false,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('chats')
-            .where('participants', arrayContains: currentUser?.uid)
-            .snapshots(),
+      body: StreamBuilder<dynamic>(
+        stream:
+            currentUser?.uid != null
+                ? db.streamChats(currentUser!.uid)
+                : null,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
-
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          var docs = snapshot.data!.docs;
+          final docs = snapshot.data!.docs;
 
           if (docs.isEmpty) {
             return Center(
@@ -60,7 +81,7 @@ class ChatsListScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    "No messages yet",
+                    'No messages yet',
                     style: TextStyle(color: Colors.grey.shade400),
                   ),
                 ],
@@ -72,17 +93,17 @@ class ChatsListScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             itemCount: docs.length,
             itemBuilder: (context, index) {
-              var chatData = docs[index].data() as Map<String, dynamic>;
-              List participants = chatData['participants'];
-              String otherUserId = participants.firstWhere(
+              final chatData = docs[index].data() as Map<String, dynamic>;
+              final List participants = chatData['participants'];
+              final String otherUserId = participants.firstWhere(
                 (id) => id != currentUser?.uid,
-                orElse: () => "",
+                orElse: () => '',
               );
 
               if (otherUserId.isEmpty) return const SizedBox();
 
-              return FutureBuilder<DocumentSnapshot>(
-                future: _getOtherUserData(otherUserId),
+              return FutureBuilder<UserModel?>(
+                future: db.getUserById(otherUserId),
                 builder: (context, userSnap) {
                   if (!userSnap.hasData) {
                     return Container(
@@ -95,25 +116,22 @@ class ChatsListScreen extends StatelessWidget {
                     );
                   }
 
-                  if (!userSnap.data!.exists) {
-                    return const SizedBox.shrink();
-                  }
+                  if (userSnap.data == null) return const SizedBox.shrink();
 
-                  var userData = userSnap.data!.data() as Map<String, dynamic>?;
-                  String name = userData?['name'] ?? "Unknown User";
+                  final String name = userSnap.data!.name;
 
                   return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (c) => ChatScreen(
-                            receiverId: otherUserId,
-                            receiverName: name,
+                    onTap:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (c) => ChatScreen(
+                                  receiverId: otherUserId,
+                                  receiverName: name,
+                                ),
                           ),
                         ),
-                      );
-                    },
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 15),
                       padding: const EdgeInsets.all(16),
@@ -133,10 +151,10 @@ class ChatsListScreen extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 28,
-                            backgroundColor: primaryBlue.withOpacity(0.1),
+                            backgroundColor: kPrimaryBlue.withOpacity(0.1),
                             child: Icon(
                               Icons.person,
-                              color: primaryBlue,
+                              color: kPrimaryBlue,
                               size: 28,
                             ),
                           ),
@@ -145,23 +163,16 @@ class ChatsListScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      name,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ],
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                                 const SizedBox(height: 5),
                                 Text(
-                                  chatData['lastMessage'] ??
-                                      "Start chatting...",
+                                  chatData['lastMessage'] ?? 'Start chatting...',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -183,9 +194,5 @@ class ChatsListScreen extends StatelessWidget {
         },
       ),
     );
-  }
-
-  Future<DocumentSnapshot> _getOtherUserData(String uid) async {
-    return await FirebaseFirestore.instance.collection('users').doc(uid).get();
   }
 }

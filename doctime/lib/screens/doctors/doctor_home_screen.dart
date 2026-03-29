@@ -1,12 +1,42 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT WAS CHANGED IN THIS FILE:
+//
+// 1. DIRECT FIRESTORE CALLS REPLACED:
+//    BEFORE: FutureBuilder<DocumentSnapshot> from Firestore to get the doctor's name.
+//         + StreamBuilder<QuerySnapshot> from Firestore to count appointments.
+//    NOW: DatabaseService().getUserById(uid) — typed UserModel?
+//         DatabaseService().streamAppointmentsForDoctor(uid)
+//
+// 2. DATE HELPERS FROM SHARED UTILS:
+//    BEFORE: had private _parseDate() and _isExpired() methods.
+//    NOW: uses parseDate() and isExpiredAppointment() from date_utils.dart.
+//    (same helpers were duplicated in 4 other screens).
+//
+// 3. ActionButton WIDGET USED:
+//    BEFORE: had a private _buildActionBtn(icon, title, color, onTap) method.
+//    NOW: uses shared ActionButton from widgets/action_button.dart.
+//
+// 4. ScheduleScreen RECEIVES isDoctor PARAMETER:
+//    BEFORE: const ScheduleScreen() — screen fetched role from Firestore on every mount.
+//    NOW: const ScheduleScreen(isDoctor: true) — zero network call for role.
+//
+// 5. kPrimaryBlue FROM CONSTANTS:
+//    BEFORE: primaryBlue was a local Color variable.
+//    NOW: kPrimaryBlue imported from utils/constants.dart.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/database_service.dart'; // replaces all direct Firestore calls
+import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
+import '../../utils/date_utils.dart'; // parseDate, isExpiredAppointment — were private methods
+import '../../widgets/action_button.dart'; // replaces private _buildActionBtn method
 import '../common/schedule_screen.dart';
 import '../common/profile_screen.dart';
-import 'doctor_requests_screen.dart';
-import 'manage_slots_screen.dart';
 import '../common/chats_list_screen.dart';
 import '../patient/doctor_search_screen.dart';
+import 'doctor_requests_screen.dart';
+import 'manage_slots_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -17,11 +47,10 @@ class DoctorHomeScreen extends StatefulWidget {
 
 class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _selectedIndex = 0;
-  final User? user = FirebaseAuth.instance.currentUser;
 
   final List<Widget> _pages = [
     const DoctorDashboard(),
-    const ScheduleScreen(),
+    const ScheduleScreen(isDoctor: true),
     const DoctorRequestsScreen(),
     const ProfileScreen(),
   ];
@@ -34,34 +63,32 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade100, width: 1),
-          ),
+          border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.white,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF407CE2),
+          selectedItemColor: kPrimaryBlue,
           unselectedItemColor: Colors.grey.shade400,
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_rounded),
-              label: "Dashboard",
+              label: 'Dashboard',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.calendar_month_rounded),
-              label: "Schedule",
+              label: 'Schedule',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.notifications_active_rounded),
-              label: "Requests",
+              label: 'Requests',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),
-              label: "Profile",
+              label: 'Profile',
             ),
           ],
         ),
@@ -70,27 +97,15 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   }
 }
 
+// ── Dashboard tab ─────────────────────────────────────────────────────────────
+
 class DoctorDashboard extends StatelessWidget {
   const DoctorDashboard({super.key});
 
-  static DateTime _parseDate(dynamic dateData) {
-    if (dateData is Timestamp) return dateData.toDate();
-    if (dateData is String) {
-      return DateTime.tryParse(dateData) ?? DateTime.now();
-    }
-    return DateTime.now();
-  }
-
-  static bool _isExpired(DateTime appointmentDate) {
-    return DateTime.now().isAfter(
-      appointmentDate.add(const Duration(minutes: 20)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    final db = DatabaseService();
     final User? user = FirebaseAuth.instance.currentUser;
-    final Color primaryBlue = const Color(0xFF407CE2);
 
     return Scaffold(
       body: Stack(
@@ -100,7 +115,7 @@ class DoctorDashboard extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [primaryBlue.withValues(alpha: 0.15), Colors.white],
+                colors: [kPrimaryBlue.withOpacity(0.15), Colors.white],
                 stops: const [0.0, 0.4],
               ),
             ),
@@ -111,6 +126,7 @@ class DoctorDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Greeting row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -119,30 +135,25 @@ class DoctorDashboard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Welcome back,",
+                              'Welcome back,',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 16,
                               ),
                             ),
-                            FutureBuilder<DocumentSnapshot>(
-                              future: FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(user?.uid)
-                                  .get(),
+                            FutureBuilder(
+                              future: db.getUserById(user?.uid ?? ''),
                               builder: (context, snapshot) {
                                 String fullName =
-                                    snapshot.data?['name'] ?? "Doctor";
-
-                                // Format name: if more than 2 parts, show only first 2
-                                List<String> nameParts =
+                                    snapshot.data?.name ?? 'Doctor';
+                                List<String> parts =
                                     fullName.trim().split(' ');
-                                String displayName = nameParts.length > 2
-                                    ? '${nameParts[0]} ${nameParts[1]}'
-                                    : fullName;
-
+                                String display =
+                                    parts.length > 2
+                                        ? '${parts[0]} ${parts[1]}'
+                                        : fullName;
                                 return Text(
-                                  "Dr. $displayName",
+                                  'Dr. $display',
                                   style: const TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.w900,
@@ -160,7 +171,7 @@ class DoctorDashboard extends StatelessWidget {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: primaryBlue.withValues(alpha: 0.5),
+                            color: kPrimaryBlue.withOpacity(0.5),
                             width: 2,
                           ),
                           color: Colors.white,
@@ -170,7 +181,7 @@ class DoctorDashboard extends StatelessWidget {
                           backgroundColor: const Color(0xFFE0E7FF),
                           child: Icon(
                             Icons.person,
-                            color: primaryBlue,
+                            color: kPrimaryBlue,
                             size: 28,
                           ),
                         ),
@@ -178,39 +189,47 @@ class DoctorDashboard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 30),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('appointments')
-                        .where('doctor_id', isEqualTo: user?.uid)
-                        .snapshots(),
+
+                  // Stats cards from appointments stream
+                  StreamBuilder<dynamic>(
+                    stream:
+                        user?.uid != null
+                            ? db.streamAppointmentsForDoctor(user!.uid)
+                            : null,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return const Center(child: CircularProgressIndicator());
                       }
-                      var docs = snapshot.data!.docs;
-                      int pendingCount =
+
+                      final docs = snapshot.data!.docs;
+                      final pending =
                           docs.where((d) => d['status'] == 'pending').length;
-
-                      int upcomingCount = docs.where((d) {
-                        if (d['status'] != 'accepted') return false;
-                        DateTime date = _parseDate(d['date']);
-                        return !_isExpired(date);
-                      }).length;
-
-                      int completedCount =
-                          docs.where((d) => d['status'] == 'completed').length;
+                      final upcoming =
+                          docs
+                              .where((d) {
+                                if (d['status'] != 'accepted') return false;
+                                return !isExpiredAppointment(
+                                  parseDate(d['date']),
+                                );
+                              })
+                              .length;
+                      final completed =
+                          docs
+                              .where((d) => d['status'] == 'completed')
+                              .length;
 
                       return Column(
                         children: [
+                          // Pending banner
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: primaryBlue,
+                              color: kPrimaryBlue,
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: primaryBlue.withValues(alpha: 0.4),
+                                  color: kPrimaryBlue.withOpacity(0.4),
                                   blurRadius: 15,
                                   offset: const Offset(0, 8),
                                 ),
@@ -224,7 +243,7 @@ class DoctorDashboard extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        "Pending Requests",
+                                        'Pending Requests',
                                         style: TextStyle(
                                           color: Colors.white70,
                                           fontWeight: FontWeight.bold,
@@ -232,7 +251,7 @@ class DoctorDashboard extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 5),
                                       Text(
-                                        "$pendingCount Pending",
+                                        '$pending Pending',
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 24,
@@ -253,7 +272,7 @@ class DoctorDashboard extends StatelessWidget {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
+                                    color: Colors.white.withOpacity(0.2),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
@@ -269,7 +288,7 @@ class DoctorDashboard extends StatelessWidget {
                           const Align(
                             alignment: Alignment.centerLeft,
                             child: Text(
-                              "Quick Dashboard",
+                              'Quick Dashboard',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -277,6 +296,7 @@ class DoctorDashboard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 15),
+                          // Completed row
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
@@ -312,7 +332,7 @@ class DoctorDashboard extends StatelessWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        "$completedCount",
+                                        '$completed',
                                         style: TextStyle(
                                           fontSize: 24,
                                           fontWeight: FontWeight.w900,
@@ -320,7 +340,7 @@ class DoctorDashboard extends StatelessWidget {
                                         ),
                                       ),
                                       Text(
-                                        "Completed Appointments",
+                                        'Completed Appointments',
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.green.shade700,
@@ -334,6 +354,7 @@ class DoctorDashboard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 20),
+                          // Action buttons grid
                           GridView.count(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -342,55 +363,50 @@ class DoctorDashboard extends StatelessWidget {
                             mainAxisSpacing: 20,
                             childAspectRatio: 1.1,
                             children: [
-                              _buildActionBtn(
-                                context,
-                                Icons.chat_bubble_rounded,
-                                "My Chats",
-                                Colors.indigo,
-                                () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (c) => const ChatsListScreen(),
+                              ActionButton(
+                                icon: Icons.chat_bubble_rounded,
+                                title: 'My Chats',
+                                color: Colors.indigo,
+                                onTap:
+                                    () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (c) => const ChatsListScreen(),
+                                      ),
                                     ),
-                                  );
-                                },
                               ),
-                              _buildActionBtn(
-                                context,
-                                Icons.calendar_today_rounded,
-                                "$upcomingCount Upcoming",
-                                Colors.orange,
-                                () {},
+                              ActionButton(
+                                icon: Icons.calendar_today_rounded,
+                                title: '$upcoming Upcoming',
+                                color: Colors.orange,
+                                onTap: () {},
                               ),
-                              _buildActionBtn(
-                                context,
-                                Icons.access_time_filled_rounded,
-                                "Manage Slots",
-                                Colors.teal,
-                                () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (c) => const ManageSlotsScreen(),
+                              ActionButton(
+                                icon: Icons.access_time_filled_rounded,
+                                title: 'Manage Slots',
+                                color: Colors.teal,
+                                onTap:
+                                    () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (c) => const ManageSlotsScreen(),
+                                      ),
                                     ),
-                                  );
-                                },
                               ),
-                              _buildActionBtn(
-                                context,
-                                Icons.person_search_rounded,
-                                "Find Doctor",
-                                Colors.blue,
-                                () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (c) =>
-                                          const DoctorSearchScreen(),
+                              ActionButton(
+                                icon: Icons.person_search_rounded,
+                                title: 'Find Doctor',
+                                color: Colors.blue,
+                                onTap:
+                                    () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (c) => const DoctorSearchScreen(),
+                                      ),
                                     ),
-                                  );
-                                },
                               ),
                             ],
                           ),
@@ -403,50 +419,6 @@ class DoctorDashboard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildActionBtn(
-    BuildContext context,
-    IconData icon,
-    String title,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 34),
-            ),
-            const SizedBox(height: 15),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-          ],
-        ),
       ),
     );
   }

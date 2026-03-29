@@ -1,6 +1,30 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT WAS CHANGED IN THIS FILE:
+//
+// 1. ALL FIRESTORE CALLS REPLACED:
+//    BEFORE: _loadUserData called FirebaseFirestore.instance directly to read user.
+//           _updateProfile called Firestore.update() directly.
+//           _deleteAccount called Firestore.delete() directly.
+//    NOW: DatabaseService().getUserById(), updateUser(), deleteUser().
+//
+// 2. LOGOUT USES AuthService:
+//    BEFORE: _logout() called FirebaseAuth.instance.signOut() directly.
+//    NOW: AuthService().signOut() — goes through the service.
+//
+// 3. SPECIALTIES LIST REMOVED (was a local copy):
+//    BEFORE: had its own List<String> specialties = [...] copy-pasted from other files.
+//    NOW: uses kSpecialties from utils/constants.dart.
+//
+// 4. kPrimaryBlue FROM CONSTANTS:
+//    BEFORE: no local primaryBlue here, but CircleAvatar used the hex directly.
+//    NOW: kPrimaryBlue imported from utils/constants.dart.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/auth_service.dart'; // for signOut() — was FirebaseAuth.instance.signOut() before
+import '../../services/database_service.dart'; // replaces all direct Firestore calls
+import '../../utils/constants.dart'; // kPrimaryBlue + kSpecialties — specialties was a local list before
 import '../../auth_wrapper.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -11,30 +35,17 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final _authService = AuthService();
+  final _db = DatabaseService();
   final User? user = FirebaseAuth.instance.currentUser;
+
   bool isDoctor = false;
   bool isLoading = true;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
-
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  final List<String> specialties = [
-    'General Medicine',
-    'Dentistry',
-    'Cardiology',
-    'Psychiatry',
-    'Nutrition',
-    'Urology',
-    'Dermatology',
-    'Gynecology & Obstetrics',
-    'Orthopedics',
-    'Pediatrics',
-    'Internal Medicine',
-    'Ophthalmology',
-  ];
 
   String? _selectedSpecialty;
 
@@ -46,29 +57,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadUserData() async {
     if (user == null) return;
-    _emailController.text = user!.email ?? "";
+    _emailController.text = user!.email ?? '';
 
     try {
-      var docSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .get();
+      final userModel = await _db.getUserById(user!.uid);
 
-      if (docSnap.exists) {
-        var data = docSnap.data();
-        String role = data?['role'] ?? 'patient';
-
-        String? dbSpecialty = data?['specialty'];
-
-        if (dbSpecialty != null && !specialties.contains(dbSpecialty)) {
+      if (userModel != null) {
+        String? dbSpecialty = userModel.specialty;
+        if (dbSpecialty != null && !kSpecialties.contains(dbSpecialty)) {
           dbSpecialty = null;
         }
 
         if (mounted) {
           setState(() {
-            isDoctor = role == 'doctor';
-            _nameController.text = data?['name'] ?? "";
-            _bioController.text = data?['about'] ?? "";
+            isDoctor = userModel.isDoctor;
+            _nameController.text = userModel.name;
+            _bioController.text = userModel.about ?? '';
             _selectedSpecialty = dbSpecialty;
             isLoading = false;
           });
@@ -92,32 +96,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _updateProfile() async {
     if (user == null) return;
-
     setState(() => isLoading = true);
 
     try {
-      Map<String, dynamic> data = {
+      final Map<String, dynamic> data = {
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
       };
 
       if (isDoctor) {
-        if (_selectedSpecialty == null) {
-          throw "Please select a specialty";
-        }
-
+        if (_selectedSpecialty == null) throw 'Please select a specialty';
         data['about'] = _bioController.text.trim();
         data['specialty'] = _selectedSpecialty;
       }
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .update(data);
+      await _db.updateUser(user!.uid, data);
 
       if (_emailController.text.trim() != user!.email) {
         await user!.verifyBeforeUpdateEmail(_emailController.text.trim());
-        _showMessage("Verification email sent to new address. Please verify.");
+        _showMessage(
+          'Verification email sent to new address. Please verify.',
+        );
       }
 
       if (_passwordController.text.isNotEmpty) {
@@ -128,9 +127,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         }
         await user!.updatePassword(_passwordController.text.trim());
-        _showMessage("Password updated successfully!");
+        _showMessage('Password updated successfully!');
       } else {
-        _showMessage("Profile Updated Successfully!");
+        _showMessage('Profile Updated Successfully!');
       }
 
       if (mounted) {
@@ -139,30 +138,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } on FirebaseAuthException catch (e) {
       if (mounted) setState(() => isLoading = false);
-
       if (e.code == 'requires-recent-login') {
         _showMessage(
-          "Security Alert: Please Log out and Log in again to update sensitive info.",
+          'Security Alert: Please Log out and Log in again to update sensitive info.',
           isError: true,
         );
       } else {
-        _showMessage("Error: ${e.message}", isError: true);
+        _showMessage('Error: ${e.message}', isError: true);
       }
     } catch (e) {
       if (mounted) setState(() => isLoading = false);
-      _showMessage("Error: $e", isError: true);
+      _showMessage('Error: $e', isError: true);
     }
   }
 
   void _deleteAccount() async {
     if (user == null) return;
-
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user!.uid)
-          .delete();
-
+      await _db.deleteUser(user!.uid);
       await user!.delete();
 
       if (mounted) {
@@ -177,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                "Please log out and log in again to delete your account.",
+                'Please log out and log in again to delete your account.',
               ),
             ),
           );
@@ -186,16 +179,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(SnackBar(content: Text("Error: ${e.message}")));
+          ).showSnackBar(SnackBar(content: Text('Error: ${e.message}')));
         }
       }
     } catch (e) {
-      debugPrint("Error deleting account: $e");
+      debugPrint('Error deleting account: $e');
     }
   }
 
   void _logout() async {
-    await FirebaseAuth.instance.signOut();
+    await _authService.signOut();
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const AuthWrapper()),
@@ -207,25 +200,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showDeleteConfirmDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Account"),
-        content: const Text(
-          "Are you sure? This cannot be undone and you will lose all your data.",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Account'),
+            content: const Text(
+              'Are you sure? This cannot be undone and you will lose all your data.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deleteAccount();
+                },
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteAccount();
-            },
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
   }
 
@@ -234,11 +231,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          "My Profile",
+          'My Profile',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
@@ -256,46 +254,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             const CircleAvatar(
               radius: 50,
-              backgroundColor: Color(0xFF407CE2),
+              backgroundColor: kPrimaryBlue,
               child: Icon(Icons.person, size: 50, color: Colors.white),
             ),
             const SizedBox(height: 30),
-
-            _buildTextField("Full Name", _nameController, Icons.person),
+            _buildTextField('Full Name', _nameController, Icons.person),
             const SizedBox(height: 15),
-
             _buildTextField(
-              "Email Address",
+              'Email Address',
               _emailController,
               Icons.email,
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 15),
-
             _buildTextField(
-              "New Password",
+              'New Password',
               _passwordController,
               Icons.lock,
               isPassword: true,
-              helperText: "Leave empty to keep current",
+              helperText: 'Leave empty to keep current',
             ),
             const SizedBox(height: 15),
-
             if (isDoctor) ...[
               _buildSpecialtyDropdown(),
-
               const SizedBox(height: 15),
               _buildTextField(
-                "About (Bio)",
+                'About (Bio)',
                 _bioController,
                 Icons.info,
                 maxLines: 3,
               ),
               const SizedBox(height: 15),
             ],
-
             const SizedBox(height: 40),
-
             SizedBox(
               width: double.infinity,
               height: 55,
@@ -309,31 +300,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Delete Account",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                  ],
+                child: const Text(
+                  'Delete Account',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-
             const SizedBox(height: 15),
-
             SizedBox(
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
                 onPressed: _updateProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF407CE2),
+                  backgroundColor: kPrimaryBlue,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -341,12 +321,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   elevation: 2,
                 ),
                 child: const Text(
-                  "Save Changes",
+                  'Save Changes',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-
             const SizedBox(height: 30),
           ],
         ),
@@ -356,17 +335,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSpecialtyDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedSpecialty,
-      items: specialties.map((String value) {
-        return DropdownMenuItem<String>(value: value, child: Text(value));
-      }).toList(),
-      onChanged: (newValue) {
-        setState(() {
-          _selectedSpecialty = newValue;
-        });
-      },
+      initialValue: _selectedSpecialty,
+      items:
+          kSpecialties.map((String value) {
+            return DropdownMenuItem<String>(value: value, child: Text(value));
+          }).toList(),
+      onChanged:
+          (newValue) => setState(() => _selectedSpecialty = newValue),
       decoration: InputDecoration(
-        labelText: "Specialty",
+        labelText: 'Specialty',
         prefixIcon: const Icon(Icons.work, color: Colors.grey),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(

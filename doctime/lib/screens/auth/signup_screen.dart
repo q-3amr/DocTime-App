@@ -1,6 +1,22 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT WAS CHANGED IN THIS FILE:
+//
+// 1. COMPLETE BYPASS OF AuthService FIXED:
+//    BEFORE: handleSignup() called FirebaseAuth.instance.createUserWithEmailAndPassword()
+//    directly, then built a raw Map<String, dynamic> and wrote it to Firestore
+//    itself — completely bypassing AuthService.signUp(). Two separate code paths
+//    existed for registration that could produce different Firestore documents.
+//    NOW: handleSignup() calls AuthService().signUp() — one line. The service
+//    handles auth + Firestore write + createdAt timestamp consistently.
+//
+// 2. SPECIALTIES LIST REMOVED (was a local copy):
+//    BEFORE: had its own List<String> specialties = [...] copy-pasted from other files.
+//    NOW: uses kSpecialties from utils/constants.dart — one source of truth.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/auth_service.dart';
+import '../../utils/constants.dart'; // kPrimaryBlue + kSpecialties — were local copies before
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -11,63 +27,34 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _authService = AuthService();
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPassController = TextEditingController();
-
-  String? selectedSpecialty;
   final TextEditingController locationController = TextEditingController();
 
+  String? selectedSpecialty;
   bool isLoading = false;
   bool isObscurePass = true;
   bool isObscureConfirm = true;
   bool isDoctor = false;
 
-  final List<String> specialties = [
-    'General Medicine',
-    'Dentistry',
-    'Cardiology',
-    'Psychiatry',
-    'Nutrition',
-    'Urology',
-    'Dermatology',
-    'Gynecology & Obstetrics',
-    'Orthopedics',
-    'Pediatrics',
-    'Internal Medicine',
-    'Ophthalmology',
-  ];
-
   void handleSignup() async {
     if (passwordController.text != confirmPassController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Passwords do not match!'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Passwords do not match!');
       return;
     }
     if (emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty ||
         nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all required fields!'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('Please fill all required fields!');
       return;
     }
     if (isDoctor) {
       if (selectedSpecialty == null || locationController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill all doctor fields!'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showError('Please fill all doctor fields!');
         return;
       }
     }
@@ -75,110 +62,76 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => isLoading = true);
 
     try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await _authService.signUp(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
+        name: nameController.text.trim(),
+        role: isDoctor ? 'doctor' : 'patient',
+        specialty: isDoctor ? selectedSpecialty : null,
+        location: isDoctor ? locationController.text.trim() : null,
       );
 
-      String uid = userCredential.user!.uid;
+      // Sign out immediately so the user can log in manually.
+      await _authService.signOut();
 
-      Map<String, dynamic> userData = {
-        'email': emailController.text.trim(),
-        'name': nameController.text.trim(),
-        'role': isDoctor ? 'doctor' : 'patient',
-        'profileImage': '',
-        'createdAt': FieldValue.serverTimestamp(),
-      };
+      if (!mounted) return;
+      setState(() => isLoading = false);
 
-      if (isDoctor) {
-        userData['specialty'] = selectedSpecialty!;
-        userData['location'] = locationController.text.trim();
-        userData['rating'] = 0.0;
-        userData['about'] = 'New Doctor';
-        userData['isVerified'] = false;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .set(userData);
-
-      if (mounted) {
-        await FirebaseAuth.instance.signOut();
-
-        if (!mounted) return;
-        setState(() => isLoading = false);
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Account created successfully! Please Login with your new account.',
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 4),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Account created successfully! Please Login with your new account.',
           ),
-        );
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
+        ),
+      );
 
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
-      if (mounted) {
-        setState(() => isLoading = false);
-        String message = "An error occurred";
-        if (e.code == 'email-already-in-use') {
-          message = "The email is already in use.";
-        } else if (e.code == 'weak-password') {
-          message = "The password is too weak.";
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.red),
-        );
-      }
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
+        _showError(e.toString());
       }
     }
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF407CE2);
-    final Color labelColor = const Color(0xFF374151);
-    final Color borderColor = const Color(0xFFD1D5DB);
+    const Color labelColor = Color(0xFF374151);
+    const Color borderColor = Color(0xFFD1D5DB);
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24.0,
-              vertical: 20.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text(
-                  "Sign up",
+                const Text(
+                  'Sign up',
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.w900,
-                    color: primaryBlue,
+                    color: kPrimaryBlue,
                     letterSpacing: 1.2,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "Create your new account",
+                  'Create your new account',
                   style: TextStyle(
                     color: Colors.grey.shade500,
                     fontWeight: FontWeight.w600,
@@ -186,65 +139,63 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 30),
                 _buildField(
-                  label: "Full Name",
+                  label: 'Full Name',
                   controller: nameController,
-                  hint: "Enter your full name",
+                  hint: 'Enter your full name',
                   icon: Icons.person_outline,
                   borderColor: borderColor,
-                  primaryBlue: primaryBlue,
                   labelColor: labelColor,
                 ),
                 const SizedBox(height: 20),
                 _buildField(
-                  label: "Email Address",
+                  label: 'Email Address',
                   controller: emailController,
-                  hint: "Enter your email",
+                  hint: 'Enter your email',
                   icon: Icons.email_outlined,
                   borderColor: borderColor,
-                  primaryBlue: primaryBlue,
                   labelColor: labelColor,
                 ),
                 const SizedBox(height: 20),
                 _buildField(
-                  label: "Password",
+                  label: 'Password',
                   controller: passwordController,
-                  hint: "Create password",
+                  hint: 'Create password',
                   icon: Icons.lock_outline,
                   borderColor: borderColor,
-                  primaryBlue: primaryBlue,
                   labelColor: labelColor,
                   isPass: true,
                   isObscure: isObscurePass,
-                  onEyeTap: () =>
-                      setState(() => isObscurePass = !isObscurePass),
+                  onEyeTap: () => setState(() => isObscurePass = !isObscurePass),
                 ),
                 const SizedBox(height: 20),
                 _buildField(
-                  label: "Confirm Password",
+                  label: 'Confirm Password',
                   controller: confirmPassController,
-                  hint: "Re-enter password",
+                  hint: 'Re-enter password',
                   icon: Icons.lock_outline,
                   borderColor: borderColor,
-                  primaryBlue: primaryBlue,
                   labelColor: labelColor,
                   isPass: true,
                   isObscure: isObscureConfirm,
-                  onEyeTap: () =>
-                      setState(() => isObscureConfirm = !isObscureConfirm),
+                  onEyeTap:
+                      () =>
+                          setState(() => isObscureConfirm = !isObscureConfirm),
                 ),
                 const SizedBox(height: 25),
+                // Doctor toggle
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 15,
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: isDoctor
-                        ? primaryBlue.withOpacity(0.1)
-                        : Colors.grey.shade50,
+                    color:
+                        isDoctor
+                            ? kPrimaryBlue.withOpacity(0.1)
+                            : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isDoctor ? primaryBlue : borderColor,
+                      color: isDoctor ? kPrimaryBlue : borderColor,
                       width: 2,
                     ),
                   ),
@@ -252,27 +203,24 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       Icon(
                         Icons.medical_services,
-                        color: isDoctor ? primaryBlue : Colors.grey,
+                        color: isDoctor ? kPrimaryBlue : Colors.grey,
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        "Register as a Doctor",
+                        'Register as a Doctor',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isDoctor ? primaryBlue : labelColor,
+                          color: isDoctor ? kPrimaryBlue : labelColor,
                         ),
                       ),
                       const Spacer(),
                       Switch(
                         value: isDoctor,
                         thumbColor: WidgetStateProperty.resolveWith<Color>(
-                          (Set<WidgetState> states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return primaryBlue;
-                            }
-                            return Colors.white;
-                          },
+                          (states) => states.contains(WidgetState.selected)
+                              ? kPrimaryBlue
+                              : Colors.white,
                         ),
                         onChanged: (val) => setState(() => isDoctor = val),
                       ),
@@ -284,40 +232,35 @@ class _SignupScreenState extends State<SignupScreen> {
                   reverseDuration: const Duration(milliseconds: 300),
                   switchInCurve: Curves.easeInOut,
                   switchOutCurve: Curves.easeInOut,
-                  transitionBuilder:
-                      (Widget child, Animation<double> animation) {
+                  transitionBuilder: (child, animation) {
                     return SizeTransition(
                       sizeFactor: animation,
                       axisAlignment: -1.0,
-                      child: FadeTransition(
-                        opacity: animation,
-                        child: child,
-                      ),
+                      child: FadeTransition(opacity: animation, child: child),
                     );
                   },
-                  child: isDoctor
-                      ? Column(
-                          key: const ValueKey('doctor_fields'),
-                          children: [
-                            const SizedBox(height: 20),
-                            _buildSpecialtyDropdown(
-                              labelColor: labelColor,
-                              borderColor: borderColor,
-                              primaryBlue: primaryBlue,
-                            ),
-                            const SizedBox(height: 20),
-                            _buildField(
-                              label: "Location",
-                              controller: locationController,
-                              hint: "e.g. Amman, Irbid",
-                              icon: Icons.location_on_outlined,
-                              borderColor: borderColor,
-                              primaryBlue: primaryBlue,
-                              labelColor: labelColor,
-                            ),
-                          ],
-                        )
-                      : const SizedBox.shrink(key: ValueKey('empty')),
+                  child:
+                      isDoctor
+                          ? Column(
+                            key: const ValueKey('doctor_fields'),
+                            children: [
+                              const SizedBox(height: 20),
+                              _buildSpecialtyDropdown(
+                                labelColor: labelColor,
+                                borderColor: borderColor,
+                              ),
+                              const SizedBox(height: 20),
+                              _buildField(
+                                label: 'Location',
+                                controller: locationController,
+                                hint: 'e.g. Amman, Irbid',
+                                icon: Icons.location_on_outlined,
+                                borderColor: borderColor,
+                                labelColor: labelColor,
+                              ),
+                            ],
+                          )
+                          : const SizedBox.shrink(key: ValueKey('empty')),
                 ),
                 const SizedBox(height: 30),
                 SizedBox(
@@ -326,31 +269,34 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: ElevatedButton(
                     onPressed: isLoading ? null : handleSignup,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
+                      backgroundColor: kPrimaryBlue,
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            "Sign Up",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                    child:
+                        isLoading
+                            ? const CircularProgressIndicator(
                               color: Colors.white,
-                              letterSpacing: 1,
+                            )
+                            : const Text(
+                              'Sign Up',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 1,
+                              ),
                             ),
-                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      "Already have an account? ",
+                    const Text(
+                      'Already have an account? ',
                       style: TextStyle(
                         color: labelColor,
                         fontSize: 15,
@@ -358,22 +304,21 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
+                      onTap:
+                          () => Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginScreen(),
+                            ),
                           ),
-                        );
-                      },
-                      child: Text(
-                        "Login",
+                      child: const Text(
+                        'Login',
                         style: TextStyle(
-                          color: primaryBlue,
+                          color: kPrimaryBlue,
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                           decoration: TextDecoration.underline,
-                          decorationColor: primaryBlue,
+                          decorationColor: kPrimaryBlue,
                         ),
                       ),
                     ),
@@ -390,13 +335,12 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget _buildSpecialtyDropdown({
     required Color labelColor,
     required Color borderColor,
-    required Color primaryBlue,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Specialty",
+          'Specialty',
           style: TextStyle(
             color: labelColor,
             fontSize: 16,
@@ -409,7 +353,7 @@ class _SignupScreenState extends State<SignupScreen> {
             color: Colors.grey.shade50,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selectedSpecialty != null ? primaryBlue : borderColor,
+              color: selectedSpecialty != null ? kPrimaryBlue : borderColor,
               width: selectedSpecialty != null ? 2.5 : 2.0,
             ),
           ),
@@ -420,7 +364,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 padding: const EdgeInsets.only(left: 18),
                 child: Text(
                   'Select your specialty',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
                 ),
               ),
               isExpanded: true,
@@ -441,17 +388,16 @@ class _SignupScreenState extends State<SignupScreen> {
                 color: Colors.black87,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-              items: specialties.map((String specialty) {
-                return DropdownMenuItem<String>(
-                  value: specialty,
-                  child: Text(specialty),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  selectedSpecialty = newValue;
-                });
-              },
+              items:
+                  kSpecialties.map((String specialty) {
+                    return DropdownMenuItem<String>(
+                      value: specialty,
+                      child: Text(specialty),
+                    );
+                  }).toList(),
+              onChanged:
+                  (String? newValue) =>
+                      setState(() => selectedSpecialty = newValue),
             ),
           ),
         ),
@@ -465,7 +411,6 @@ class _SignupScreenState extends State<SignupScreen> {
     required String hint,
     required IconData icon,
     required Color borderColor,
-    required Color primaryBlue,
     required Color labelColor,
     bool isPass = false,
     bool isObscure = false,
@@ -506,20 +451,21 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: primaryBlue, width: 2.5),
+              borderSide: const BorderSide(color: kPrimaryBlue, width: 2.5),
             ),
-            suffixIcon: isPass
-                ? IconButton(
-                    icon: Icon(
-                      isObscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: Colors.grey.shade600,
-                      size: 26,
-                    ),
-                    onPressed: onEyeTap,
-                  )
-                : Icon(icon, color: Colors.grey.shade400, size: 24),
+            suffixIcon:
+                isPass
+                    ? IconButton(
+                      icon: Icon(
+                        isObscure
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        color: Colors.grey.shade600,
+                        size: 26,
+                      ),
+                      onPressed: onEyeTap,
+                    )
+                    : Icon(icon, color: Colors.grey.shade400, size: 24),
           ),
         ),
       ],

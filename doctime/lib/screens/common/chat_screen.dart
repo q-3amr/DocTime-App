@@ -1,6 +1,25 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT WAS CHANGED IN THIS FILE:
+//
+// 1. ALL FIRESTORE CALLS REPLACED:
+//    BEFORE: had a FirebaseFirestore _firestore instance field and called it directly
+//    for: adding messages, updating the chat room document, and the messages stream.
+//    NOW: DatabaseService().sendMessage(), updateChatRoom(), streamMessages()
+//
+// 2. kPrimaryBlue FROM CONSTANTS:
+//    BEFORE: primaryBlue was a local Color variable.
+//    NOW: kPrimaryBlue imported from utils/constants.dart.
+//
+// NOTE: cloud_firestore is still imported here only to use Timestamp.now()
+// for the message timestamp. This is acceptable as it’s a data-type import,
+// not a database operation.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // only for Timestamp type, not DB operations
+import '../../services/database_service.dart'; // replaces all direct Firestore DB calls
+import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -17,52 +36,40 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  final _db = DatabaseService();
   final TextEditingController _messageController = TextEditingController();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final Color primaryBlue = const Color(0xFF407CE2);
+  final String _currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
-  String getChatRoomId(String user1, String user2) {
-    if (user1.compareTo(user2) > 0) {
-      return "${user1}_$user2";
-    } else {
-      return "${user2}_$user1";
-    }
-  }
+  String _chatRoomId(String user1, String user2) =>
+      user1.compareTo(user2) > 0 ? '${user1}_$user2' : '${user2}_$user1';
 
   void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
-    String msg = _messageController.text.trim();
+    final msg = _messageController.text.trim();
     _messageController.clear();
 
-    String currentUserId = _auth.currentUser!.uid;
-    String chatRoomId = getChatRoomId(currentUserId, widget.receiverId);
-    Timestamp now = Timestamp.now();
+    final chatRoomId = _chatRoomId(_currentUserId, widget.receiverId);
+    final now = Timestamp.now();
 
-    await _firestore
-        .collection('chats')
-        .doc(chatRoomId)
-        .collection('messages')
-        .add({
-          'senderId': currentUserId,
-          'receiverId': widget.receiverId,
-          'message': msg,
-          'timestamp': now,
-        });
+    await _db.sendMessage(chatRoomId, {
+      'senderId': _currentUserId,
+      'receiverId': widget.receiverId,
+      'message': msg,
+      'timestamp': now,
+    });
 
-    await _firestore.collection('chats').doc(chatRoomId).set({
-      'participants': [currentUserId, widget.receiverId],
+    await _db.updateChatRoom(chatRoomId, {
+      'participants': [_currentUserId, widget.receiverId],
       'lastMessage': msg,
       'lastMessageTime': now,
-      'users': {currentUserId: true, widget.receiverId: true},
-    }, SetOptions(merge: true));
+      'users': {_currentUserId: true, widget.receiverId: true},
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    String currentUserId = _auth.currentUser!.uid;
-    String chatRoomId = getChatRoomId(currentUserId, widget.receiverId);
+    final chatRoomId = _chatRoomId(_currentUserId, widget.receiverId);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -78,10 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
@@ -92,22 +96,17 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('chats')
-                  .doc(chatRoomId)
-                  .collection('messages')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
+            child: StreamBuilder<dynamic>(
+              stream: _db.streamMessages(chatRoomId),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return const Center(child: Text("Error loading messages"));
+                  return const Center(child: Text('Error loading messages'));
                 }
                 if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                var docs = snapshot.data!.docs;
+                final docs = snapshot.data!.docs;
 
                 return ListView.builder(
                   reverse: true,
@@ -117,15 +116,14 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    var data = docs[index].data() as Map<String, dynamic>;
-                    bool isMe = data['senderId'] == currentUserId;
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    final isMe = data['senderId'] == _currentUserId;
                     return _buildChatBubble(data['message'], isMe);
                   },
                 );
               },
             ),
           ),
-
           _buildInputArea(),
         ],
       ),
@@ -139,17 +137,14 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: isMe ? primaryBlue : Colors.white,
-
+          color: isMe ? kPrimaryBlue : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
             bottomLeft: Radius.circular(isMe ? 20 : 0),
             bottomRight: Radius.circular(isMe ? 0 : 20),
           ),
-
           border: isMe ? null : Border.all(color: Colors.grey.shade200),
-
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
@@ -203,7 +198,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: TextField(
                 controller: _messageController,
                 decoration: const InputDecoration(
-                  hintText: "Write a message...",
+                  hintText: 'Write a message...',
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -211,13 +206,12 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
           const SizedBox(width: 15),
-
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: primaryBlue.withOpacity(0.4),
+                  color: kPrimaryBlue.withOpacity(0.4),
                   blurRadius: 15,
                   offset: const Offset(0, 8),
                 ),
@@ -225,7 +219,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: CircleAvatar(
               radius: 26,
-              backgroundColor: primaryBlue,
+              backgroundColor: kPrimaryBlue,
               child: IconButton(
                 icon: const Icon(
                   Icons.send_rounded,

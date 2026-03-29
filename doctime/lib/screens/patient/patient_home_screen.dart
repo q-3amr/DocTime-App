@@ -1,7 +1,34 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT WAS CHANGED IN THIS FILE:
+//
+// 1. DIRECT FIRESTORE CALLS REPLACED:
+//    BEFORE: StreamBuilder<DocumentSnapshot> from FirebaseFirestore.instance directly
+//    for the user name, and another direct stream for appointments.
+//    NOW: DatabaseService().streamUser(uid) — typed Stream<UserModel?>, no Map casting.
+//         DatabaseService().streamAcceptedAppointmentsForPatient(uid) for the banner.
+//
+// 2. ActionButton WIDGET USED:
+//    BEFORE: had a private _buildActionBtn(icon, title, color, onTap) method.
+//    NOW: uses shared ActionButton from widgets/action_button.dart.
+//    (same widget was duplicated in doctor_home_screen and guest_home_screen).
+//
+// 3. ScheduleScreen RECEIVES isDoctor PARAMETER:
+//    BEFORE: const ScheduleScreen() — screen fetched role from Firestore on every mount.
+//    NOW: const ScheduleScreen(isDoctor: false) — zero network call for role.
+//
+// 4. kPrimaryBlue AND kSpecialties FROM CONSTANTS:
+//    BEFORE: primaryBlue was a local Color variable in this file.
+//    NOW: kPrimaryBlue imported from utils/constants.dart.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import '../../services/database_service.dart'; // replaces all direct Firestore calls
+import '../../models/user.dart';
+import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
+import '../../utils/date_utils.dart'; // parseDate shared helper
+import '../../widgets/action_button.dart'; // replaces private _buildActionBtn method
 import 'doctor_search_screen.dart';
 import 'ai_chat_screen.dart';
 import '../common/schedule_screen.dart';
@@ -20,7 +47,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
   final List<Widget> _pages = [
     const PatientHomeContent(),
-    const ScheduleScreen(),
+    const ScheduleScreen(isDoctor: false),
     const ChatsListScreen(),
     const ProfileScreen(),
   ];
@@ -33,34 +60,32 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade100, width: 1),
-          ),
+          border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.white,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF407CE2),
+          selectedItemColor: kPrimaryBlue,
           unselectedItemColor: Colors.grey.shade400,
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
-              label: "Home",
+              label: 'Home',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.calendar_today_rounded),
-              label: "My Bookings",
+              label: 'My Bookings',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.chat_bubble_outline_rounded),
-              label: "Messages",
+              label: 'Messages',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),
-              label: "Profile",
+              label: 'Profile',
             ),
           ],
         ),
@@ -68,6 +93,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     );
   }
 }
+
+// ── Home content tab ──────────────────────────────────────────────────────────
 
 class PatientHomeContent extends StatefulWidget {
   const PatientHomeContent({super.key});
@@ -77,27 +104,24 @@ class PatientHomeContent extends StatefulWidget {
 }
 
 class _PatientHomeContentState extends State<PatientHomeContent> {
+  final _db = DatabaseService();
   final User? user = FirebaseAuth.instance.currentUser;
-  final Color primaryBlue = const Color(0xFF407CE2);
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      if (mounted) setState(() {});
-    });
+    // Refresh the countdown banner every minute.
+    _timer = Timer.periodic(
+      const Duration(minutes: 1),
+      (timer) { if (mounted) setState(() {}); },
+    );
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
-  }
-
-  DateTime _parseDate(dynamic dateData) {
-    if (dateData is Timestamp) return dateData.toDate();
-    return DateTime.tryParse(dateData.toString()) ?? DateTime.now();
   }
 
   @override
@@ -110,7 +134,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [primaryBlue.withOpacity(0.15), Colors.white],
+                colors: [kPrimaryBlue.withOpacity(0.15), Colors.white],
                 stops: const [0.0, 0.4],
               ),
             ),
@@ -121,6 +145,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Greeting row
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -129,70 +154,27 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Hello,",
+                              'Hello,',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 16,
                               ),
                             ),
-                            StreamBuilder<DocumentSnapshot>(
-                              stream: user?.uid != null
-                                  ? FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(user!.uid)
-                                      .snapshots()
-                                  : null,
+                            StreamBuilder<UserModel?>(
+                              stream:
+                                  user?.uid != null
+                                      ? _db.streamUser(user!.uid)
+                                      : null,
                               builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Text(
-                                    "Patient",
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 2,
-                                  );
-                                }
-                                if (!snapshot.hasData ||
-                                    snapshot.data == null ||
-                                    !snapshot.data!.exists) {
-                                  return const Text(
-                                    "Patient",
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 2,
-                                  );
-                                }
-                                final data = snapshot.data!.data();
-                                if (data == null) {
-                                  return const Text(
-                                    "Patient",
-                                    style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                    maxLines: 2,
-                                  );
-                                }
                                 String fullName =
-                                    (data as Map<String, dynamic>)['name'] ??
-                                        "Patient";
-
-                                // Format name: if more than 2 parts, show only first 2
-                                List<String> nameParts =
-                                    fullName.trim().split(' ');
-                                String displayName = nameParts.length > 2
-                                    ? '${nameParts[0]} ${nameParts[1]}'
-                                    : fullName;
-
+                                    snapshot.data?.name ?? 'Patient';
+                                List<String> parts = fullName.trim().split(' ');
+                                String display =
+                                    parts.length > 2
+                                        ? '${parts[0]} ${parts[1]}'
+                                        : fullName;
                                 return Text(
-                                  displayName,
+                                  display,
                                   style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900,
@@ -210,7 +192,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: primaryBlue.withOpacity(0.5),
+                            color: kPrimaryBlue.withOpacity(0.5),
                             width: 2,
                           ),
                           color: Colors.white,
@@ -220,7 +202,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                           backgroundColor: const Color(0xFFE0E7FF),
                           child: Icon(
                             Icons.person,
-                            color: primaryBlue,
+                            color: kPrimaryBlue,
                             size: 28,
                           ),
                         ),
@@ -228,53 +210,59 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                     ],
                   ),
                   const SizedBox(height: 30),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('appointments')
-                        .where('patient_id', isEqualTo: user?.uid)
-                        .where('status', isEqualTo: 'accepted')
-                        .snapshots(),
+
+                  // Upcoming appointment banner
+                  StreamBuilder<dynamic>(
+                    stream:
+                        user?.uid != null
+                            ? _db.streamAcceptedAppointmentsForPatient(
+                              user!.uid,
+                            )
+                            : null,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) return _buildEmptyBanner();
 
                       var docs = snapshot.data!.docs;
-                      var futureAppointments = docs
-                          .map((doc) {
-                            return {
-                              'data': doc.data(),
-                              'date': _parseDate((doc.data() as Map)['date']),
-                            };
-                          })
-                          .where(
-                            (item) => (item['date'] as DateTime).isAfter(
-                              DateTime.now(),
-                            ),
-                          )
-                          .toList();
+                      var futureAppointments =
+                          docs
+                              .map((doc) {
+                                final data = doc.data() as Map;
+                                return {
+                                  'data': data,
+                                  'date': parseDate(data['date']),
+                                };
+                              })
+                              .where(
+                                (item) =>
+                                    (item['date'] as DateTime).isAfter(
+                                      DateTime.now(),
+                                    ),
+                              )
+                              .toList();
 
-                      if (futureAppointments.isEmpty) {
-                        return _buildEmptyBanner();
-                      }
+                      if (futureAppointments.isEmpty) return _buildEmptyBanner();
 
                       futureAppointments.sort(
                         (a, b) => (a['date'] as DateTime).compareTo(
                           b['date'] as DateTime,
                         ),
                       );
-                      var nextAppt = futureAppointments.first;
+                      final next = futureAppointments.first;
 
                       return _buildTimerBanner(
-                        nextAppt['date'] as DateTime,
-                        (nextAppt['data'] as Map)['doctor_name'] ?? "Doctor",
+                        next['date'] as DateTime,
+                        (next['data'] as Map)['doctor_name'] ?? 'Doctor',
                       );
                     },
                   ),
                   const SizedBox(height: 25),
+
                   const Text(
-                    "Quick Actions",
+                    'Quick Actions',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 15),
+
                   Expanded(
                     child: GridView.count(
                       crossAxisCount: 2,
@@ -282,33 +270,29 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       mainAxisSpacing: 20,
                       childAspectRatio: 1.1,
                       children: [
-                        _buildActionBtn(
-                          context,
-                          Icons.person_search_rounded,
-                          "Find Doctor",
-                          Colors.blue,
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (c) => const DoctorSearchScreen(),
+                        ActionButton(
+                          icon: Icons.person_search_rounded,
+                          title: 'Find Doctor',
+                          color: Colors.blue,
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (c) => const DoctorSearchScreen(),
+                                ),
                               ),
-                            );
-                          },
                         ),
-                        _buildActionBtn(
-                          context,
-                          Icons.smart_toy_rounded,
-                          "AI Assistant",
-                          Colors.purple,
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (c) => const AiChatScreen(),
+                        ActionButton(
+                          icon: Icons.smart_toy_rounded,
+                          title: 'AI Assistant',
+                          color: Colors.purple,
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (c) => const AiChatScreen(),
+                                ),
                               ),
-                            );
-                          },
                         ),
                       ],
                     ),
@@ -324,21 +308,22 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
 
   Widget _buildTimerBanner(DateTime apptDate, String doctorName) {
     Duration diff = apptDate.difference(DateTime.now());
-    String timeText = diff.inDays > 0
-        ? "${diff.inDays} Days, ${diff.inHours % 24} Hours"
-        : "${diff.inHours} Hours, ${diff.inMinutes % 60} Minutes";
+    String timeText =
+        diff.inDays > 0
+            ? '${diff.inDays} Days, ${diff.inHours % 24} Hours'
+            : '${diff.inHours} Hours, ${diff.inMinutes % 60} Minutes';
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [primaryBlue, primaryBlue.withOpacity(0.8)],
+          colors: [kPrimaryBlue, kPrimaryBlue.withOpacity(0.8)],
         ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: primaryBlue.withOpacity(0.4),
+            color: kPrimaryBlue.withOpacity(0.4),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -348,7 +333,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Upcoming Appointment",
+            'Upcoming Appointment',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 14,
@@ -366,7 +351,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
           ),
           const SizedBox(height: 5),
           Text(
-            "with Dr. $doctorName",
+            'with Dr. $doctorName',
             style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
@@ -397,7 +382,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "No upcoming appointments yet.",
+                  'No upcoming appointments yet.',
                   style: TextStyle(
                     color: Colors.grey,
                     fontSize: 16,
@@ -406,7 +391,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                 ),
                 SizedBox(height: 5),
                 Text(
-                  "Book Now?",
+                  'Book Now?',
                   style: TextStyle(
                     color: Colors.black87,
                     fontSize: 20,
@@ -429,50 +414,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildActionBtn(
-    BuildContext context,
-    IconData icon,
-    String title,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 38),
-            ),
-            const SizedBox(height: 15),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -1,6 +1,26 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT WAS CHANGED IN THIS FILE:
+//
+// 1. DIRECT FIRESTORE CALLS REPLACED:
+//    BEFORE: had a direct Firestore stream for pending appointments, and
+//    called Firestore.doc().update({'status': ...}) directly for accept/decline.
+//    NOW: _db.streamPendingAppointments(uid), _db.updateAppointmentStatus(id, status)
+//
+// 2. DATE HELPERS FROM SHARED UTILS:
+//    BEFORE: had a private _parseDate() method (same as 3 other screens).
+//    NOW: uses parseDate(), formatDateDisplay(), formatTimeFromDateTime()
+//    from shared date_utils.dart.
+//
+// 3. kPrimaryBlue FROM CONSTANTS:
+//    BEFORE: primaryBlue was a local Color variable.
+//    NOW: kPrimaryBlue imported from utils/constants.dart.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/database_service.dart'; // replaces all direct Firestore calls
+import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
+import '../../utils/date_utils.dart'; // parseDate, formatDateDisplay, formatTimeFromDateTime
 
 class DoctorRequestsScreen extends StatefulWidget {
   const DoctorRequestsScreen({super.key});
@@ -10,48 +30,25 @@ class DoctorRequestsScreen extends StatefulWidget {
 }
 
 class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
+  final _db = DatabaseService();
   final User? user = FirebaseAuth.instance.currentUser;
-  DateTime _parseDate(dynamic dateData) {
-    if (dateData is Timestamp) {
-      return dateData.toDate();
-    }
-    if (dateData is String) {
-      return DateTime.tryParse(dateData) ?? DateTime.now();
-    }
-    return DateTime.now();
-  }
 
   String _formatDateTime(DateTime date) {
-    String datePart =
-        "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-
-    int hour = date.hour > 12
-        ? date.hour - 12
-        : (date.hour == 0 ? 12 : date.hour);
-    String amPm = date.hour >= 12 ? 'PM' : 'AM';
-    String timePart = "$hour:${date.minute.toString().padLeft(2, '0')} $amPm";
-
-    return "$datePart | $timePart";
+    final datePart = formatDateDisplay(date);
+    final timePart = formatTimeFromDateTime(date);
+    return '$datePart | $timePart';
   }
 
   Future<void> _acceptRequest(String docId) async {
-    await FirebaseFirestore.instance
-        .collection('appointments')
-        .doc(docId)
-        .update({'status': 'accepted'});
+    await _db.updateAppointmentStatus(docId, 'accepted');
   }
 
   Future<void> _declineRequest(String docId) async {
-    await FirebaseFirestore.instance
-        .collection('appointments')
-        .doc(docId)
-        .update({'status': 'declined'});
+    await _db.updateAppointmentStatus(docId, 'declined');
   }
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF407CE2);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -59,14 +56,11 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Pending Requests",
+          'Pending Requests',
           style: TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.w900,
@@ -76,67 +70,56 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('appointments')
-                    .where('doctor_id', isEqualTo: user?.uid)
-                    .where('status', isEqualTo: 'pending')
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.inbox_rounded,
-                            size: 80,
-                            color: Colors.grey.shade300,
-                          ),
-                          const SizedBox(height: 15),
-                          Text(
-                            "No pending requests",
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+        child: StreamBuilder<dynamic>(
+          stream:
+              user?.uid != null
+                  ? _db.streamPendingAppointments(user!.uid)
+                  : null,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.inbox_rounded,
+                      size: 80,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 15),
+                    Text(
+                      'No pending requests',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  }
+                    ),
+                  ],
+                ),
+              );
+            }
 
-                  var requests = snapshot.data!.docs;
+            final requests = snapshot.data!.docs;
 
-                  return ListView.builder(
-                    itemCount: requests.length,
-                    itemBuilder: (context, index) {
-                      var req = requests[index];
-                      var data = req.data() as Map<String, dynamic>;
+            return ListView.builder(
+              itemCount: requests.length,
+              itemBuilder: (context, index) {
+                final req = requests[index];
+                final data = req.data() as Map<String, dynamic>;
+                final dateObj = parseDate(data['date']);
 
-                      DateTime dateObj = _parseDate(data['date']);
-                      String formattedString = _formatDateTime(dateObj);
-
-                      return _buildRequestCard(
-                        name: data['patient_name'] ?? 'Unknown',
-                        date: formattedString,
-                        docId: req.id,
-                        primaryColor: primaryBlue,
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+                return _buildRequestCard(
+                  name: data['patient_name'] ?? 'Unknown',
+                  date: _formatDateTime(dateObj),
+                  docId: req.id,
+                );
+              },
+            );
+          },
         ),
       ),
     );
@@ -146,7 +129,6 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
     required String name,
     required String date,
     required String docId,
-    required Color primaryColor,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -157,7 +139,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.08),
+            color: Colors.grey.withOpacity(0.08),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -215,9 +197,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
           Row(
             children: [
               Expanded(
@@ -233,7 +213,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                     elevation: 0,
                   ),
                   child: const Text(
-                    "Decline",
+                    'Decline',
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                   ),
                 ),
@@ -243,17 +223,17 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                 child: ElevatedButton(
                   onPressed: () => _acceptRequest(docId),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
+                    backgroundColor: kPrimaryBlue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 5,
-                    shadowColor: primaryColor.withValues(alpha: 0.4),
+                    shadowColor: kPrimaryBlue.withOpacity(0.4),
                   ),
                   child: const Text(
-                    "Accept",
+                    'Accept',
                     style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
                   ),
                 ),

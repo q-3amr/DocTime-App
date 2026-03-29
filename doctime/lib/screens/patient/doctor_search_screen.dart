@@ -1,6 +1,26 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT WAS CHANGED IN THIS FILE:
+//
+// 1. FIRESTORE STREAM REPLACED + TYPE IMPROVED:
+//    BEFORE: StreamBuilder<QuerySnapshot> from FirebaseFirestore.instance directly
+//    with raw doc['name'], doc['specialty'], doc.id access.
+//    NOW: DatabaseService().streamDoctors() returns Stream<List<UserModel>>.
+//    StreamBuilder<List<UserModel>> — access doctor.name, .specialty, .id directly.
+//
+// 2. SPECIALTIES LIST REPLACED:
+//    BEFORE: had its own local List<String> specialties = [...] copy-pasted from others.
+//    NOW: kSpecialties from utils/constants.dart (also used in signup + profile).
+//
+// 3. kPrimaryBlue FROM CONSTANTS:
+//    BEFORE: primaryBlue was a local Color variable.
+//    NOW: kPrimaryBlue imported from utils/constants.dart.
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../services/database_service.dart'; // replaces direct Firestore stream
+import '../../models/user.dart'; // StreamBuilder now uses List<UserModel> instead of QuerySnapshot
+import '../../utils/constants.dart'; // kPrimaryBlue + kSpecialties — were local copies before
 import 'doctor_details_screen.dart';
 
 class DoctorSearchScreen extends StatefulWidget {
@@ -11,51 +31,38 @@ class DoctorSearchScreen extends StatefulWidget {
 }
 
 class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
-  String searchQuery = "";
+  final _db = DatabaseService();
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  String selectedFilter = "By Specialty";
 
-  final List<String> specialties = [
-    'All Specialties',
-    'General Medicine',
-    'Dentistry',
-    'Cardiology',
-    'Psychiatry',
-    'Nutrition',
-    'Urology',
-    'Dermatology',
-    'Gynecology & Obstetrics',
-    'Orthopedics',
-    'Pediatrics',
-    'Internal Medicine',
-    'Ophthalmology',
-  ];
-
+  String searchQuery = '';
+  String selectedFilter = 'By Specialty';
   String? selectedSpecialty = 'All Specialties';
+
+  // All specialties + "All" option for the filter dropdown.
+  static const List<String> _filterSpecialties = [
+    'All Specialties',
+    ...kSpecialties,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF407CE2);
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Find Your Doctor",
+          'Find Your Doctor',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
         ),
       ),
       body: Column(
         children: [
+          // Search bar
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: Container(
@@ -64,10 +71,11 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: TextField(
-                onChanged: (value) =>
-                    setState(() => searchQuery = value.toLowerCase()),
+                onChanged:
+                    (value) =>
+                        setState(() => searchQuery = value.toLowerCase()),
                 decoration: const InputDecoration(
-                  hintText: "Search by name or specialty...",
+                  hintText: 'Search by name or specialty...',
                   prefixIcon: Icon(Icons.search, color: Colors.grey),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(vertical: 15),
@@ -76,59 +84,62 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             ),
           ),
 
+          // Filter row
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-            child: _buildFilterSection(primaryBlue),
+            child: _buildFilterSection(),
           ),
 
-          _buildSpecialtyDropdown(primaryBlue),
+          // Specialty dropdown (shown only when By Specialty is active)
+          _buildSpecialtyDropdown(),
 
+          // Doctor list
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .where('role', isEqualTo: 'doctor')
-                  .where('isVerified', isEqualTo: true)
-                  .snapshots(),
+            child: StreamBuilder<List<UserModel>>(
+              stream: _db.streamDoctors(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("No doctors found."));
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No doctors found.'));
                 }
 
-                var filteredDocs = snapshot.data!.docs.where((doc) {
-                  if (currentUser != null && doc.id == currentUser!.uid) {
-                    return false;
-                  }
+                final filtered =
+                    snapshot.data!.where((doctor) {
+                      // Exclude current user if they are a doctor browsing.
+                      if (currentUser != null &&
+                          doctor.id == currentUser!.uid) {
+                        return false;
+                      }
 
-                  String name = doc['name'].toString().toLowerCase();
-                  String spec = doc['specialty'].toString().toLowerCase();
-                  bool matchesSearch =
-                      name.contains(searchQuery) || spec.contains(searchQuery);
+                      final name = doctor.name.toLowerCase();
+                      final spec =
+                          (doctor.specialty ?? '').toLowerCase();
+                      final matchesSearch =
+                          name.contains(searchQuery) ||
+                          spec.contains(searchQuery);
 
-                  bool matchesSpecialty = true;
-                  if (selectedFilter == "By Specialty" &&
-                      selectedSpecialty != 'All Specialties') {
-                    matchesSpecialty = doc['specialty'] == selectedSpecialty;
-                  }
+                      bool matchesSpecialty = true;
+                      if (selectedFilter == 'By Specialty' &&
+                          selectedSpecialty != 'All Specialties') {
+                        matchesSpecialty =
+                            doctor.specialty == selectedSpecialty;
+                      }
 
-                  return matchesSearch && matchesSpecialty;
-                }).toList();
+                      return matchesSearch && matchesSpecialty;
+                    }).toList();
+
+                if (filtered.isEmpty) {
+                  return const Center(child: Text('No doctors match your search.'));
+                }
 
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  itemCount: filteredDocs.length,
+                  itemCount: filtered.length,
                   itemBuilder: (context, index) {
-                    var doc = filteredDocs[index];
-                    return _buildDoctorCard(
-                      id: doc.id,
-                      name: doc['name'],
-                      specialty: doc['specialty'],
-                      primaryColor: primaryBlue,
-                    );
+                    final doctor = filtered[index];
+                    return _buildDoctorCard(doctor);
                   },
                 );
               },
@@ -139,7 +150,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     );
   }
 
-  Widget _buildFilterSection(Color primaryBlue) {
+  Widget _buildFilterSection() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -156,10 +167,10 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.filter_list_rounded, color: primaryBlue, size: 22),
+          const Icon(Icons.filter_list_rounded, color: kPrimaryBlue, size: 22),
           const SizedBox(width: 12),
           const Text(
-            "Filter by:",
+            'Filter by:',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
@@ -179,9 +190,9 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                 child: DropdownButton<String>(
                   value: selectedFilter,
                   isExpanded: true,
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: primaryBlue,
+                    color: kPrimaryBlue,
                     size: 22,
                   ),
                   style: const TextStyle(
@@ -191,39 +202,40 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   ),
                   dropdownColor: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  items: ['By Specialty', 'By Nearest', 'By Top Rated'].map((
-                    String filter,
-                  ) {
-                    return DropdownMenuItem<String>(
-                      value: filter,
-                      child: Row(
-                        children: [
-                          Text(filter),
-                          if (filter != 'By Specialty') ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'GP2',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange.shade800,
+                  items:
+                      ['By Specialty', 'By Nearest', 'By Top Rated'].map((
+                        String filter,
+                      ) {
+                        return DropdownMenuItem<String>(
+                          value: filter,
+                          child: Row(
+                            children: [
+                              Text(filter),
+                              if (filter != 'By Specialty') ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'GP2',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange.shade800,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                              ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
                   onChanged: (String? newValue) {
                     if (newValue == 'By Nearest' ||
                         newValue == 'By Top Rated') {
@@ -235,9 +247,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                         ),
                       );
                     } else {
-                      setState(() {
-                        selectedFilter = newValue!;
-                      });
+                      setState(() => selectedFilter = newValue!);
                     }
                   },
                 ),
@@ -249,71 +259,65 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     );
   }
 
-  Widget _buildSpecialtyDropdown(Color primaryBlue) {
-    if (selectedFilter != "By Specialty") return const SizedBox.shrink();
+  Widget _buildSpecialtyDropdown() {
+    if (selectedFilter != 'By Specialty') return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: primaryBlue.withOpacity(0.05),
+          color: kPrimaryBlue.withOpacity(0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: primaryBlue.withOpacity(0.3)),
+          border: Border.all(color: kPrimaryBlue.withOpacity(0.3)),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: selectedSpecialty,
             isExpanded: true,
             hint: const Text('Select Specialty'),
-            icon: Icon(
+            icon: const Icon(
               Icons.medical_services_outlined,
-              color: primaryBlue,
+              color: kPrimaryBlue,
               size: 20,
             ),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: primaryBlue,
+              color: kPrimaryBlue,
             ),
             dropdownColor: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            items: specialties.map((String specialty) {
-              return DropdownMenuItem<String>(
-                value: specialty,
-                child: Text(specialty),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedSpecialty = newValue;
-              });
-            },
+            items:
+                _filterSpecialties.map((String specialty) {
+                  return DropdownMenuItem<String>(
+                    value: specialty,
+                    child: Text(specialty),
+                  );
+                }).toList(),
+            onChanged:
+                (String? newValue) =>
+                    setState(() => selectedSpecialty = newValue),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDoctorCard({
-    required String id,
-    required String name,
-    required String specialty,
-    required Color primaryColor,
-  }) {
+  Widget _buildDoctorCard(UserModel doctor) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (c) => DoctorDetailsScreen(
-              doctorName: name,
-              specialty: specialty,
-              doctorId: id,
+      onTap:
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (c) => DoctorDetailsScreen(
+                    doctorName: doctor.name,
+                    specialty: doctor.specialty ?? 'General',
+                    doctorId: doctor.id,
+                  ),
             ),
           ),
-        );
-      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.all(16),
@@ -342,7 +346,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Dr. $name",
+                    'Dr. ${doctor.name}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -350,7 +354,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    specialty,
+                    doctor.specialty ?? 'General',
                     style: TextStyle(
                       color: Colors.grey.shade500,
                       fontWeight: FontWeight.w600,
@@ -359,10 +363,10 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.arrow_forward_ios_rounded,
               size: 18,
-              color: primaryColor,
+              color: kPrimaryBlue,
             ),
           ],
         ),
