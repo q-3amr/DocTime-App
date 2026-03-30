@@ -38,6 +38,9 @@ dependencies:
   cloud_firestore: ^6.1.0
   firebase_auth: ^6.1.2
   intl: ^0.20.2
+   # LAITH Add This to google maps
+  google_maps_flutter: ^2.5.3
+  geolocator: ^11.0.0
 
 dev_dependencies:
   flutter_test:
