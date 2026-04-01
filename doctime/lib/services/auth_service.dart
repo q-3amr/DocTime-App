@@ -21,11 +21,15 @@
 // 4. currentUser GETTER ADDED:
 //    Screens needed access to the currently logged-in Firebase user.
 //    Instead of them importing firebase_auth directly, they can use this getter.
+//
+// 5. LOCATION COORDINATES ADDED:
+//    Added latitude and longitude parameters to the signUp method so doctors
+//    can save their exact map coordinates to Firestore.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/user.dart';
+import '../models/user.dart'; // تأكد إنك عدلت اسم الملف لـ user_model.dart إذا غيرته قبل، أو خليه زي ما هو إذا شغال
 
 /// Centralises all Firebase Authentication operations.
 /// RULE: Screens must NOT call FirebaseAuth.instance directly — all auth
@@ -71,6 +75,8 @@ class AuthService {
     required String role,
     String? specialty,
     String? location,
+    double? latitude,  // إضافة جديدة: خط العرض
+    double? longitude, // إضافة جديدة: خط الطول
   }) async {
     try {
       UserCredential result = await auth.createUserWithEmailAndPassword(
@@ -89,6 +95,8 @@ class AuthService {
         profileImage: '',
         specialty: role == 'doctor' ? (specialty ?? 'General') : null,
         location: role == 'doctor' ? (location ?? 'Amman') : null,
+        latitude: role == 'doctor' ? latitude : null,   // ربطناه هون
+        longitude: role == 'doctor' ? longitude : null, // وربطناه هون
         rating: role == 'doctor' ? 0.0 : null,
         about: role == 'doctor' ? 'New Doctor' : null,
         // Doctors start as unverified — admin must approve them.
