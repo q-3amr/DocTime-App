@@ -30,12 +30,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // only for FieldValue.serverTimestamp()
 import '../../services/database_service.dart'; // replaces all direct Firestore DB calls
 import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
 import '../../utils/date_utils.dart'; // formatDateKey, formatTimeFromDateTime, parseDate
 import '../common/chat_screen.dart';
 import '../auth/login_screen.dart';
+import '../../models/appointment.dart';
 
 class DoctorDetailsScreen extends StatefulWidget {
   final String doctorName;
@@ -113,7 +113,8 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       }
     }
 
-    final available = doctorSlots.where((s) => !takenTimes.contains(s)).toList();
+    final available =
+        doctorSlots.where((s) => !takenTimes.contains(s)).toList();
 
     if (mounted) {
       setState(() {
@@ -155,21 +156,38 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       final patient = await _db.getUserById(user!.uid);
       final patientName = patient?.name ?? 'Unknown';
 
-      await _db.addAppointment({
-        'doctor_id': widget.doctorId,
-        'doctor_name': widget.doctorName,
-        'patient_id': user!.uid,
-        'patient_name': patientName,
-        'date': finalDate,
-        'status': 'pending',
-        'created_at': FieldValue.serverTimestamp(),
-      });
+      // 1. استخدام الموديل النظيف بدل الـ Map العشوائي المفرط
+      final newAppointment = AppointmentModel(
+        id: '', // رح نعمله ID ذكي بالسيرفس عشان الترانزاكشن
+        doctorId: widget.doctorId ?? '',
+        doctorName: widget.doctorName,
+        patientId: user!.uid,
+        patientName: patientName,
+        appointmentDateTime: finalDate,
+        status: 'pending',
+      );
+
+      // 2. استدعاء دالة القفل الآمنة اللي بترجع true أو false
+      final success = await _db.bookAppointmentSafely(newAppointment);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Request Sent! Wait for approval.')),
-        );
-        Navigator.pop(context);
+        if (success) {
+          // الحجز تم بدون مشاكل وتضارب
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Request Sent! Wait for approval.')),
+          );
+          Navigator.pop(context);
+        } else {
+          // الموعد انحجز لمريض ثاني بنفس اللحظة! بنرفض الطلب وبنحدث الواجهة
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content:
+                  Text('Sorry, this slot was just booked by someone else!'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          _generateSlotsForDate(_selectedDate);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -183,36 +201,35 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
   void _showLoginDialog() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Login Required'),
-            content: const Text(
-              'Please login to book an appointment. You can browse doctors '
-              'without an account, but booking requires login.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kPrimaryBlue,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Login'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text(
+          'Please login to book an appointment. You can browse doctors '
+          'without an account, but booking requires login.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimaryBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Login'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -276,8 +293,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                       itemCount: 14,
                       itemBuilder: (context, index) {
                         final day = DateTime.now().add(Duration(days: index));
-                        final isSelected =
-                            day.day == _selectedDate.day &&
+                        final isSelected = day.day == _selectedDate.day &&
                             day.month == _selectedDate.month;
 
                         return GestureDetector(
@@ -292,10 +308,9 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                               color: isSelected ? kPrimaryBlue : Colors.white,
                               borderRadius: BorderRadius.circular(15),
                               border: Border.all(
-                                color:
-                                    isSelected
-                                        ? kPrimaryBlue
-                                        : Colors.grey.shade300,
+                                color: isSelected
+                                    ? kPrimaryBlue
+                                    : Colors.grey.shade300,
                               ),
                             ),
                             child: Column(
@@ -320,8 +335,9 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                                 Text(
                                   '${day.day}',
                                   style: TextStyle(
-                                    color:
-                                        isSelected ? Colors.white : Colors.black,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.black,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 18,
                                   ),
@@ -342,36 +358,33 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   _isLoadingSlots
                       ? const Center(child: CircularProgressIndicator())
                       : _availableSlots.isEmpty
-                      ? const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text(
-                          'No slots available for this day',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      )
-                      : Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children:
-                            _availableSlots.map((slot) {
-                              final isSelected = _selectedTimeSlot == slot;
-                              return ChoiceChip(
-                                label: Text(slot),
-                                selected: isSelected,
-                                selectedColor: kPrimaryBlue,
-                                labelStyle: TextStyle(
-                                  color:
-                                      isSelected ? Colors.white : Colors.black,
-                                ),
-                                onSelected:
-                                    (val) => setState(
-                                      () =>
-                                          _selectedTimeSlot =
-                                              val ? slot : null,
-                                    ),
-                              );
-                            }).toList(),
-                      ),
+                          ? const Padding(
+                              padding: EdgeInsets.all(20),
+                              child: Text(
+                                'No slots available for this day',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: _availableSlots.map((slot) {
+                                final isSelected = _selectedTimeSlot == slot;
+                                return ChoiceChip(
+                                  label: Text(slot),
+                                  selected: isSelected,
+                                  selectedColor: kPrimaryBlue,
+                                  labelStyle: TextStyle(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : Colors.black,
+                                  ),
+                                  onSelected: (val) => setState(
+                                    () => _selectedTimeSlot = val ? slot : null,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -411,11 +424,10 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (c) => ChatScreen(
-                            receiverId: widget.doctorId!,
-                            receiverName: widget.doctorName,
-                          ),
+                      builder: (c) => ChatScreen(
+                        receiverId: widget.doctorId!,
+                        receiverName: widget.doctorName,
+                      ),
                     ),
                   );
                 },

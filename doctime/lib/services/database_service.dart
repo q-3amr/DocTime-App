@@ -13,6 +13,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user.dart';
+import '../models/appointment.dart';
 
 /// Central database access layer.
 /// Screens call methods here — they never touch FirebaseFirestore directly.
@@ -33,10 +34,9 @@ class DatabaseService {
         .where('isVerified', isEqualTo: true)
         .snapshots()
         .map(
-          (snapshot) =>
-              snapshot.docs
-                  .map((doc) => UserModel.fromMap(doc.data(), doc.id))
-                  .toList(),
+          (snapshot) => snapshot.docs
+              .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+              .toList(),
         );
   }
 
@@ -155,8 +155,50 @@ class DatabaseService {
   /// Creates a new appointment document in Firestore.
   /// Used by: doctor_details_screen — when a patient books an appointment.
   /// BEFORE: doctor_details_screen called Firestore.add() directly.
-  Future<void> addAppointment(Map<String, dynamic> data) async {
-    await _db.collection('appointments').add(data);
+  /// دالة حجز آمنة بتستخدم (Transactions) لمنع الـ Race Condition.
+  /// هاي الدالة بتضمن إنه مستحيل مريضين يحجزوا نفس الموعد بنفس اللحظة.
+  Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
+    try {
+      // 1. صناعة ID ذكي وموحد:
+      // بدل ما الفايربيز يعطينا ID عشوائي، بنعمل ID ثابت بيعتمد على (ID الدكتور + وقت الموعد).
+      // هيك الداتابيز بتعرف إنه هاد "موعد واحد" ومستحيل تعمل منه نسختين.
+      String slotId =
+          "appt_${appointment.doctorId}_${appointment.appointmentDateTime.millisecondsSinceEpoch}";
+
+      // 2. تجهيز المرجع (Reference):
+      // بنحدد مسار الدوكيومنت بالداتابيز اللي رح نشتغل عليه.
+      DocumentReference apptRef = _db.collection('appointments').doc(slotId);
+
+      // 3. تشغيل القفل (runTransaction):
+      // الترانزاكشن بيقفل هاد الدوكيومنت بالسيرفر، وبمنع أي حدا ثاني يعدل عليه بنفس اللحظة.
+      return await _db.runTransaction((transaction) async {
+        // 4. قراءة الدوكيومنت:
+        // بنقرأ الموعد من السيرفر عشان نتأكد إذا في مريض ثاني كبس زر الحجز قبلنا بملي ثانية.
+        DocumentSnapshot snapshot = await transaction.get(apptRef);
+
+        // 5. فحص حالة الموعد:
+        // إذا الدوكيومنت موجود، يعني في حدا حجزه!
+        if (snapshot.exists) {
+          final data = snapshot.data() as Map<String, dynamic>;
+          // نتأكد إنه الموعد مش "ملغي" ولا "مرفوض" (لأنه لو ملغي بنقدر نرجع نحجزه).
+          if (data['status'] != 'cancelled' && data['status'] != 'rejected') {
+            // الموعد محجوز فعلياً! بنرفض العملية وبنرجع false.
+            return false;
+          }
+        }
+
+        // 6. الحجز الفعلي:
+        // إذا الموعد فاضي أو كان ملغي، بنحط الداتا تبعت المريض باستخدام دالة toMap() تبعت الموديل.
+        transaction.set(apptRef, appointment.toMap());
+
+        // بنرجع true يعني الحجز تم بنجاح بدون أي تضارب.
+        return true;
+      });
+    } catch (e) {
+      // إذا صار أي إيرور بالاتصال، بنطبع الإيرور وبنرجع false عشان الواجهة تتصرف.
+      print("Transaction Error: $e");
+      return false;
+    }
   }
 
   /// Updates only the 'status' field of an appointment.
@@ -164,10 +206,7 @@ class DatabaseService {
   /// BEFORE: each of those screens called Firestore.doc().update() directly —
   ///         the same one-liner duplicated in 4+ places.
   Future<void> updateAppointmentStatus(String docId, String status) async {
-    await _db
-        .collection('appointments')
-        .doc(docId)
-        .update({'status': status});
+    await _db.collection('appointments').doc(docId).update({'status': status});
   }
 
   /// Permanently deletes an appointment document.
