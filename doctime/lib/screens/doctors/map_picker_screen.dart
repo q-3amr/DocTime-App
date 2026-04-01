@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart'; // لازم تضيف هاي المكتبة في pubspec.yaml
+import 'package:geolocator/geolocator.dart';
 
 class MapPickerScreen extends StatefulWidget {
   const MapPickerScreen({Key? key}) : super(key: key);
@@ -10,33 +10,77 @@ class MapPickerScreen extends StatefulWidget {
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
+  // موقع افتراضي (عمان) في حال فشل تحديد الموقع
   static const LatLng _initialPosition = LatLng(31.9539, 35.9106); 
   LatLng? _pickedLocation;
   GoogleMapController? _mapController;
+  bool _isLoading = false;
 
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
   }
 
-  // دالة لتحديد الموقع الحالي ونقل الكاميرا إليه
-  Future<void> _goToCurrentLocation() async {
-    // نطلب الإذن من المستخدم للوصول للموقع
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
+  // دالة لإظهار رسائل الخطأ للمستخدم
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color),
+    );
+  }
 
-    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
-      Position position = await Geolocator.getCurrentPosition();
+  // الدالة المعدلة لجلب الموقع الحالي بدون كراش
+  Future<void> _goToCurrentLocation() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      bool serviceEnabled;
+      LocationPermission permission;
+
+      // 1. التأكد من تفعيل الـ GPS في الجهاز
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _showSnackBar("يرجى تفعيل خدمات الموقع (GPS) من إعدادات الجهاز", Colors.orange);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // 2. التأكد من الصلاحيات
+      permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _showSnackBar("تم رفض صلاحية الوصول للموقع", Colors.red);
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _showSnackBar("صلاحية الموقع مرفوضة دائماً، يرجى تفعيلها من الإعدادات", Colors.red);
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // 3. جلب الموقع مع "وقت انتظار" (Timeout) لمنع تعليق التطبيق
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10), // إذا تأخر الرد أكتر من 10 ثواني بوقف
+      );
+
       LatLng currentLatLng = LatLng(position.latitude, position.longitude);
       
+      // تحريك الكاميرا للموقع الجديد
       _mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(currentLatLng, 15),
       );
       
       setState(() {
         _pickedLocation = currentLatLng;
+        _isLoading = false;
       });
+
+    } catch (e) {
+      _showSnackBar("حدث خطأ أثناء جلب الموقع: $e", Colors.red);
+      setState(() => _isLoading = false);
     }
   }
 
@@ -51,10 +95,13 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('حدد موقع العيادة'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
         actions: [
           if (_pickedLocation != null)
             IconButton(
-              icon: const Icon(Icons.check, color: Colors.green, size: 30),
+              icon: const Icon(Icons.check_circle, color: Colors.green, size: 30),
               onPressed: () => Navigator.of(context).pop(_pickedLocation),
             ),
         ],
@@ -68,8 +115,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               zoom: 13,
             ),
             onTap: _selectLocation,
-            myLocationEnabled: true, // بظهر النقطة الزرقاء تاعت موقعك
-            myLocationButtonEnabled: false, // بنطفي الزر الأصلي عشان نتحكم بمكانه
+            myLocationEnabled: true, 
+            myLocationButtonEnabled: false, 
             markers: _pickedLocation == null
                 ? {}
                 : {
@@ -79,13 +126,20 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     ),
                   },
           ),
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator()),
         ],
       ),
-      // زر تحديد الموقع التلقائي بشكل أجمل
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _goToCurrentLocation,
-        label: const Text('موقعي الحالي'),
-        icon: const Icon(Icons.my_location),
+        onPressed: _isLoading ? null : _goToCurrentLocation,
+        label: Text(_isLoading ? 'جاري التحديد...' : 'موقعي الحالي'),
+        icon: _isLoading 
+            ? const SizedBox(
+                width: 20, 
+                height: 20, 
+                child: CircularProgressIndicator(color: Colors.blue, strokeWidth: 2)
+              )
+            : const Icon(Icons.my_location),
         backgroundColor: Colors.white,
         foregroundColor: Colors.blue,
       ),
