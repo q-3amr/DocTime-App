@@ -15,9 +15,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // إضافة الخرائط
 import '../../services/auth_service.dart';
-import '../../utils/constants.dart'; // kPrimaryBlue + kSpecialties — were local copies before
+import '../../utils/constants.dart';
 import 'login_screen.dart';
+import 'map_picker_screen.dart'; // استدعاء شاشة الخريطة (تأكد من مسارها صح عندك)
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -41,6 +43,27 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isObscureConfirm = true;
   bool isDoctor = false;
 
+  // متغيرات لتخزين موقع الدكتور
+  double? _selectedLatitude;
+  double? _selectedLongitude;
+
+  // دالة فتح الخريطة واسترجاع الموقع
+  Future<void> _openMapPicker() async {
+    final LatLng? pickedLocation = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const MapPickerScreen()),
+    );
+
+    if (pickedLocation != null) {
+      setState(() {
+        _selectedLatitude = pickedLocation.latitude;
+        _selectedLongitude = pickedLocation.longitude;
+        // بنغير النص اللي جوا الحقل عشان نأكد للدكتور إنه اختار موقع
+        locationController.text = '📍 تم تحديد الموقع بنجاح';
+      });
+    }
+  }
+
   void handleSignup() async {
     if (passwordController.text != confirmPassController.text) {
       _showError('Passwords do not match!');
@@ -53,8 +76,9 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
     if (isDoctor) {
-      if (selectedSpecialty == null || locationController.text.trim().isEmpty) {
-        _showError('Please fill all doctor fields!');
+      // ضفنا شرط نتأكد إنه جاب الإحداثيات كمان
+      if (selectedSpecialty == null || locationController.text.trim().isEmpty || _selectedLatitude == null) {
+        _showError('Please fill all doctor fields and pick a location!');
         return;
       }
     }
@@ -69,6 +93,9 @@ class _SignupScreenState extends State<SignupScreen> {
         role: isDoctor ? 'doctor' : 'patient',
         specialty: isDoctor ? selectedSpecialty : null,
         location: isDoctor ? locationController.text.trim() : null,
+        // بعثنا الإحداثيات للخدمة (هون رح يعطيك خط أحمر لحد ما نعدل AuthService)
+        latitude: isDoctor ? _selectedLatitude : null,
+        longitude: isDoctor ? _selectedLongitude : null,
       );
 
       // Sign out immediately so the user can log in manually.
@@ -251,12 +278,14 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               const SizedBox(height: 20),
                               _buildField(
-                                label: 'Location',
+                                label: 'Clinic Location',
                                 controller: locationController,
-                                hint: 'e.g. Amman, Irbid',
-                                icon: Icons.location_on_outlined,
+                                hint: 'Tap to pick location from map', // غيرنا النص
+                                icon: Icons.map_outlined, // غيرنا الأيقونة لشكل خريطة
                                 borderColor: borderColor,
                                 labelColor: labelColor,
+                                readOnly: true, // عشان ما يكتب بإيده
+                                onTap: _openMapPicker, // عشان تفتح الخريطة بس يكبس
                               ),
                             ],
                           )
@@ -415,6 +444,8 @@ class _SignupScreenState extends State<SignupScreen> {
     bool isPass = false,
     bool isObscure = false,
     VoidCallback? onEyeTap,
+    bool readOnly = false, // ضفناها هون عشان نقفل الكتابة
+    VoidCallback? onTap,   // ضفناها هون عشان ننفذ أمر لما يكبس
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,6 +462,8 @@ class _SignupScreenState extends State<SignupScreen> {
         TextField(
           controller: controller,
           obscureText: isPass ? isObscure : false,
+          readOnly: readOnly, // تفعيل خاصية القراءة فقط
+          onTap: onTap,       // تفعيل زر الكبس
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           decoration: InputDecoration(
             hintText: hint,
