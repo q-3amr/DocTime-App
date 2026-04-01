@@ -10,8 +10,8 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   // موقع افتراضي (مثلاً حطيناه بنص عمان، بتقدر تغيره لأربد إذا بدك)
-  static const LatLng _initialPosition = LatLng(31.9539, 35.9106); 
-  
+  static const LatLng _initialPosition = LatLng(31.9539, 35.9106);
+
   LatLng? _pickedLocation;
   GoogleMapController? _mapController;
 

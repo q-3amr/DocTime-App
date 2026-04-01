@@ -75,7 +75,7 @@ class AuthService {
     required String role,
     String? specialty,
     String? location,
-    double? latitude,  // إضافة جديدة: خط العرض
+    double? latitude, // إضافة جديدة: خط العرض
     double? longitude, // إضافة جديدة: خط الطول
   }) async {
     try {
@@ -95,7 +95,7 @@ class AuthService {
         profileImage: '',
         specialty: role == 'doctor' ? (specialty ?? 'General') : null,
         location: role == 'doctor' ? (location ?? 'Amman') : null,
-        latitude: role == 'doctor' ? latitude : null,   // ربطناه هون
+        latitude: role == 'doctor' ? latitude : null, // ربطناه هون
         longitude: role == 'doctor' ? longitude : null, // وربطناه هون
         rating: role == 'doctor' ? 0.0 : null,
         about: role == 'doctor' ? 'New Doctor' : null,

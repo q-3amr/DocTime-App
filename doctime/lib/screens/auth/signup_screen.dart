@@ -19,7 +19,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'; // إضافة ا�
 import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import 'login_screen.dart';
-import 'map_picker_screen.dart'; // استدعاء شاشة الخريطة (تأكد من مسارها صح عندك)
+import '/screens/doctors/map_picker_screen.dart'; // استدعاء شاشة الخريطة (تأكد من مسارها صح عندك)
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -77,7 +77,9 @@ class _SignupScreenState extends State<SignupScreen> {
     }
     if (isDoctor) {
       // ضفنا شرط نتأكد إنه جاب الإحداثيات كمان
-      if (selectedSpecialty == null || locationController.text.trim().isEmpty || _selectedLatitude == null) {
+      if (selectedSpecialty == null ||
+          locationController.text.trim().isEmpty ||
+          _selectedLatitude == null) {
         _showError('Please fill all doctor fields and pick a location!');
         return;
       }
@@ -130,7 +132,8 @@ class _SignupScreenState extends State<SignupScreen> {
   void _showError(String message) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+    ).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.red));
   }
 
   @override
@@ -143,7 +146,8 @@ class _SignupScreenState extends State<SignupScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -192,7 +196,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   labelColor: labelColor,
                   isPass: true,
                   isObscure: isObscurePass,
-                  onEyeTap: () => setState(() => isObscurePass = !isObscurePass),
+                  onEyeTap: () =>
+                      setState(() => isObscurePass = !isObscurePass),
                 ),
                 const SizedBox(height: 20),
                 _buildField(
@@ -204,9 +209,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   labelColor: labelColor,
                   isPass: true,
                   isObscure: isObscureConfirm,
-                  onEyeTap:
-                      () =>
-                          setState(() => isObscureConfirm = !isObscureConfirm),
+                  onEyeTap: () =>
+                      setState(() => isObscureConfirm = !isObscureConfirm),
                 ),
                 const SizedBox(height: 25),
                 // Doctor toggle
@@ -216,10 +220,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        isDoctor
-                            ? kPrimaryBlue.withOpacity(0.1)
-                            : Colors.grey.shade50,
+                    color: isDoctor
+                        ? kPrimaryBlue.withOpacity(0.1)
+                        : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDoctor ? kPrimaryBlue : borderColor,
@@ -266,30 +269,32 @@ class _SignupScreenState extends State<SignupScreen> {
                       child: FadeTransition(opacity: animation, child: child),
                     );
                   },
-                  child:
-                      isDoctor
-                          ? Column(
-                            key: const ValueKey('doctor_fields'),
-                            children: [
-                              const SizedBox(height: 20),
-                              _buildSpecialtyDropdown(
-                                labelColor: labelColor,
-                                borderColor: borderColor,
-                              ),
-                              const SizedBox(height: 20),
-                              _buildField(
-                                label: 'Clinic Location',
-                                controller: locationController,
-                                hint: 'Tap to pick location from map', // غيرنا النص
-                                icon: Icons.map_outlined, // غيرنا الأيقونة لشكل خريطة
-                                borderColor: borderColor,
-                                labelColor: labelColor,
-                                readOnly: true, // عشان ما يكتب بإيده
-                                onTap: _openMapPicker, // عشان تفتح الخريطة بس يكبس
-                              ),
-                            ],
-                          )
-                          : const SizedBox.shrink(key: ValueKey('empty')),
+                  child: isDoctor
+                      ? Column(
+                          key: const ValueKey('doctor_fields'),
+                          children: [
+                            const SizedBox(height: 20),
+                            _buildSpecialtyDropdown(
+                              labelColor: labelColor,
+                              borderColor: borderColor,
+                            ),
+                            const SizedBox(height: 20),
+                            _buildField(
+                              label: 'Clinic Location',
+                              controller: locationController,
+                              hint:
+                                  'Tap to pick location from map', // غيرنا النص
+                              icon: Icons
+                                  .map_outlined, // غيرنا الأيقونة لشكل خريطة
+                              borderColor: borderColor,
+                              labelColor: labelColor,
+                              readOnly: true, // عشان ما يكتب بإيده
+                              onTap:
+                                  _openMapPicker, // عشان تفتح الخريطة بس يكبس
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(key: ValueKey('empty')),
                 ),
                 const SizedBox(height: 30),
                 SizedBox(
@@ -304,20 +309,19 @@ class _SignupScreenState extends State<SignupScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child:
-                        isLoading
-                            ? const CircularProgressIndicator(
+                    child: isLoading
+                        ? const CircularProgressIndicator(
+                            color: Colors.white,
+                          )
+                        : const Text(
+                            'Sign Up',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                               color: Colors.white,
-                            )
-                            : const Text(
-                              'Sign Up',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 1,
-                              ),
+                              letterSpacing: 1,
                             ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -333,13 +337,12 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap:
-                          () => Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                            ),
-                          ),
+                      onTap: () => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
+                      ),
                       child: const Text(
                         'Login',
                         style: TextStyle(
@@ -417,16 +420,14 @@ class _SignupScreenState extends State<SignupScreen> {
                 color: Colors.black87,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-              items:
-                  kSpecialties.map((String specialty) {
-                    return DropdownMenuItem<String>(
-                      value: specialty,
-                      child: Text(specialty),
-                    );
-                  }).toList(),
-              onChanged:
-                  (String? newValue) =>
-                      setState(() => selectedSpecialty = newValue),
+              items: kSpecialties.map((String specialty) {
+                return DropdownMenuItem<String>(
+                  value: specialty,
+                  child: Text(specialty),
+                );
+              }).toList(),
+              onChanged: (String? newValue) =>
+                  setState(() => selectedSpecialty = newValue),
             ),
           ),
         ),
@@ -445,7 +446,7 @@ class _SignupScreenState extends State<SignupScreen> {
     bool isObscure = false,
     VoidCallback? onEyeTap,
     bool readOnly = false, // ضفناها هون عشان نقفل الكتابة
-    VoidCallback? onTap,   // ضفناها هون عشان ننفذ أمر لما يكبس
+    VoidCallback? onTap, // ضفناها هون عشان ننفذ أمر لما يكبس
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,7 +464,7 @@ class _SignupScreenState extends State<SignupScreen> {
           controller: controller,
           obscureText: isPass ? isObscure : false,
           readOnly: readOnly, // تفعيل خاصية القراءة فقط
-          onTap: onTap,       // تفعيل زر الكبس
+          onTap: onTap, // تفعيل زر الكبس
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           decoration: InputDecoration(
             hintText: hint,
@@ -486,19 +487,18 @@ class _SignupScreenState extends State<SignupScreen> {
               borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: kPrimaryBlue, width: 2.5),
             ),
-            suffixIcon:
-                isPass
-                    ? IconButton(
-                      icon: Icon(
-                        isObscure
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: Colors.grey.shade600,
-                        size: 26,
-                      ),
-                      onPressed: onEyeTap,
-                    )
-                    : Icon(icon, color: Colors.grey.shade400, size: 24),
+            suffixIcon: isPass
+                ? IconButton(
+                    icon: Icon(
+                      isObscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      color: Colors.grey.shade600,
+                      size: 26,
+                    ),
+                    onPressed: onEyeTap,
+                  )
+                : Icon(icon, color: Colors.grey.shade400, size: 24),
           ),
         ),
       ],
