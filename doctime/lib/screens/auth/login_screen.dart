@@ -83,8 +83,12 @@ class _LoginScreenState extends State<LoginScreen> {
           await _authService.signOut();
           if (!mounted) return;
           _showPendingApprovalDialog();
+        } else {
+          // Verified users: pop the login screen. AuthWrapper handles the home screen.
+          if (mounted) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
         }
-        // Verified users: do nothing here. AuthWrapper already navigated them.
       }
     } catch (e) {
       // AuthService throws a translated String, not a FirebaseAuthException.
@@ -139,17 +143,16 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showPendingApprovalDialog() {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Pending Approval'),
-            content: const Text('Your account is currently under review.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('Pending Approval'),
+        content: const Text('Your account is currently under review.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
           ),
+        ],
+      ),
     );
   }
 
@@ -182,12 +185,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Image.asset(
                             'assets/images/doctor_login.png',
                             fit: BoxFit.contain,
-                            errorBuilder:
-                                (c, e, s) => Icon(
-                                  Icons.image_not_supported,
-                                  size: 80,
-                                  color: Colors.grey.shade300,
-                                ),
+                            errorBuilder: (c, e, s) => Icon(
+                              Icons.image_not_supported,
+                              size: 80,
+                              color: Colors.grey.shade300,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -236,9 +238,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Colors.grey.shade600,
                                   size: 26,
                                 ),
-                                onPressed:
-                                    () =>
-                                        setState(() => isObscure = !isObscure),
+                                onPressed: () =>
+                                    setState(() => isObscure = !isObscure),
                               ),
                             ),
                           ),
@@ -271,20 +272,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            child:
-                                isLoading
-                                    ? const CircularProgressIndicator(
+                            child: isLoading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white,
+                                  )
+                                : const Text(
+                                    'Login',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
                                       color: Colors.white,
-                                    )
-                                    : const Text(
-                                      'Login',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 1,
-                                      ),
+                                      letterSpacing: 1,
                                     ),
+                                  ),
                           ),
                         ),
                         const Spacer(),
@@ -302,14 +302,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               GestureDetector(
-                                onTap:
-                                    () => Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) => const SignupScreen(),
-                                      ),
-                                    ),
+                                onTap: () => Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignupScreen(),
+                                  ),
+                                ),
                                 child: const Text(
                                   'Sign up',
                                   style: TextStyle(
