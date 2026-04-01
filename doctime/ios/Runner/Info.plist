@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- LAITH Add Permissions for location services to google maps -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>نحتاج موقعك لعرض الأطباء الأقرب إليك على الخريطة.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>نحتاج موقعك لتحديث المسافة بينك وبين الطبيب بشكل مستمر.</string>
 </dict>
 </plist>
