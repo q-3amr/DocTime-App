@@ -25,6 +25,7 @@
 
 // Uses shared parseDate() instead of duplicating Timestamp/String handling here.
 import '../utils/date_utils.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Represents a single document in the Firestore `appointments` collection.
 /// Field names in fromMap/toMap match the snake_case keys stored in Firestore.
@@ -77,7 +78,7 @@ class AppointmentModel {
       'doctor_name': doctorName,
       'patient_id': patientId,
       'patient_name': patientName,
-      'date': appointmentDateTime,
+      'date': Timestamp.fromDate(appointmentDateTime),
       'status': status,
       if (notes != null) 'notes': notes,
     };
