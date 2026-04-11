@@ -307,4 +307,21 @@ class DatabaseService {
         .doc(chatRoomId)
         .set(data, SetOptions(merge: true));
   }
+
+  Stream<List<UserModel>> streamUnverifiedDoctors() {
+    return _db
+        .collection('users')
+        .where('role', isEqualTo: 'doctor')
+        .where('isVerified', isEqualTo: false)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => UserModel.fromMap(doc.data(), doc.id))
+              .toList(),
+        );
+  }
+
+  Future<void> approveDoctor(String doctorId) async {
+    await _db.collection('users').doc(doctorId).update({'isVerified': true});
+  }
 }
