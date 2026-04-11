@@ -79,13 +79,16 @@ class _ChatScreenState extends State<ChatScreen> {
         centerTitle: true,
         title: Text(
           widget.receiverName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.w900,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: PreferredSize(
