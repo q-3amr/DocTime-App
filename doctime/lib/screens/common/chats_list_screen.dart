@@ -155,29 +155,52 @@ class ChatsListScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 15),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
                               children: [
-                                Text(
-                                  name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        chatData['lastMessage'] ??
+                                            'Start chatting...',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  chatData['lastMessage'] ??
-                                      'Start chatting...',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 14,
+
+                                // --- إضافة نقطة الإشعار الزرقاء هنا ---
+                                // بتظهر فقط إذا كان آخر مرسل مش أنا (يعني الطرف الثاني)
+                                // وإذا كان السيستم مسجل إنها غير مقروءة
+                                if (chatData['lastMessageSenderId'] !=
+                                        currentUser?.uid &&
+                                    chatData['isRead'] == false)
+                                  Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: const BoxDecoration(
+                                      color: Color(
+                                          0xFF407CE2), // اللون الأزرق تبعك
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),

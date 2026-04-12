@@ -64,6 +64,8 @@ class _ChatScreenState extends State<ChatScreen> {
       'lastMessage': msg,
       'lastMessageTime': now,
       'users': {_currentUserId: true, widget.receiverId: true},
+      'lastMessageSenderId': _currentUserId,
+      'isRead': false,
     });
   }
 

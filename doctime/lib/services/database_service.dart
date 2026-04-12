@@ -10,8 +10,9 @@
 //
 // Added 16 new methods to cover: Users, Appointments, Availability, Chats.
 // ─────────────────────────────────────────────────────────────────────────────
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 import '../models/user.dart';
 import '../models/appointment.dart';
 
@@ -323,5 +324,30 @@ class DatabaseService {
 
   Future<void> approveDoctor(String doctorId) async {
     await _db.collection('users').doc(doctorId).update({'isVerified': true});
+  }
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NOTIFICATIONS (إعدادات الإشعارات)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /// وظيفة الدالة: تأخذ "هوية الجهاز" وتخزنها في ملف المستخدم بـ Firestore
+  /// لضمان وصول الإشعارات لهذا الشخص تحديداً.
+  Future<void> updateNotificationToken(String userId) async {
+    try {
+      // الحصول على الـ Token الفريد للجهاز من سيرفر Firebase
+      String? token = await FirebaseMessaging.instance.getToken();
+
+      if (token != null) {
+        // تحديث حقل الـ pushToken داخل وثيقة المستخدم في مجموعة users
+        await _db.collection('users').doc(userId).set(
+            {
+              'pushToken': token,
+            },
+            SetOptions(
+                merge:
+                    true)); // merge: true عشان ما يمسح بيانات المريض أو الدكتور
+      }
+    } catch (e) {
+      print("Error updating notification token: $e");
+    }
   }
 }
