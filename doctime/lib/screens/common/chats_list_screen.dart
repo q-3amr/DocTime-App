@@ -1,27 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. CHATS STREAM REPLACED:
-//    BEFORE: StreamBuilder<QuerySnapshot> from FirebaseFirestore.instance directly:
-//      .collection('chats').where('participants', arrayContains: uid).snapshots()
-//    NOW: DatabaseService().streamChats(uid)
-//
-// 2. USER FETCH REPLACED + TYPE IMPROVED:
-//    BEFORE: private _getOtherUserData(uid) calling Firestore directly, returning
-//    a DocumentSnapshot. FutureBuilder<DocumentSnapshot> then cast it to Map.
-//    NOW: DatabaseService().getUserById(uid) returns UserModel?.
-//    FutureBuilder<UserModel?> — access .name directly, no Map casting.
-//
-// 3. kPrimaryBlue FROM CONSTANTS:
-//    BEFORE: primaryBlue was a local Color variable.
-//    NOW: kPrimaryBlue imported from utils/constants.dart.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/database_service.dart'; // replaces direct Firestore calls
-import '../../models/user.dart'; // FutureBuilder now uses UserModel? instead of DocumentSnapshot
-import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
+import 'package:cloud_firestore/cloud_firestore.dart'; // سطر ضروري للترتيب والبيانات
+import '../../services/database_service.dart';
+import '../../models/user.dart';
+import '../../utils/constants.dart';
 import 'chat_screen.dart';
 
 class ChatsListScreen extends StatelessWidget {
@@ -53,9 +35,15 @@ class ChatsListScreen extends StatelessWidget {
             : null,
         automaticallyImplyLeading: false,
       ),
-      body: StreamBuilder<dynamic>(
-        stream:
-            currentUser?.uid != null ? db.streamChats(currentUser!.uid) : null,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: currentUser?.uid != null
+            ? FirebaseFirestore.instance
+                .collection('chats')
+                .where('participants', arrayContains: currentUser!.uid)
+                .orderBy('lastMessageTime',
+                    descending: true) // ترتيب تنازلي (الأحدث فوق)
+                .snapshots()
+            : null,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
@@ -185,10 +173,7 @@ class ChatsListScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-
-                                // --- إضافة نقطة الإشعار الزرقاء هنا ---
-                                // بتظهر فقط إذا كان آخر مرسل مش أنا (يعني الطرف الثاني)
-                                // وإذا كان السيستم مسجل إنها غير مقروءة
+                                // نقطة الإشعار الزرقاء
                                 if (chatData['lastMessageSenderId'] !=
                                         currentUser?.uid &&
                                     chatData['isRead'] == false)
@@ -196,8 +181,7 @@ class ChatsListScreen extends StatelessWidget {
                                     width: 12,
                                     height: 12,
                                     decoration: const BoxDecoration(
-                                      color: Color(
-                                          0xFF407CE2), // اللون الأزرق تبعك
+                                      color: Color(0xFF407CE2),
                                       shape: BoxShape.circle,
                                     ),
                                   ),

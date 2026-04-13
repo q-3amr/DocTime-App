@@ -36,6 +36,19 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _markAsRead(); // أول ما تفتح الشاشة بنخلي الرسائل مقروءة
+  }
+
+  void _markAsRead() async {
+    final chatRoomId = _chatRoomId(_currentUserId, widget.receiverId);
+    await _db.updateChatRoom(chatRoomId, {
+      'isRead': true, // هيك النقطة رح تختفي من الـ Dashboard والـ List
+    });
+  }
+
   final _db = DatabaseService();
   final TextEditingController _messageController = TextEditingController();
   final String _currentUserId = FirebaseAuth.instance.currentUser!.uid;

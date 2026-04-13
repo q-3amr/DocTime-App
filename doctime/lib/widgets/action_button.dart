@@ -1,31 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHY THIS FILE EXISTS:
-// patient_home_screen, doctor_home_screen, and guest_home_screen each had an
-// IDENTICAL private method called _buildActionBtn(icon, title, color, onTap).
-// Three copies = three places to update for any UI change.
-//
-// Extracted into a single shared StatelessWidget so all 3 screens import it.
-// Add it to any new screen that needs a grid action button.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
 
-/// Reusable grid action button.
-/// Used by: patient_home_screen, doctor_home_screen, guest_home_screen.
-///
-/// BEFORE: each of those screens had a private _buildActionBtn() method
-/// with identical code. Now they all use this shared widget.
 class ActionButton extends StatelessWidget {
-  // The icon shown inside the coloured circle.
-  final IconData icon;
-
-  // The label shown below the icon.
+  final dynamic icon; // بضل dynamic عشان العداد يشتغل
   final String title;
-
-  // The accent colour — used for the icon tint and the circle background.
   final Color color;
-
-  // What happens when the user taps the button.
   final VoidCallback onTap;
 
   const ActionButton({
@@ -42,12 +20,13 @@ class ActionButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.grey.shade200),
+          color: Colors.white, // رجعنا الخلفية بيضاء زي ما كانت
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: Colors.grey.shade100, width: 1.5), // رجعنا الحدود
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -56,20 +35,25 @@ class ActionButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Coloured circle background for the icon.
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withOpacity(0.1), // لون خفيف خلف الأيقونة
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 38),
+              child: icon is Widget
+                  ? icon
+                  : Icon(icon as IconData,
+                      color: color, size: 28), // الأيقونة بتاخد لونها الأصلي
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.black87, // رجعنا الخط غامق
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
           ],
         ),

@@ -1,34 +1,12 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. DIRECT FIRESTORE CALLS REPLACED:
-//    BEFORE: StreamBuilder<DocumentSnapshot> from FirebaseFirestore.instance directly
-//    for the user name, and another direct stream for appointments.
-//    NOW: DatabaseService().streamUser(uid) — typed Stream<UserModel?>, no Map casting.
-//         DatabaseService().streamAcceptedAppointmentsForPatient(uid) for the banner.
-//
-// 2. ActionButton WIDGET USED:
-//    BEFORE: had a private _buildActionBtn(icon, title, color, onTap) method.
-//    NOW: uses shared ActionButton from widgets/action_button.dart.
-//    (same widget was duplicated in doctor_home_screen and guest_home_screen).
-//
-// 3. ScheduleScreen RECEIVES isDoctor PARAMETER:
-//    BEFORE: const ScheduleScreen() — screen fetched role from Firestore on every mount.
-//    NOW: const ScheduleScreen(isDoctor: false) — zero network call for role.
-//
-// 4. kPrimaryBlue AND kSpecialties FROM CONSTANTS:
-//    BEFORE: primaryBlue was a local Color variable in this file.
-//    NOW: kPrimaryBlue imported from utils/constants.dart.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import '../../services/database_service.dart'; // replaces all direct Firestore calls
+import '../../services/database_service.dart';
 import '../../models/user.dart';
-import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
-import '../../utils/date_utils.dart'; // parseDate shared helper
-import '../../widgets/action_button.dart'; // replaces private _buildActionBtn method
+import '../../utils/constants.dart';
+import '../../utils/date_utils.dart';
+import '../../widgets/action_button.dart';
 import 'doctor_search_screen.dart';
 import 'ai_chat_screen.dart';
 import '../common/schedule_screen.dart';
@@ -54,13 +32,16 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final String _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
+          border:
+              Border(top: BorderSide(color: Colors.grey.shade100, width: 1)),
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.white,
@@ -70,26 +51,67 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           unselectedItemColor: Colors.grey.shade400,
           currentIndex: _selectedIndex,
           onTap: (index) => setState(() => _selectedIndex = index),
-          items: const [
+          items: [
+            const BottomNavigationBarItem(
+                icon: Icon(Icons.home_rounded), label: 'Home'),
+            const BottomNavigationBarItem(
+                icon: Icon(Icons.calendar_today_rounded), label: 'My Bookings'),
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_rounded),
-              label: 'My Bookings',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.chat_bubble_outline_rounded),
+              icon: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('chats')
+                    .where('participants', arrayContains: _uid)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  int unreadCount = 0;
+                  if (snapshot.hasData) {
+                    unreadCount = snapshot.data!.docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      if (data.containsKey('isRead') &&
+                          data.containsKey('lastMessageSenderId')) {
+                        return data['isRead'] == false &&
+                            data['lastMessageSenderId'] != _uid;
+                      }
+                      return false;
+                    }).length;
+                  }
+                  return _buildBadgeIcon(
+                      Icons.chat_bubble_outline_rounded, unreadCount);
+                },
+              ),
               label: 'Messages',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded),
-              label: 'Profile',
-            ),
+            const BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline_rounded), label: 'Profile'),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildBadgeIcon(IconData icon, int count) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        if (count > 0)
+          Positioned(
+            right: -6,
+            top: -6,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                  color: Colors.red, shape: BoxShape.circle),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Text('$count',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -98,7 +120,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
 class PatientHomeContent extends StatefulWidget {
   const PatientHomeContent({super.key});
-
   @override
   State<PatientHomeContent> createState() => _PatientHomeContentState();
 }
@@ -107,21 +128,161 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
   final _db = DatabaseService();
   final User? user = FirebaseAuth.instance.currentUser;
   Timer? _timer;
+  StreamSubscription? _feedbackListener;
+  final TextEditingController _feedbackController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Refresh the countdown banner every minute.
-    _timer = Timer.periodic(
-      const Duration(minutes: 1),
-      (timer) { if (mounted) setState(() {}); },
-    );
+    _startFeedbackListener();
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _feedbackListener?.cancel();
+    _feedbackController.dispose();
     super.dispose();
+  }
+
+  void _startFeedbackListener() {
+    if (user?.uid == null) return;
+    _feedbackListener = FirebaseFirestore.instance
+        .collection('appointments')
+        .where('patient_id', isEqualTo: user!.uid)
+        .where('status', isEqualTo: 'completed')
+        .snapshots()
+        .listen((snapshot) {
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['hasFeedback'] != true) {
+          _showFeedbackPopup(context, doc.id);
+          break;
+        }
+      }
+    });
+  }
+
+  void _showFeedbackPopup(BuildContext context, String appointmentId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.stars_rounded,
+                        color: Colors.amber, size: 50),
+                    const SizedBox(height: 10),
+                    const Text('Feedback',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w900, fontSize: 22)),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'Your appointment has finished!\nPlease share your experience with us.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // --- مكان النجوم (شريكك يضع الكود هنا) ---
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(15),
+                        border:
+                            Border.all(color: Colors.amber.withOpacity(0.3)),
+                      ),
+                      child: const Column(
+                        children: [
+                          Text("⭐⭐⭐⭐⭐", style: TextStyle(fontSize: 30)),
+                          SizedBox(height: 5),
+                          Text("(Place Rating Stars Here)",
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.amber,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _feedbackController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Write your feedback here...',
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
+                            borderSide:
+                                BorderSide(color: Colors.grey.shade200)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kPrimaryBlue,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
+                        onPressed: () async {
+                          // إرسال التعليق للفايربيس
+                          await FirebaseFirestore.instance
+                              .collection('appointments')
+                              .doc(appointmentId)
+                              .update({
+                            'hasFeedback': true,
+                            'feedback_text': _feedbackController.text,
+                            'rating': 5.0, // قيمة مؤقتة
+                          });
+                          _feedbackController.clear();
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Confirm',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                right: 10,
+                top: 10,
+                child: IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                  onPressed: () async {
+                    await FirebaseFirestore.instance
+                        .collection('appointments')
+                        .doc(appointmentId)
+                        .update({'hasFeedback': true});
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -130,139 +291,78 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
       body: Stack(
         children: [
           Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [kPrimaryBlue.withOpacity(0.15), Colors.white],
-                stops: const [0.0, 0.4],
-              ),
-            ),
-          ),
+              decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [kPrimaryBlue.withOpacity(0.15), Colors.white],
+                      stops: const [0.0, 0.4]))),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Greeting row
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hello,',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 16,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                              Text('Hello,',
+                                  style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 16)),
+                              StreamBuilder<UserModel?>(
+                                stream: user?.uid != null
+                                    ? _db.streamUser(user!.uid)
+                                    : null,
+                                builder: (context, snapshot) {
+                                  String name =
+                                      snapshot.data?.name ?? 'Patient';
+                                  return Text(name.split(' ')[0],
+                                      style: const TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w900));
+                                },
                               ),
-                            ),
-                            StreamBuilder<UserModel?>(
-                              stream:
-                                  user?.uid != null
-                                      ? _db.streamUser(user!.uid)
-                                      : null,
-                              builder: (context, snapshot) {
-                                String fullName =
-                                    snapshot.data?.name ?? 'Patient';
-                                List<String> parts = fullName.trim().split(' ');
-                                String display =
-                                    parts.length > 2
-                                        ? '${parts[0]} ${parts[1]}'
-                                        : fullName;
-                                return Text(
-                                  display,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 2,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: kPrimaryBlue.withOpacity(0.5),
-                            width: 2,
-                          ),
-                          color: Colors.white,
-                        ),
-                        child: CircleAvatar(
-                          radius: 24,
-                          backgroundColor: const Color(0xFFE0E7FF),
-                          child: Icon(
-                            Icons.person,
-                            color: kPrimaryBlue,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                            ])),
+                        CircleAvatar(
+                            radius: 24,
+                            backgroundColor: const Color(0xFFE0E7FF),
+                            child: Icon(Icons.person,
+                                color: kPrimaryBlue, size: 28)),
+                      ]),
                   const SizedBox(height: 30),
-
-                  // Upcoming appointment banner
                   StreamBuilder<dynamic>(
-                    stream:
-                        user?.uid != null
-                            ? _db.streamAcceptedAppointmentsForPatient(
-                              user!.uid,
-                            )
-                            : null,
+                    stream: user?.uid != null
+                        ? _db.streamAcceptedAppointmentsForPatient(user!.uid)
+                        : null,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) return _buildEmptyBanner();
-
                       var docs = snapshot.data!.docs;
-                      var futureAppointments =
-                          docs
-                              .map((doc) {
-                                final data = doc.data() as Map;
-                                return {
-                                  'data': data,
-                                  'date': parseDate(data['date']),
-                                };
+                      var future = docs
+                          .map((doc) => {
+                                'data': doc.data() as Map,
+                                'date': parseDate((doc.data() as Map)['date'])
                               })
-                              .where(
-                                (item) =>
-                                    (item['date'] as DateTime).isAfter(
-                                      DateTime.now(),
-                                    ),
-                              )
-                              .toList();
-
-                      if (futureAppointments.isEmpty) return _buildEmptyBanner();
-
-                      futureAppointments.sort(
-                        (a, b) => (a['date'] as DateTime).compareTo(
-                          b['date'] as DateTime,
-                        ),
-                      );
-                      final next = futureAppointments.first;
-
-                      return _buildTimerBanner(
-                        next['date'] as DateTime,
-                        (next['data'] as Map)['doctor_name'] ?? 'Doctor',
-                      );
+                          .where((item) => (item['date'] as DateTime)
+                              .isAfter(DateTime.now()))
+                          .toList();
+                      if (future.isEmpty) return _buildEmptyBanner();
+                      future.sort((a, b) => (a['date'] as DateTime)
+                          .compareTo(b['date'] as DateTime));
+                      final next = future.first;
+                      return _buildTimerBanner(next['date'] as DateTime,
+                          (next['data'] as Map)['doctor_name'] ?? 'Doctor');
                     },
                   ),
                   const SizedBox(height: 25),
-
-                  const Text(
-                    'Quick Actions',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                  ),
+                  const Text('Quick Actions',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 15),
-
                   Expanded(
                     child: GridView.count(
                       crossAxisCount: 2,
@@ -271,29 +371,22 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       childAspectRatio: 1.1,
                       children: [
                         ActionButton(
-                          icon: Icons.person_search_rounded,
-                          title: 'Find Doctor',
-                          color: Colors.blue,
-                          onTap:
-                              () => Navigator.push(
+                            icon: Icons.person_search_rounded,
+                            title: 'Find Doctor',
+                            color: Colors.blue,
+                            onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (c) => const DoctorSearchScreen(),
-                                ),
-                              ),
-                        ),
+                                    builder: (c) =>
+                                        const DoctorSearchScreen()))),
                         ActionButton(
-                          icon: Icons.smart_toy_rounded,
-                          title: 'AI Assistant',
-                          color: Colors.purple,
-                          onTap:
-                              () => Navigator.push(
+                            icon: Icons.smart_toy_rounded,
+                            title: 'AI Assistant',
+                            color: Colors.purple,
+                            onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (c) => const AiChatScreen(),
-                                ),
-                              ),
-                        ),
+                                    builder: (c) => const AiChatScreen()))),
                       ],
                     ),
                   ),
@@ -306,115 +399,79 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     );
   }
 
-  Widget _buildTimerBanner(DateTime apptDate, String doctorName) {
-    Duration diff = apptDate.difference(DateTime.now());
-    String timeText =
-        diff.inDays > 0
-            ? '${diff.inDays} Days, ${diff.inHours % 24} Hours'
-            : '${diff.inHours} Hours, ${diff.inMinutes % 60} Minutes';
-
+  Widget _buildTimerBanner(DateTime date, String name) {
+    Duration diff = date.difference(DateTime.now());
+    String timeText = diff.inDays > 0
+        ? '${diff.inDays} Days, ${diff.inHours % 24} Hours'
+        : '${diff.inHours} Hours, ${diff.inMinutes % 60} Minutes';
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [kPrimaryBlue, kPrimaryBlue.withOpacity(0.8)],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: kPrimaryBlue.withOpacity(0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Upcoming Appointment',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+            gradient: LinearGradient(
+                colors: [kPrimaryBlue, kPrimaryBlue.withOpacity(0.8)]),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                  color: kPrimaryBlue.withOpacity(0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10))
+            ]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Upcoming Appointment',
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 5),
-          Text(
-            timeText,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+          Text(timeText,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900)),
           const SizedBox(height: 5),
-          Text(
-            'with Dr. $doctorName',
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-          ),
-        ],
-      ),
-    );
+          Text('with Dr. $name',
+              style: const TextStyle(color: Colors.white, fontSize: 16))
+        ]));
   }
 
   Widget _buildEmptyBanner() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade200),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.grey.withOpacity(0.05),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10))
+            ]),
+        child: Row(children: [
           const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'No upcoming appointments yet.',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text('No upcoming appointments yet.',
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600)),
                 SizedBox(height: 5),
-                Text(
-                  'Book Now?',
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
+                Text('Book Now?',
+                    style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900))
+              ])),
           Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.calendar_month_rounded,
-              color: Colors.grey,
-              size: 30,
-            ),
-          ),
-        ],
-      ),
-    );
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                  color: Colors.grey.shade100, shape: BoxShape.circle),
+              child: const Icon(Icons.calendar_month_rounded,
+                  color: Colors.grey, size: 30))
+        ]));
   }
 }
