@@ -15,7 +15,6 @@ import 'doctor_reviews_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
-
   @override
   State<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
 }
@@ -25,17 +24,17 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String _uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final List<Widget> _pages = [
+    final String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final List<Widget> pages = [
       const DoctorDashboard(),
       const ScheduleScreen(isDoctor: true),
       const DoctorRequestsScreen(),
-      const ProfileScreen(),
+      const ProfileScreen()
     ];
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: IndexedStack(index: _selectedIndex, children: _pages),
+      body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
             color: Colors.white,
@@ -58,7 +57,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
               icon: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('appointments')
-                    .where('doctor_id', isEqualTo: _uid)
+                    .where('doctor_id', isEqualTo: uid)
                     .where('status', isEqualTo: 'pending')
                     .snapshots(),
                 builder: (context, snapshot) {
@@ -160,12 +159,12 @@ class DoctorDashboard extends StatelessWidget {
                         return const Center(child: CircularProgressIndicator());
                       final docs = snapshot.data!.docs;
 
-                      // --- منطق عداد المراجعات الجديد (يصفر عند المشاهدة) ---
-                      final int newReviewsCount = docs.where((d) {
+                      // --- فحص النقطة الزرقاء (الشرط المعدل ليشمل القديم والجديد) ---
+                      final bool hasNewReview = docs.any((d) {
                         final data = d.data() as Map<String, dynamic>;
                         return data['hasFeedback'] == true &&
-                            data['isReviewSeen'] == false;
-                      }).length;
+                            data['isReviewSeen'] != true;
+                      });
 
                       final int upcoming = docs
                           .where((d) =>
@@ -225,13 +224,29 @@ class DoctorDashboard extends StatelessWidget {
                             mainAxisSpacing: 20,
                             childAspectRatio: 1.1,
                             children: [
-                              // زر التقييمات الجديد (يظهر الرقم فقط للتعليقات غير المشاهدة)
                               ActionButton(
-                                icon: const Icon(Icons.star_rate_rounded,
-                                    color: Colors.amber, size: 32),
-                                title: newReviewsCount > 0
-                                    ? 'Reviews ($newReviewsCount)'
-                                    : 'Reviews',
+                                icon: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    const Icon(Icons.star_rate_rounded,
+                                        color: Colors.amber, size: 32),
+                                    if (hasNewReview)
+                                      Positioned(
+                                        right: -2,
+                                        top: -2,
+                                        child: Container(
+                                            width: 12,
+                                            height: 12,
+                                            decoration: BoxDecoration(
+                                                color: Colors.blue,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 2))),
+                                      ),
+                                  ],
+                                ),
+                                title: 'Reviews',
                                 color: Colors.amber,
                                 onTap: () => Navigator.push(
                                     context,
@@ -239,14 +254,12 @@ class DoctorDashboard extends StatelessWidget {
                                         builder: (c) =>
                                             const DoctorReviewsScreen())),
                               ),
-
                               ActionButton(
                                   icon: const Icon(Icons.calendar_today_rounded,
                                       color: Colors.orange, size: 28),
                                   title: '$upcoming Upcoming',
                                   color: Colors.orange,
                                   onTap: () {}),
-
                               ActionButton(
                                   icon: const Icon(Icons.chat_bubble_rounded,
                                       color: Colors.indigo, size: 28),
@@ -257,7 +270,6 @@ class DoctorDashboard extends StatelessWidget {
                                       MaterialPageRoute(
                                           builder: (c) =>
                                               const ChatsListScreen()))),
-
                               ActionButton(
                                   icon: const Icon(
                                       Icons.access_time_filled_rounded,
@@ -270,7 +282,6 @@ class DoctorDashboard extends StatelessWidget {
                                       MaterialPageRoute(
                                           builder: (c) =>
                                               const ManageSlotsScreen()))),
-
                               ActionButton(
                                   icon: const Icon(Icons.person_search_rounded,
                                       color: Colors.blue, size: 28),

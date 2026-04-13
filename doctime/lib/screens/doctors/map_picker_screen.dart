@@ -3,7 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
 class MapPickerScreen extends StatefulWidget {
-  const MapPickerScreen({Key? key}) : super(key: key);
+  const MapPickerScreen({super.key});
 
   @override
   State<MapPickerScreen> createState() => _MapPickerScreenState();
@@ -11,7 +11,7 @@ class MapPickerScreen extends StatefulWidget {
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
   // موقع افتراضي (عمان) في حال فشل تحديد الموقع
-  static const LatLng _initialPosition = LatLng(31.9539, 35.9106); 
+  static const LatLng _initialPosition = LatLng(31.9539, 35.9106);
   LatLng? _pickedLocation;
   GoogleMapController? _mapController;
   bool _isLoading = false;
@@ -30,7 +30,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
   // الدالة المعدلة لجلب الموقع الحالي بدون كراش
   Future<void> _goToCurrentLocation() async {
     setState(() => _isLoading = true);
-    
+
     try {
       bool serviceEnabled;
       LocationPermission permission;
@@ -38,7 +38,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       // 1. التأكد من تفعيل الـ GPS في الجهاز
       serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _showSnackBar("يرجى تفعيل خدمات الموقع (GPS) من إعدادات الجهاز", Colors.orange);
+        _showSnackBar(
+            "يرجى تفعيل خدمات الموقع (GPS) من إعدادات الجهاز", Colors.orange);
         setState(() => _isLoading = false);
         return;
       }
@@ -55,7 +56,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showSnackBar("صلاحية الموقع مرفوضة دائماً، يرجى تفعيلها من الإعدادات", Colors.red);
+        _showSnackBar("صلاحية الموقع مرفوضة دائماً، يرجى تفعيلها من الإعدادات",
+            Colors.red);
         setState(() => _isLoading = false);
         return;
       }
@@ -63,21 +65,21 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       // 3. جلب الموقع مع "وقت انتظار" (Timeout) لمنع تعليق التطبيق
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10), // إذا تأخر الرد أكتر من 10 ثواني بوقف
+        timeLimit:
+            const Duration(seconds: 10), // إذا تأخر الرد أكتر من 10 ثواني بوقف
       );
 
       LatLng currentLatLng = LatLng(position.latitude, position.longitude);
-      
+
       // تحريك الكاميرا للموقع الجديد
       _mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(currentLatLng, 15),
       );
-      
+
       setState(() {
         _pickedLocation = currentLatLng;
         _isLoading = false;
       });
-
     } catch (e) {
       _showSnackBar("حدث خطأ أثناء جلب الموقع: $e", Colors.red);
       setState(() => _isLoading = false);
@@ -101,7 +103,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         actions: [
           if (_pickedLocation != null)
             IconButton(
-              icon: const Icon(Icons.check_circle, color: Colors.green, size: 30),
+              icon:
+                  const Icon(Icons.check_circle, color: Colors.green, size: 30),
               onPressed: () => Navigator.of(context).pop(_pickedLocation),
             ),
         ],
@@ -115,8 +118,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               zoom: 13,
             ),
             onTap: _selectLocation,
-            myLocationEnabled: true, 
-            myLocationButtonEnabled: false, 
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
             markers: _pickedLocation == null
                 ? {}
                 : {
@@ -126,19 +129,18 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     ),
                   },
           ),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator()),
+          if (_isLoading) const Center(child: CircularProgressIndicator()),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isLoading ? null : _goToCurrentLocation,
         label: Text(_isLoading ? 'جاري التحديد...' : 'موقعي الحالي'),
-        icon: _isLoading 
+        icon: _isLoading
             ? const SizedBox(
-                width: 20, 
-                height: 20, 
-                child: CircularProgressIndicator(color: Colors.blue, strokeWidth: 2)
-              )
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    color: Colors.blue, strokeWidth: 2))
             : const Icon(Icons.my_location),
         backgroundColor: Colors.white,
         foregroundColor: Colors.blue,

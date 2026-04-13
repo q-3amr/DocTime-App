@@ -116,8 +116,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 }
 
-// ── Home content tab ──────────────────────────────────────────────────────────
-
 class PatientHomeContent extends StatefulWidget {
   const PatientHomeContent({super.key});
   @override
@@ -195,8 +193,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       style: TextStyle(color: Colors.grey, fontSize: 14),
                     ),
                     const SizedBox(height: 20),
-
-                    // --- مكان النجوم (شريكك يضع الكود هنا) ---
                     Container(
                       padding: const EdgeInsets.all(15),
                       decoration: BoxDecoration(
@@ -217,7 +213,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 20),
                     TextField(
                       controller: _feedbackController,
@@ -243,14 +238,15 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                           padding: const EdgeInsets.symmetric(vertical: 15),
                         ),
                         onPressed: () async {
-                          // إرسال التعليق للفايربيس
+                          // تحديث قاعدة البيانات وتفعيل التنبيه (isReviewSeen: false)
                           await FirebaseFirestore.instance
                               .collection('appointments')
                               .doc(appointmentId)
                               .update({
                             'hasFeedback': true,
                             'feedback_text': _feedbackController.text,
-                            'rating': 5.0, // قيمة مؤقتة
+                            'isReviewSeen': false,
+                            'rating': 5.0,
                           });
                           _feedbackController.clear();
                           Navigator.pop(context);
