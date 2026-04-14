@@ -12,14 +12,17 @@
 // 2. SPECIALTIES LIST REMOVED (was a local copy):
 //    BEFORE: had its own List<String> specialties = [...] copy-pasted from other files.
 //    NOW: uses kSpecialties from utils/constants.dart — one source of truth.
+//
+// 3. MAP SCREEN UPDATED (NEW ARCHITECTURE):
+//    NOW: Navigates to the inherited DoctorMapScreen and awaits LatLng result.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // إضافة الخرائط
+import 'package:google_maps_flutter/google_maps_flutter.dart'; // 📍 إضافة مكتبة الخرائط عشان نتعرف على نوع البيانات LatLng
 import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import 'login_screen.dart';
-import '/screens/doctors/map_picker_screen.dart'; // استدعاء شاشة الخريطة (تأكد من مسارها صح عندك)
+import '../doctors/doctor_map_screen.dart'; // 📍 التعديل الأول: استدعينا شاشة الدكتور الجديدة اللي بتورث من الأب، بدل الشاشة القديمة
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -43,22 +46,29 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isObscureConfirm = true;
   bool isDoctor = false;
 
-  // متغيرات لتخزين موقع الدكتور
+  // 📍 التعديل الثاني: متغيرات لتخزين موقع الدكتور بدقة
+  // عملناهم double عشان الفايربيس بيستقبل خط الطول والعرض كأرقام عشرية
   double? _selectedLatitude;
   double? _selectedLongitude;
 
-  // دالة فتح الخريطة واسترجاع الموقع
+  // 📍 التعديل الثالث: دالة فتح الخريطة واسترجاع الموقع (أهم دالة)
   Future<void> _openMapPicker() async {
+    // 1. بنستخدم Navigator.push عشان نفتح شاشة الدكتور (DoctorMapScreen)
+    // وبنحط await لأننا بدنا نستنى الدكتور يخلص تحديد موقعه ويكبس "تأكيد"
+    // النتيجة اللي بترجع بنخزنها بمتغير اسمه pickedLocation ونوعه LatLng
     final LatLng? pickedLocation = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const MapPickerScreen()),
+      MaterialPageRoute(builder: (context) => const DoctorMapScreen()),
     );
 
+    // 2. بنفحص: هل الدكتور اختار موقع فعلاً؟ (لأنه ممكن يكبس زر الرجوع بدون ما يختار)
     if (pickedLocation != null) {
       setState(() {
+        // 3. إذا اختار، بنسحب خط العرض (latitude) وخط الطول (longitude) وبنخزنهم عندنا
         _selectedLatitude = pickedLocation.latitude;
         _selectedLongitude = pickedLocation.longitude;
-        // بنغير النص اللي جوا الحقل عشان نأكد للدكتور إنه اختار موقع
+
+        // 4. بنغير النص اللي جوا حقل الموقع عشان نعطي تنبيه بصري للدكتور إنه شغله صح وموقعه انحفظ
         locationController.text = '📍 تم تحديد الموقع بنجاح';
       });
     }
@@ -76,7 +86,8 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
     if (isDoctor) {
-      // ضفنا شرط نتأكد إنه جاب الإحداثيات كمان
+      // 📍 التعديل الرابع: حماية إضافية (Validation)
+      // ضفنا شرط `_selectedLatitude == null` عشان نمنع الدكتور من إنشاء حساب إذا ما كان فاتح الخريطة ومحدد موقعه
       if (selectedSpecialty == null ||
           locationController.text.trim().isEmpty ||
           _selectedLatitude == null) {
@@ -94,8 +105,11 @@ class _SignupScreenState extends State<SignupScreen> {
         name: nameController.text.trim(),
         role: isDoctor ? 'doctor' : 'patient',
         specialty: isDoctor ? selectedSpecialty : null,
+
+        // 📍 التعديل الخامس: إرسال بيانات الموقع للفايربيس
+        // location بيبعث النص (مثلاً: تم تحديد الموقع بنجاح)
         location: isDoctor ? locationController.text.trim() : null,
-        // بعثنا الإحداثيات للخدمة (هون رح يعطيك خط أحمر لحد ما نعدل AuthService)
+        // وهون بنبعث الإحداثيات الحقيقية للخدمة (طبعاً لازم خدمة AuthService تكون معدلة عشان تستقبلهم)
         latitude: isDoctor ? _selectedLatitude : null,
         longitude: isDoctor ? _selectedLongitude : null,
       );
@@ -279,18 +293,20 @@ class _SignupScreenState extends State<SignupScreen> {
                               borderColor: borderColor,
                             ),
                             const SizedBox(height: 20),
+
+                            // 📍 التعديل السادس: حقل العيادة بالواجهة
                             _buildField(
                               label: 'Clinic Location',
                               controller: locationController,
                               hint:
-                                  'Tap to pick location from map', // غيرنا النص
-                              icon: Icons
-                                  .map_outlined, // غيرنا الأيقونة لشكل خريطة
+                                  'Tap to pick location from map', // تم تغيير النص لتوضيح المطلوب
+                              icon: Icons.map_outlined, // استخدمنا أيقونة خريطة
                               borderColor: borderColor,
                               labelColor: labelColor,
-                              readOnly: true, // عشان ما يكتب بإيده
-                              onTap:
-                                  _openMapPicker, // عشان تفتح الخريطة بس يكبس
+                              // 📍 readOnly بتخلي الحقل للقراءة فقط، يعني الدكتور ما بيقدر يطبع فيه كيبورد
+                              readOnly: true,
+                              // 📍 onTap بتشتغل لما الدكتور يكبس على الحقل، وهون بننادي دالة فتح الخريطة اللي عملناها فوق
+                              onTap: _openMapPicker,
                             ),
                           ],
                         )
@@ -435,6 +451,8 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
+  // 📍 التعديل الأخير: تحديث تصميم الحقل (Widget)
+  // ضفنا readOnly و onTap عشان نقدر نستخدمهم بحقل الموقع تحديداً بدون ما نأثر على باقي الحقول زي الاسم والإيميل
   Widget _buildField({
     required String label,
     required TextEditingController controller,
@@ -445,8 +463,8 @@ class _SignupScreenState extends State<SignupScreen> {
     bool isPass = false,
     bool isObscure = false,
     VoidCallback? onEyeTap,
-    bool readOnly = false, // ضفناها هون عشان نقفل الكتابة
-    VoidCallback? onTap, // ضفناها هون عشان ننفذ أمر لما يكبس
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,8 +481,8 @@ class _SignupScreenState extends State<SignupScreen> {
         TextField(
           controller: controller,
           obscureText: isPass ? isObscure : false,
-          readOnly: readOnly, // تفعيل خاصية القراءة فقط
-          onTap: onTap, // تفعيل زر الكبس
+          readOnly: readOnly,
+          onTap: onTap,
           style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           decoration: InputDecoration(
             hintText: hint,
