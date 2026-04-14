@@ -21,12 +21,12 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   void onMapTapped(LatLng position);
 
   // ==========================================
-  // الشاشة المنبثقة (Dialog) زي اللي بالصورة
+  // الشاشة المنبثقة (Dialog) لتفعيل الـ GPS
   // ==========================================
   Future<void> _showLocationServiceDialog() async {
     return showDialog<void>(
       context: context,
-      barrierDismissible: false, // عشان ما يقدر يسكرها إلا إذا كبس كبسة
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           shape:
@@ -38,17 +38,14 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
           actions: <Widget>[
             TextButton(
               child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
-              onPressed: () {
-                Navigator.of(context).pop(); // بيسكر الشاشة
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
               child: const Text('الإعدادات',
                   style: TextStyle(color: Colors.white)),
               onPressed: () {
-                Geolocator
-                    .openLocationSettings(); // سحر! بفتح إعدادات التلفون فوراً
+                Geolocator.openLocationSettings();
                 Navigator.of(context).pop();
               },
             ),
@@ -59,23 +56,19 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   }
 
   // ==========================================
-  // اللوجيك المعقد للصلاحيات
+  // منطق جلب الموقع والصلاحيات
   // ==========================================
   Future<void> requestLocationAndGetPosition() async {
     setState(() => isLoading = true);
-
     try {
-      // 1. فحص الـ GPS
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         setState(() => isLoading = false);
-        await _showLocationServiceDialog(); // هون بنستدعي الشاشة تبعتك
+        await _showLocationServiceDialog();
         return;
       }
 
-      // 2. فحص الصلاحيات (هاي بتطلع شاشة النظام الافتراضية للسماح/الرفض)
       LocationPermission permission = await Geolocator.checkPermission();
-
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
@@ -90,7 +83,6 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
         return;
       }
 
-      // 3. الأمور تمام
       currentPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -126,30 +118,61 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
       ),
       body: Stack(
         children: [
+          // 1. الخريطة الأساسية
           GoogleMap(
             initialCameraPosition: initialPosition,
             onMapCreated: (controller) => mapController = controller,
             markers: markers,
             onTap: onMapTapped,
             myLocationEnabled: true,
-            myLocationButtonEnabled: false,
+            myLocationButtonEnabled:
+                false, // 📍 تم الإخفاء لاستخدام الزر المخصص
           ),
+
+          // 📍 2. الزر المخصص "موقعي الحالي" - مكانه على الشمال (Left)
+          Positioned(
+            // إذا كانت الشاشة السفلية موجودة، يرتفع الزر للأعلى قليلاً ليتجنب التداخل
+            bottom: buildBottomPanel() != null ? 140 : 20,
+            left: 16,
+            child: ElevatedButton.icon(
+              onPressed: isLoading ? null : requestLocationAndGetPosition,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.blue,
+                elevation: 5,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  side: const BorderSide(color: Colors.blue, width: 1),
+                ),
+              ),
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.blue))
+                  : const Icon(Icons.my_location, size: 20),
+              label: const Text(
+                'موقعي الحالي',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+
+          // 3. مؤشر التحميل (CircularProgress)
           if (isLoading) const Center(child: CircularProgressIndicator()),
+
+          // 4. الشاشة السفلية (Panel) تظهر إذا كان هناك بيانات (مثل تأكيد الموقع أو الاتجاهات)
           if (buildBottomPanel() != null)
             Positioned(
-                bottom: 0, left: 0, right: 0, child: buildBottomPanel()!),
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: buildBottomPanel()!,
+            ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: isLoading ? null : requestLocationAndGetPosition,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.blue,
-        child: isLoading
-            ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2))
-            : const Icon(Icons.my_location),
       ),
     );
   }
