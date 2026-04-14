@@ -126,14 +126,14 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
             onTap: onMapTapped,
             myLocationEnabled: true,
             myLocationButtonEnabled:
-                false, // 📍 تم الإخفاء لاستخدام الزر المخصص
+                false, // بنخليها false عشان نستخدم زرنا المخصص
+            zoomControlsEnabled: true, // 📍 رجعت فعلت لك أزرار التكبير والتصغير
           ),
 
-          // 📍 2. الزر المخصص "موقعي الحالي" - مكانه على الشمال (Left)
+          // 📍 2. زر "موقعي الحالي" (على الشمال)
           Positioned(
-            // إذا كانت الشاشة السفلية موجودة، يرتفع الزر للأعلى قليلاً ليتجنب التداخل
             bottom: buildBottomPanel() != null ? 140 : 20,
-            left: 16,
+            left: 16, // جهة اليسار
             child: ElevatedButton.icon(
               onPressed: isLoading ? null : requestLocationAndGetPosition,
               style: ElevatedButton.styleFrom(
@@ -161,10 +161,10 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
             ),
           ),
 
-          // 3. مؤشر التحميل (CircularProgress)
+          // 3. مؤشر التحميل
           if (isLoading) const Center(child: CircularProgressIndicator()),
 
-          // 4. الشاشة السفلية (Panel) تظهر إذا كان هناك بيانات (مثل تأكيد الموقع أو الاتجاهات)
+          // 4. الشاشة السفلية
           if (buildBottomPanel() != null)
             Positioned(
               bottom: 0,
