@@ -244,6 +244,12 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             doctorName: doctor.name,
             specialty: doctor.specialty ?? 'General',
             doctorId: doctor.id,
+            // ─────────────────────────────────────────────────────────
+            // 📍 تم التعديل هنا لتمرير البيانات الجغرافية لشاشة التفاصيل
+            // ─────────────────────────────────────────────────────────
+            latitude: doctor.latitude,
+            longitude: doctor.longitude,
+            distance: doctor.distance,
           ),
         ),
       ),
