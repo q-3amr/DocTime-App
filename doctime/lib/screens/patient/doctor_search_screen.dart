@@ -1,26 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. FIRESTORE STREAM REPLACED + TYPE IMPROVED:
-//    BEFORE: StreamBuilder<QuerySnapshot> from FirebaseFirestore.instance directly
-//    with raw doc['name'], doc['specialty'], doc.id access.
-//    NOW: DatabaseService().streamDoctors() returns Stream<List<UserModel>>.
-//    StreamBuilder<List<UserModel>> — access doctor.name, .specialty, .id directly.
-//
-// 2. SPECIALTIES LIST REPLACED:
-//    BEFORE: had its own local List<String> specialties = [...] copy-pasted from others.
-//    NOW: kSpecialties from utils/constants.dart (also used in signup + profile).
-//
-// 3. kPrimaryBlue FROM CONSTANTS:
-//    BEFORE: primaryBlue was a local Color variable.
-//    NOW: kPrimaryBlue imported from utils/constants.dart.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/database_service.dart'; // replaces direct Firestore stream
-import '../../models/user.dart'; // StreamBuilder now uses List<UserModel> instead of QuerySnapshot
-import '../../utils/constants.dart'; // kPrimaryBlue + kSpecialties — were local copies before
+import 'package:geolocator/geolocator.dart'; // 📍 تعليق: مكتبة تحديد الموقع الجغرافي
+import 'dart:math'
+    show cos, sqrt, asin; // 📍 تعليق: مكتبة الحسابات الرياضية للمعادلات
+import '../../services/database_service.dart';
+import '../../models/user.dart';
+import '../../utils/constants.dart';
 import 'doctor_details_screen.dart';
 
 class DoctorSearchScreen extends StatefulWidget {
@@ -38,11 +23,45 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   String selectedFilter = 'By Specialty';
   String? selectedSpecialty = 'All Specialties';
 
-  // All specialties + "All" option for the filter dropdown.
+  // 📍 تعليق: متغير لتخزين إحداثيات موقع المريض (Latitude & Longitude)
+  Position? _userPosition;
+
   static const List<String> _filterSpecialties = [
     'All Specialties',
     ...kSpecialties,
   ];
+
+  // 📍 تعليق: دالة رياضية (Haversine) لحساب المسافة الجوية بين نقطتين بالكيلومتر
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
+    var p = 0.017453292519943295;
+    var c = cos;
+    var a = 0.5 -
+        c((lat2 - lat1) * p) / 2 +
+        c(lat1 * p) * c(lat2 * p) * (1 - c((lon2 - lon1) * p)) / 2;
+    return 12742 * asin(sqrt(a));
+  }
+
+  // 📍 تعليق: دالة لطلب الإذن من المستخدم وجلب موقعه الحالي من الـ GPS
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
+    }
+
+    final position = await Geolocator.getCurrentPosition();
+    setState(() {
+      _userPosition = position; // حفظ الموقع
+      selectedFilter = 'By Nearest'; // تفعيل فلتر الأقرب
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +71,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -62,7 +82,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       ),
       body: Column(
         children: [
-          // Search bar
+          // بار البحث
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: Container(
@@ -71,9 +91,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: TextField(
-                onChanged:
-                    (value) =>
-                        setState(() => searchQuery = value.toLowerCase()),
+                onChanged: (value) =>
+                    setState(() => searchQuery = value.toLowerCase()),
                 decoration: const InputDecoration(
                   hintText: 'Search by name or specialty...',
                   prefixIcon: Icon(Icons.search, color: Colors.grey),
@@ -84,16 +103,15 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             ),
           ),
 
-          // Filter row
+          // قسم الفلترة
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
             child: _buildFilterSection(),
           ),
 
-          // Specialty dropdown (shown only when By Specialty is active)
+          // دروب داون التخصصات
           _buildSpecialtyDropdown(),
 
-          // Doctor list
           Expanded(
             child: StreamBuilder<List<UserModel>>(
               stream: _db.streamDoctors(),
@@ -105,42 +123,45 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   return const Center(child: Text('No doctors found.'));
                 }
 
-                final filtered =
-                    snapshot.data!.where((doctor) {
-                      // Exclude current user if they are a doctor browsing.
-                      if (currentUser != null &&
-                          doctor.id == currentUser!.uid) {
-                        return false;
-                      }
+                // 📍 تعليق: المرحلة الأولى - الفلترة حسب النص (البحث) وحسب التخصص المختار
+                List<UserModel> filtered = snapshot.data!.where((doctor) {
+                  if (currentUser != null && doctor.id == currentUser!.uid)
+                    return false;
+                  final name = doctor.name.toLowerCase();
+                  final spec = (doctor.specialty ?? '').toLowerCase();
+                  final matchesSearch =
+                      name.contains(searchQuery) || spec.contains(searchQuery);
 
-                      final name = doctor.name.toLowerCase();
-                      final spec =
-                          (doctor.specialty ?? '').toLowerCase();
-                      final matchesSearch =
-                          name.contains(searchQuery) ||
-                          spec.contains(searchQuery);
+                  bool matchesSpecialty = true;
+                  if (selectedSpecialty != 'All Specialties') {
+                    matchesSpecialty = doctor.specialty == selectedSpecialty;
+                  }
+                  return matchesSearch && matchesSpecialty;
+                }).toList();
 
-                      bool matchesSpecialty = true;
-                      if (selectedFilter == 'By Specialty' &&
-                          selectedSpecialty != 'All Specialties') {
-                        matchesSpecialty =
-                            doctor.specialty == selectedSpecialty;
-                      }
-
-                      return matchesSearch && matchesSpecialty;
-                    }).toList();
-
-                if (filtered.isEmpty) {
-                  return const Center(child: Text('No doctors match your search.'));
+                // 📍 تعليق: المرحلة الثانية - إذا كان المريض اختار "الأقرب" وموقعه متوفر
+                if (selectedFilter == 'By Nearest' && _userPosition != null) {
+                  for (var doc in filtered) {
+                    if (doc.latitude != null && doc.longitude != null) {
+                      // حساب المسافة لكل دكتور وتخزينها في الموديل
+                      doc.distance = _calculateDistance(
+                        _userPosition!.latitude,
+                        _userPosition!.longitude,
+                        doc.latitude!,
+                        doc.longitude!,
+                      );
+                    }
+                  }
+                  // ترتيب القائمة من الأقرب للأبعد (الرقم الأصغر أولاً)
+                  filtered.sort((a, b) =>
+                      (a.distance ?? 99999).compareTo(b.distance ?? 99999));
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final doctor = filtered[index];
-                    return _buildDoctorCard(doctor);
-                  },
+                  itemBuilder: (context, index) =>
+                      _buildDoctorCard(filtered[index]),
                 );
               },
             ),
@@ -157,100 +178,30 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Row(
         children: [
           const Icon(Icons.filter_list_rounded, color: kPrimaryBlue, size: 22),
           const SizedBox(width: 12),
-          const Text(
-            'Filter by:',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-              color: Colors.black87,
-            ),
-          ),
+          const Text('Filter by:',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(width: 12),
           Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: selectedFilter,
-                  isExpanded: true,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: kPrimaryBlue,
-                    size: 22,
-                  ),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                  dropdownColor: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  items:
-                      ['By Specialty', 'By Nearest', 'By Top Rated'].map((
-                        String filter,
-                      ) {
-                        return DropdownMenuItem<String>(
-                          value: filter,
-                          child: Row(
-                            children: [
-                              Text(filter),
-                              if (filter != 'By Specialty') ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.shade100,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    'GP2',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange.shade800,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                  onChanged: (String? newValue) {
-                    if (newValue == 'By Nearest' ||
-                        newValue == 'By Top Rated') {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('$newValue will be available in GP2'),
-                          backgroundColor: Colors.orange,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    } else {
-                      setState(() => selectedFilter = newValue!);
-                    }
-                  },
-                ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedFilter,
+                isExpanded: true,
+                items: ['By Specialty', 'By Nearest']
+                    .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                    .toList(),
+                onChanged: (String? newValue) {
+                  if (newValue == 'By Nearest') {
+                    // 📍 تعليق: استدعاء دالة جلب الموقع عند اختيار فلتر الأقرب
+                    _getCurrentLocation();
+                  } else {
+                    setState(() => selectedFilter = newValue!);
+                  }
+                },
               ),
             ),
           ),
@@ -260,44 +211,24 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   }
 
   Widget _buildSpecialtyDropdown() {
-    if (selectedFilter != 'By Specialty') return const SizedBox.shrink();
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: kPrimaryBlue.withOpacity(0.05),
+          // 📍 تعليق: استخدام withValues بدل withOpacity ليتناسب مع تحديثات فلاتر الجديدة
+          color: kPrimaryBlue.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: kPrimaryBlue.withOpacity(0.3)),
+          border: Border.all(color: kPrimaryBlue.withValues(alpha: 0.3)),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
             value: selectedSpecialty,
             isExpanded: true,
-            hint: const Text('Select Specialty'),
-            icon: const Icon(
-              Icons.medical_services_outlined,
-              color: kPrimaryBlue,
-              size: 20,
-            ),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: kPrimaryBlue,
-            ),
-            dropdownColor: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            items:
-                _filterSpecialties.map((String specialty) {
-                  return DropdownMenuItem<String>(
-                    value: specialty,
-                    child: Text(specialty),
-                  );
-                }).toList(),
-            onChanged:
-                (String? newValue) =>
-                    setState(() => selectedSpecialty = newValue),
+            items: _filterSpecialties
+                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                .toList(),
+            onChanged: (val) => setState(() => selectedSpecialty = val),
           ),
         ),
       ),
@@ -306,18 +237,16 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
   Widget _buildDoctorCard(UserModel doctor) {
     return GestureDetector(
-      onTap:
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (c) => DoctorDetailsScreen(
-                    doctorName: doctor.name,
-                    specialty: doctor.specialty ?? 'General',
-                    doctorId: doctor.id,
-                  ),
-            ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (c) => DoctorDetailsScreen(
+            doctorName: doctor.name,
+            specialty: doctor.specialty ?? 'General',
+            doctorId: doctor.id,
           ),
+        ),
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 20),
         padding: const EdgeInsets.all(16),
@@ -326,11 +255,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.grey.shade100),
           boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
+            BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 15)
           ],
         ),
         child: Row(
@@ -345,29 +270,29 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Dr. ${doctor.name}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                  Text('Dr. ${doctor.name}',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(doctor.specialty ?? 'General',
+                      style: TextStyle(color: Colors.grey.shade500)),
+
+                  // 📍 تعليق: إظهار المسافة بالكيلومتر فقط إذا كانت محسوبة (أي عند تفعيل فلتر الأقرب)
+                  if (doctor.distance != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        '${doctor.distance!.toStringAsFixed(1)} km away', // عرض رقم واحد بعد الفاصلة
+                        style: const TextStyle(
+                            color: kPrimaryBlue,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    doctor.specialty ?? 'General',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 18,
-              color: kPrimaryBlue,
-            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                size: 18, color: kPrimaryBlue),
           ],
         ),
       ),
