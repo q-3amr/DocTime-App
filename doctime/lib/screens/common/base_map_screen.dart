@@ -20,6 +20,15 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   Widget? buildBottomPanel();
   void onMapTapped(LatLng position);
 
+  @override
+  void initState() {
+    super.initState();
+    // 📍 أول ما تفتح الشاشة، بنبلش نطلب الموقع
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      requestLocationAndGetPosition();
+    });
+  }
+
   // ==========================================
   // الشاشة المنبثقة (Dialog) لتفعيل الـ GPS
   // ==========================================
@@ -59,11 +68,12 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   // منطق جلب الموقع والصلاحيات
   // ==========================================
   Future<void> requestLocationAndGetPosition() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() => isLoading = false);
+        if (mounted) setState(() => isLoading = false);
         await _showLocationServiceDialog();
         return;
       }
@@ -87,10 +97,11 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
+      // 📍 تحريك الكاميرا لموقع المستخدم
       mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(currentPosition!.latitude, currentPosition!.longitude),
-          15,
+          16, // زووم أوضح شوي
         ),
       );
     } catch (e) {
@@ -118,22 +129,24 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
       ),
       body: Stack(
         children: [
-          // 1. الخريطة الأساسية
           GoogleMap(
             initialCameraPosition: initialPosition,
-            onMapCreated: (controller) => mapController = controller,
+            onMapCreated: (controller) {
+              mapController = controller;
+              // 📍 بمجرد ما تفتح الخريطة، بنعمل فوكس ع الموقع الحالي
+              requestLocationAndGetPosition();
+            },
             markers: markers,
             onTap: onMapTapped,
             myLocationEnabled: true,
-            myLocationButtonEnabled:
-                false, // بنخليها false عشان نستخدم زرنا المخصص
-            zoomControlsEnabled: true, // 📍 رجعت فعلت لك أزرار التكبير والتصغير
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: true,
           ),
 
-          // 📍 2. زر "موقعي الحالي" (على الشمال)
+          // الزر المخصص "موقعي الحالي"
           Positioned(
             bottom: buildBottomPanel() != null ? 140 : 20,
-            left: 16, // جهة اليسار
+            left: 16,
             child: ElevatedButton.icon(
               onPressed: isLoading ? null : requestLocationAndGetPosition,
               style: ElevatedButton.styleFrom(
@@ -161,10 +174,8 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
             ),
           ),
 
-          // 3. مؤشر التحميل
           if (isLoading) const Center(child: CircularProgressIndicator()),
 
-          // 4. الشاشة السفلية
           if (buildBottomPanel() != null)
             Positioned(
               bottom: 0,
