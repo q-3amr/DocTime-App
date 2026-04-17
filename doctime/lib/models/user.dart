@@ -6,11 +6,12 @@ class UserModel {
   final String? profileImage;
   final String? specialty;
   final double? rating;
-  final String? location; 
-  final double? latitude;  // إضافة جديدة: خط العرض
+  final String? location;
+  final double? latitude; // إضافة جديدة: خط العرض
   final double? longitude; // إضافة جديدة: خط الطول
   final String? about;
   final bool? isVerified;
+  double? distance; // 📍 تم إضافة هذا السطر لحساب المسافة لحظياً
 
   UserModel({
     required this.id,
@@ -21,10 +22,11 @@ class UserModel {
     this.specialty,
     this.rating,
     this.location,
-    this.latitude,  // إضافة جديدة
-    this.longitude, // إضافة جديدة
+    this.latitude,
+    this.longitude,
     this.about,
     this.isVerified,
+    this.distance, // 📍 تم إضافته في الـ Constructor
   });
 
   bool get isDoctor => role == 'doctor';
@@ -40,10 +42,14 @@ class UserModel {
       specialty: map['specialty'],
       rating: map['rating'] != null ? (map['rating'] as num).toDouble() : null,
       location: map['location'],
-      latitude: map['latitude'] != null ? (map['latitude'] as num).toDouble() : null,   
-      longitude: map['longitude'] != null ? (map['longitude'] as num).toDouble() : null, 
+      latitude:
+          map['latitude'] != null ? (map['latitude'] as num).toDouble() : null,
+      longitude: map['longitude'] != null
+          ? (map['longitude'] as num).toDouble()
+          : null,
       about: map['about'],
       isVerified: map['isVerified'] ?? false,
+      // 📍 لا داعي لجلب الـ distance من الفايربيس لأنه متغير لحظي
     );
   }
 
@@ -58,8 +64,8 @@ class UserModel {
       map['specialty'] = specialty ?? '';
       map['rating'] = rating ?? 0.0;
       map['location'] = location ?? '';
-      map['latitude'] = latitude;   
-      map['longitude'] = longitude; 
+      map['latitude'] = latitude;
+      map['longitude'] = longitude;
       map['about'] = about ?? '';
       map['isVerified'] = isVerified ?? false;
     }
@@ -76,10 +82,11 @@ class UserModel {
     String? specialty,
     double? rating,
     String? location,
-    double? latitude,  
-    double? longitude, 
+    double? latitude,
+    double? longitude,
     String? about,
     bool? isVerified,
+    double? distance, // 📍 تم إضافته هنا أيضاً
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -90,10 +97,11 @@ class UserModel {
       specialty: specialty ?? this.specialty,
       rating: rating ?? this.rating,
       location: location ?? this.location,
-      latitude: latitude ?? this.latitude,   
-      longitude: longitude ?? this.longitude, 
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       about: about ?? this.about,
       isVerified: isVerified ?? this.isVerified,
+      distance: distance ?? this.distance, // 📍 تم إضافته هنا
     );
   }
 }
