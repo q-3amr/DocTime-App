@@ -1,38 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. AVAILABILITY READ REPLACED:
-//    BEFORE: FirebaseFirestore.instance.collection('users').doc(doctorId)
-//            .collection('availability').doc(dateKey).get() — directly in UI.
-//    NOW: _db.getAvailability(doctorId, dateKey) — through DatabaseService.
-//
-// 2. APPOINTMENTS READ REPLACED:
-//    BEFORE: FirebaseFirestore.instance.collection('appointments')
-//            .where('doctor_id', isEqualTo: doctorId).get() — in UI.
-//    NOW: _db.getAppointmentsForDoctor(doctorId)
-//
-// 3. PATIENT NAME FETCH REPLACED + TYPE IMPROVED:
-//    BEFORE: FirebaseFirestore.instance.collection('users').doc(uid).get()
-//    then raw DocumentSnapshot['name'] casting.
-//    NOW: _db.getUserById(uid) returns UserModel? — access .name directly.
-//
-// 4. APPOINTMENT BOOKING REPLACED:
-//    BEFORE: FirebaseFirestore.instance.collection('appointments').add({...}) in UI.
-//    NOW: _db.addAppointment({...})
-//
-// 5. DATE HELPERS FROM SHARED UTILS:
-//    BEFORE: inline date math for time string formatting.
-//    NOW: formatDateKey(), formatTimeFromDateTime() from date_utils.dart.
-//
-// 6. RATING — INTENTIONALLY HARDCODED DUMMY:
-//    '4.8 (120 Reviews)' — will be replaced with real data in a future update.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/database_service.dart'; // replaces all direct Firestore DB calls
-import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
-import '../../utils/date_utils.dart'; // formatDateKey, formatTimeFromDateTime, parseDate
+import 'package:url_launcher/url_launcher.dart'; // 📍 تعليق: مكتبة فتح الروابط الخارجية (خرائط جوجل)
+import '../../services/database_service.dart';
+import '../../utils/constants.dart';
+import '../../utils/date_utils.dart';
 import '../common/chat_screen.dart';
 import '../auth/login_screen.dart';
 import '../../models/appointment.dart';
@@ -41,12 +12,18 @@ class DoctorDetailsScreen extends StatefulWidget {
   final String doctorName;
   final String specialty;
   final String? doctorId;
+  final double? latitude; // 📍 تعليق: استقبال خط العرض
+  final double? longitude; // 📍 تعليق: استقبال خط الطول
+  final double? distance; // 📍 تعليق: استقبال المسافة المحسوبة من شاشة البحث
 
   const DoctorDetailsScreen({
     super.key,
     required this.doctorName,
     required this.specialty,
     this.doctorId,
+    this.latitude, // 📍
+    this.longitude, // 📍
+    this.distance, // 📍
   });
 
   @override
@@ -66,6 +43,31 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
   void initState() {
     super.initState();
     _generateSlotsForDate(_selectedDate);
+  }
+
+  // 📍 تعليق: دالة فتح تطبيق خرائط جوجل مباشرة لإظهار الاتجاهات
+  Future<void> _openDirections() async {
+    if (widget.latitude != null && widget.longitude != null) {
+      final Uri googleMapsUrl = Uri.parse(
+          'google.navigation:q=${widget.latitude},${widget.longitude}&mode=d');
+
+      try {
+        if (await canLaunchUrl(googleMapsUrl)) {
+          await launchUrl(googleMapsUrl);
+        } else {
+          // إذا لم يفتح التطبيق، نفتح المتصفح كرابط بديل
+          final Uri webUrl = Uri.parse(
+              'https://www.google.com/maps/search/?api=1&query=${widget.latitude},${widget.longitude}');
+          await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open maps')),
+          );
+        }
+      }
+    }
   }
 
   void _generateSlotsForDate(DateTime date) async {
@@ -136,7 +138,6 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       return;
     }
 
-    // Parse selected time-slot string back to a DateTime.
     final parts = _selectedTimeSlot!.split(' ');
     final timeParts = parts[0].split(':');
     int hour = int.parse(timeParts[0]);
@@ -156,9 +157,8 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       final patient = await _db.getUserById(user!.uid);
       final patientName = patient?.name ?? 'Unknown';
 
-      // 1. استخدام الموديل النظيف بدل الـ Map العشوائي المفرط
       final newAppointment = AppointmentModel(
-        id: '', // رح نعمله ID ذكي بالسيرفس عشان الترانزاكشن
+        id: '',
         doctorId: widget.doctorId ?? '',
         doctorName: widget.doctorName,
         patientId: user!.uid,
@@ -167,18 +167,15 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         status: 'pending',
       );
 
-      // 2. استدعاء دالة القفل الآمنة اللي بترجع true أو false
       final success = await _db.bookAppointmentSafely(newAppointment);
 
       if (mounted) {
         if (success) {
-          // الحجز تم بدون مشاكل وتضارب
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Request Sent! Wait for approval.')),
           );
           Navigator.pop(context);
         } else {
-          // الموعد انحجز لمريض ثاني بنفس اللحظة! بنرفض الطلب وبنحدث الواجهة
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content:
@@ -204,8 +201,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Login Required'),
         content: const Text(
-          'Please login to book an appointment. You can browse doctors '
-          'without an account, but booking requires login.',
+          'Please login to book an appointment.',
         ),
         actions: [
           TextButton(
@@ -246,12 +242,24 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
             backgroundColor: kPrimaryBlue,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                color: kPrimaryBlue.withOpacity(0.8),
+                color: kPrimaryBlue.withValues(alpha: 0.8),
                 child: const Icon(Icons.person, size: 100, color: Colors.white),
               ),
-              title: Text(
-                'Dr. ${widget.doctorName}',
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Dr. ${widget.doctorName}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 8),
+                  // 📍 تعليق: أيقونة خريطة صغيرة في العنوان لفتح الاتجاهات
+                  GestureDetector(
+                    onTap: _openDirections,
+                    child: const Icon(Icons.location_on,
+                        color: Colors.white, size: 18),
+                  ),
+                ],
               ),
             ),
           ),
@@ -269,17 +277,62 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 15),
+
+                  // 📍 تعليق: قسم الاتجاهات والمسافة الجديد
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 20),
-                      const SizedBox(width: 5),
-                      const Text(
-                        '4.8 (120 Reviews)',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 20),
+                          const SizedBox(width: 5),
+                          const Text(
+                            '4.8 (120 Reviews)',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
+                      // 📍 تعليق: عرض المسافة إذا كانت متوفرة
+                      if (widget.distance != null)
+                        Text(
+                          '${widget.distance!.toStringAsFixed(1)} km away',
+                          style: const TextStyle(
+                            color: kPrimaryBlue,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                     ],
                   ),
+                  const SizedBox(height: 20),
+
+                  // 📍 تعليق: زر "أرني الاتجاهات" العريض
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _openDirections,
+                      icon: const Icon(Icons.map_outlined, color: kPrimaryBlue),
+                      label: const Text(
+                        'أرني الاتجاهات',
+                        style: TextStyle(
+                          color: kPrimaryBlue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kPrimaryBlue.withValues(alpha: 0.1),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: BorderSide(
+                              color: kPrimaryBlue.withValues(alpha: 0.3)),
+                        ),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 30),
                   const Text(
                     'Select Date',
@@ -398,7 +451,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -408,11 +461,11 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: kPrimaryBlue.withOpacity(0.1),
+                color: kPrimaryBlue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
-                icon: Icon(
+                icon: const Icon(
                   Icons.chat_bubble_outline_rounded,
                   color: kPrimaryBlue,
                 ),
