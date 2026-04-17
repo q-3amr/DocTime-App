@@ -9,6 +9,7 @@ import '../../utils/date_utils.dart';
 import '../../widgets/action_button.dart';
 import 'doctor_search_screen.dart';
 import 'ai_chat_screen.dart';
+import 'patient_map_screen.dart'; // 📍 تم إضافة استدعاء شاشة الخريطة
 import '../common/schedule_screen.dart';
 import '../common/profile_screen.dart';
 import '../common/chats_list_screen.dart';
@@ -238,7 +239,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                           padding: const EdgeInsets.symmetric(vertical: 15),
                         ),
                         onPressed: () async {
-                          // تحديث قاعدة البيانات وتفعيل التنبيه (isReviewSeen: false)
                           await FirebaseFirestore.instance
                               .collection('appointments')
                               .doc(appointmentId)
@@ -249,7 +249,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                             'rating': 5.0,
                           });
                           _feedbackController.clear();
-                          Navigator.pop(context);
+                          if (context.mounted) Navigator.pop(context);
                         },
                         child: const Text('Confirm',
                             style: TextStyle(
@@ -270,7 +270,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                         .collection('appointments')
                         .doc(appointmentId)
                         .update({'hasFeedback': true});
-                    Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   },
                 ),
               ),
@@ -383,6 +383,15 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (c) => const AiChatScreen()))),
+                        // 📍 تم إضافة زر "Clinic Map" هنا لفتح شاشة الخرائط
+                        ActionButton(
+                            icon: Icons.map_outlined,
+                            title: 'Clinic Map',
+                            color: Colors.green.shade600,
+                            onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (c) => const PatientMapScreen()))),
                       ],
                     ),
                   ),
