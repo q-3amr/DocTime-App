@@ -21,6 +21,7 @@ import 'services/database_service.dart';
 import 'screens/guest/guest_home_screen.dart';
 import 'screens/patient/patient_home_screen.dart';
 import 'screens/doctors/doctor_home_screen.dart';
+import 'screens/admin/admin_home_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -90,7 +91,9 @@ class AuthWrapper extends StatelessWidget {
               }
 
               final userModel = roleSnapshot.data;
-
+              if (userModel != null && userModel.role == 'admin') {
+                return const AdminHomeScreen();
+              }
               if (userModel != null && userModel.isDoctor) {
                 // BUG FIX: BEFORE this check didn't exist here — only login_screen
                 // checked isVerified. That meant on app restart (force-close + reopen),

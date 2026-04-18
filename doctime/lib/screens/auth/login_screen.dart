@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           // Verified users: pop the login screen. AuthWrapper handles the home screen.
           if (mounted) {
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            Navigator.pop(context);
           }
         }
       }
