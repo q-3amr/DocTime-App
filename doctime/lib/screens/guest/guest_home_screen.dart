@@ -130,12 +130,9 @@ class GuestHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
 
+/**************************************************/
                   Expanded(
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 20,
-                      mainAxisSpacing: 20,
-                      childAspectRatio: 1.1,
+                    child: ListView(
                       children: [
                         _buildActionBtn(
                           context,
@@ -151,6 +148,7 @@ class GuestHomeScreen extends StatelessWidget {
                             );
                           },
                         ),
+                        const SizedBox(height: 15),
                         _buildActionBtn(
                           context,
                           Icons.info_outline_rounded,
@@ -169,6 +167,7 @@ class GuestHomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
+/**************************************************/
                 ],
               ),
             ),
@@ -188,10 +187,11 @@ class GuestHomeScreen extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: Colors.grey.shade300, width: 2.0),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
@@ -200,22 +200,28 @@ class GuestHomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 38),
+              child: Icon(icon, color: color, size: 28),
             ),
-            const SizedBox(height: 15),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
+                ),
+              ),
             ),
+            Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 16),
           ],
         ),
       ),

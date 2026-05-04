@@ -359,12 +359,9 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 15),
+/**************************************************/
                   Expanded(
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 20,
-                      mainAxisSpacing: 20,
-                      childAspectRatio: 1.1,
+                    child: ListView(
                       children: [
                         ActionButton(
                             icon: Icons.person_search_rounded,
@@ -375,6 +372,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                                 MaterialPageRoute(
                                     builder: (c) =>
                                         const DoctorSearchScreen()))),
+                        const SizedBox(height: 15),
                         ActionButton(
                             icon: Icons.smart_toy_rounded,
                             title: 'AI Assistant',
@@ -383,6 +381,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (c) => const AiChatScreen()))),
+                        const SizedBox(height: 15),
                         // 📍 تم إضافة زر "Clinic Map" هنا لفتح شاشة الخرائط
                         ActionButton(
                             icon: Icons.map_outlined,
@@ -395,6 +394,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       ],
                     ),
                   ),
+/**************************************************/
                 ],
               ),
             ),

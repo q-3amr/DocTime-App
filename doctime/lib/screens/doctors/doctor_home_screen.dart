@@ -384,13 +384,44 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold))),
                           const SizedBox(height: 15),
-                          GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 20,
-                            mainAxisSpacing: 20,
-                            childAspectRatio: 1.1,
+/**************************************************/
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AspectRatio(
+                                  aspectRatio: 1.1,
+                                  child: ActionButton(
+                                      icon: const Icon(Icons.calendar_today_rounded,
+                                          color: Colors.orange, size: 28),
+                                      title: '$upcoming Upcoming',
+                                      color: Colors.orange,
+                                      isSquare: true,
+                                      onTap: () {}),
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: AspectRatio(
+                                  aspectRatio: 1.1,
+                                  child: ActionButton(
+                                      icon: const Icon(
+                                          Icons.access_time_filled_rounded,
+                                          color: Colors.teal,
+                                          size: 28),
+                                      title: 'Manage Slots',
+                                      color: Colors.teal,
+                                      isSquare: true,
+                                      onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (c) =>
+                                                  const ManageSlotsScreen()))),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 15),
+                          Column(
                             children: [
                               ActionButton(
                                 icon: Stack(
@@ -421,12 +452,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                         builder: (c) =>
                                             const DoctorReviewsScreen())),
                               ),
-                              ActionButton(
-                                  icon: const Icon(Icons.calendar_today_rounded,
-                                      color: Colors.orange, size: 28),
-                                  title: '$upcoming Upcoming',
-                                  color: Colors.orange,
-                                  onTap: () {}),
+                              const SizedBox(height: 15),
                               ActionButton(
                                 icon: const Icon(Icons.chat_bubble_rounded,
                                     color: Colors.indigo, size: 28),
@@ -438,18 +464,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                         builder: (c) =>
                                             const ChatsListScreen())),
                               ),
-                              ActionButton(
-                                  icon: const Icon(
-                                      Icons.access_time_filled_rounded,
-                                      color: Colors.teal,
-                                      size: 28),
-                                  title: 'Manage Slots',
-                                  color: Colors.teal,
-                                  onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (c) =>
-                                              const ManageSlotsScreen()))),
+                              const SizedBox(height: 15),
                               ActionButton(
                                   icon: const Icon(Icons.person_search_rounded,
                                       color: Colors.blue, size: 28),
@@ -462,6 +477,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                               const DoctorSearchScreen()))),
                             ],
                           ),
+/**************************************************/
                         ],
                       );
                     },

@@ -1,88 +1,37 @@
 import 'package:flutter/material.dart';
+import '../../utils/constants.dart';
 
-class AiChatScreen extends StatelessWidget {
+// 1. الكلاس تبع الرسالة (الهيكل)
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  ChatMessage({required this.text, required this.isUser});
+}
+
+class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
 
   @override
+  State<AiChatScreen> createState() => _AiChatScreenState();
+}
+
+class _AiChatScreenState extends State<AiChatScreen> {
+  // 2. تعريف المتغيرات اللي بتتحكم بالشاشة (State)
+  final TextEditingController _messageController = TextEditingController();
+
+  final List<ChatMessage> _messages = [
+    ChatMessage(
+      text:
+          "Hello! I am DocTime AI Triage Assistant. How can I help you today?",
+      isUser: false,
+    ),
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    final Color primaryBlue = const Color(0xFF407CE2);
-
-    return Scaffold(
+    // رح نبني الواجهة بالخطوة الجاي، حالياً حط شاشة بيضاء فاضية عشان ما يضرب إيرور
+    return const Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text(
-          "AI Assistant",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 1,
-        iconTheme: const IconThemeData(color: Colors.black),
-        centerTitle: true,
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.smart_toy_outlined,
-                size: 120,
-                color: primaryBlue.withOpacity(0.3),
-              ),
-              const SizedBox(height: 40),
-
-              const Text(
-                "AI Assistant Feature",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-
-              const Text(
-                "This feature will be implemented in Graduation Project 2",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: primaryBlue,
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryBlue.withOpacity(0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  "Planned for GP2",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
