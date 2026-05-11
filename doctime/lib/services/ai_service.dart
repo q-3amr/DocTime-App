@@ -1,39 +1,50 @@
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AiService {
-  late final GenerativeModel _model;
+  final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+  late final String _apiKey;
 
   AiService() {
-    // 1. بنسحب المفتاح من ملف الـ .env
-    final apiKey = dotenv.env['GEMINI_API_KEY'];
-
-    // 2. حماية: إذا نسينا نحط المفتاح، التطبيق بضرب إيرور واضح بدل ما يضل معلق
-    if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('API Key is missing! Please check your .env file.');
+    final key = dotenv.env['GROQ_API_KEY'];
+    if (key == null || key.isEmpty) {
+      throw Exception('API Key for Groq is missing in .env file!');
     }
-
-    // 3. تهيئة الموديل (استخدمنا gemini-1.5-flash لأنه سريع جداً ومناسب للـ Triage)
-    _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
-      apiKey: apiKey,
-    );
+    _apiKey = key;
   }
 
-  // 4. هاي الدالة اللي الشاشة تبعتك رح تناديها
   Future<String> getAiResponse(String userMessage) async {
     try {
-      // بنغلف رسالة المريض بالشكل اللي بتفهمه جوجل
-      final content = [Content.text(userMessage)];
+      final response = await http.post(
+        Uri.parse(_apiUrl),
+        headers: {
+          "Authorization": "Bearer $_apiKey",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          // استخدمنا أسرع موديل عند جروق
+          "model": "llama3-8b-8192",
+          "messages": [
+            {
+              // هاد هو الـ System Prompt اللي ببرمج مخ البوت
+              "role": "system",
+              "content":
+                  "You are a strict, concise medical triage assistant for the DocTime app. Your goal is to gather information about the patient's symptoms. ONLY ask one short, direct question at a time to narrow down the condition. DO NOT provide a final diagnosis. DO NOT write lists or long paragraphs. Keep your response under 3 sentences."
+            },
+            {"role": "user", "content": userMessage}
+          ],
+          "temperature": 0.5 // عشان نقلل الهلوسة ونخليه جدي
+        }),
+      );
 
-      // بنبعث الطلب وبنستنى الرد
-      final response = await _model.generateContent(content);
-
-      // بنرجع النص، وإذا كان null بنرجع رسالة خطأ بديلة
-      return response.text ??
-          "Sorry, I couldn't process your request at the moment.";
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['choices'][0]['message']['content'];
+      } else {
+        return "Server error: ${response.statusCode}";
+      }
     } catch (e) {
-      // إذا فصل النت أو صار إيرور بالـ API، بنمسكه هون وما بنخلي التطبيق يكرش
       return "Connection issue: $e";
     }
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
+import '../../services/ai_service.dart'; // تأكد من مسار الملف عندك صح
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 // 1. الكلاس تبع الرسالة (الهيكل)
 class ChatMessage {
@@ -18,6 +20,8 @@ class AiChatScreen extends StatefulWidget {
 class _AiChatScreenState extends State<AiChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   bool _isTyping = false;
+  // استدعينا الـ Service عشان الشاشة تقدر تستخدمها
+  final AiService _aiService = AiService();
   final List<ChatMessage> _messages = [
     ChatMessage(
       text:
@@ -41,15 +45,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
       );
       _isTyping = true;
     });
-    //************should replace it with real API call time soon******************//
-    await Future.delayed(const Duration(seconds: 2));
+
+    final String aiResponseText = await _aiService.getAiResponse(userText);
 
     setState(() {
       _isTyping = false;
 
       _messages.add(
         ChatMessage(
-          text: "This is a simulated AI response...",
+          text: aiResponseText,
           isUser: false,
         ),
       );
