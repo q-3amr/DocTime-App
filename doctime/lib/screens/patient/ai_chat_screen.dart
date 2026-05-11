@@ -123,11 +123,18 @@ class _AiChatScreenState extends State<AiChatScreen> {
             ),
           ],
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: message.isUser ? Colors.white : Colors.black87,
-            fontSize: 16,
+        child: MarkdownBody(
+          data: message.text,
+          styleSheet: MarkdownStyleSheet(
+            // هون بنتحكم بلون النص الأساسي (الفقرات)
+            p: TextStyle(
+              color: message.isUser ? Colors.white : Colors.black87,
+              fontSize: 16,
+            ),
+            // إذا البوت قرر يبعث نقاط، بنخلي لونها صح
+            listBullet: TextStyle(
+              color: message.isUser ? Colors.white : Colors.black87,
+            ),
           ),
         ),
       ),

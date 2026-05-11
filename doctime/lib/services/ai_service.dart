@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 
 class AiService {
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
@@ -11,7 +11,7 @@ class AiService {
     if (key == null || key.isEmpty) {
       throw Exception('API Key for Groq is missing in .env file!');
     }
-    _apiKey = key;
+    _apiKey = key.trim();
   }
 
   Future<String> getAiResponse(String userMessage) async {
@@ -24,7 +24,7 @@ class AiService {
         },
         body: jsonEncode({
           // استخدمنا أسرع موديل عند جروق
-          "model": "llama3-8b-8192",
+          "model": "llama-3.3-70b-versatile",
           "messages": [
             {
               // هاد هو الـ System Prompt اللي ببرمج مخ البوت
@@ -32,7 +32,7 @@ class AiService {
               "content":
                   "You are a strict, concise medical triage assistant for the DocTime app. Your goal is to gather information about the patient's symptoms. ONLY ask one short, direct question at a time to narrow down the condition. DO NOT provide a final diagnosis. DO NOT write lists or long paragraphs. Keep your response under 3 sentences."
             },
-            {"role": "user", "content": userMessage}
+            {"role": "user", "content": userMessage.trim()}
           ],
           "temperature": 0.5 // عشان نقلل الهلوسة ونخليه جدي
         }),
@@ -42,7 +42,7 @@ class AiService {
         final data = jsonDecode(response.body);
         return data['choices'][0]['message']['content'];
       } else {
-        return "Server error: ${response.statusCode}";
+        return "Server error: ${response.statusCode}\nDetails: ${response.body}";
       }
     } catch (e) {
       return "Connection issue: $e";
