@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:permission_handler/permission_handler.dart'; // السطر الجديد
 import 'auth_wrapper.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // دالة للتعامل مع الإشعارات في الخلفية
 @pragma('vm:entry-point')
@@ -27,7 +28,7 @@ Future<void> main() async {
     badge: true,
     sound: true,
   );
-
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 } // تأكدي إن القوس مسكر هون قبل ما تبدأي الدالة اللي تحت
 
