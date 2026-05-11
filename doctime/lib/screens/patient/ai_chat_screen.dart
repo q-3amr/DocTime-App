@@ -16,9 +16,8 @@ class AiChatScreen extends StatefulWidget {
 }
 
 class _AiChatScreenState extends State<AiChatScreen> {
-  // 2. تعريف المتغيرات اللي بتتحكم بالشاشة (State)
   final TextEditingController _messageController = TextEditingController();
-
+  bool _isTyping = false;
   final List<ChatMessage> _messages = [
     ChatMessage(
       text:
@@ -26,26 +25,37 @@ class _AiChatScreenState extends State<AiChatScreen> {
       isUser: false,
     ),
   ];
-  // 3. دالة إرسال الرسالة
-  void _sendMessage() {
-    // التحقق: إذا المربع فاضي، لا تعمل إشي
+  Future<void> _sendMessage() async {
+    if (_isTyping) return;
     if (_messageController.text.trim().isEmpty) return;
+    final String userText = _messageController.text;
 
-    // تحديث الحالة (State) وإضافة الرسالة
+    _messageController.clear();
+
     setState(() {
       _messages.add(
         ChatMessage(
-          text: _messageController.text,
-          isUser: true, // لأنها من المريض
+          text: userText,
+          isUser: true,
+        ),
+      );
+      _isTyping = true;
+    });
+    //************should replace it with real API call time soon******************//
+    await Future.delayed(const Duration(seconds: 2));
+
+    setState(() {
+      _isTyping = false;
+
+      _messages.add(
+        ChatMessage(
+          text: "This is a simulated AI response...",
+          isUser: false,
         ),
       );
     });
-
-    // مسح النص من المربع بعد الإرسال
-    _messageController.clear();
   }
 
-  // 4. دالة تنظيف الميموري (مهمة جداً هندسياً)
   @override
   void dispose() {
     _messageController.dispose();
@@ -55,10 +65,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // 1. لون خلفية هادي عشان الفقاعات تبرز
-      backgroundColor: Colors.grey[50],
-
-      // 2. الشريط العلوي
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
         title: const Text(
           "AI Triage",
@@ -69,46 +76,31 @@ class _AiChatScreenState extends State<AiChatScreen> {
         iconTheme: const IconThemeData(color: Colors.black),
         centerTitle: true,
       ),
-
-      // 3. محتوى الشاشة (رح يكون عمود مقسم لجزئين)
       body: Column(
         children: [
-          // الجزء العلوي: رح نعرض فيه لستة الرسائل (الخطوة الجاي)
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              // عدد العناصر باللستة هو نفسه عدد الرسائل اللي عنا
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
-                // دالة رح نبنيها بالخطوة الجاي عشان ترسم شكل الفقاعة
                 return _buildMessageBubble(msg);
               },
             ),
           ),
-
-          // الجزء السفلي: رح نحط فيه مربع الكتابة (الخطوة اللي بعدها)
-          const Divider(height: 1), // خط فاصل رفيع
-          Container(
-            height: 70,
-            color: Colors.white,
-            child: const Center(child: Text("Input area")),
-          ),
+          _buildMessageInput(),
         ],
       ),
     );
   }
 
-  // 5. تصميم فقاعة الرسالة
   Widget _buildMessageBubble(ChatMessage message) {
     return Align(
-      // تحديد المحاذاة: يمين للمريض، شمال للـ AI
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          // تلوين الفقاعة: أزرق للمريض (من ثوابتك) وأبيض للـ AI
           color: message.isUser ? kPrimaryBlue : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
@@ -121,9 +113,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -133,6 +125,59 @@ class _AiChatScreenState extends State<AiChatScreen> {
             color: message.isUser ? Colors.white : Colors.black87,
             fontSize: 16,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: Colors.white,
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _messageController,
+                enabled: !_isTyping,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  hintText: _isTyping
+                      ? "Analyzing your symptoms..."
+                      : "Describe your symptoms...",
+                  hintStyle: TextStyle(color: Colors.grey[500]),
+                  filled: true,
+                  fillColor: Colors.grey[100],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none, // بدون حدود واضحة
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: _isTyping ? Colors.grey[400] : kPrimaryBlue,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: Icon(
+                  _isTyping
+                      ? Icons.hourglass_empty_rounded
+                      : Icons.send_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                onPressed: _isTyping ? null : _sendMessage,
+              ),
+            ),
+          ],
         ),
       ),
     );
