@@ -33,4 +33,5 @@ const List<String> kSpecialties = [
   'Pediatrics',
   'Internal Medicine',
   'Ophthalmology',
+  'Neurologist',
 ];

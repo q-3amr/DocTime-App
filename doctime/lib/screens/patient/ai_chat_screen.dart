@@ -18,6 +18,8 @@ class AiChatScreen extends StatefulWidget {
 }
 
 class _AiChatScreenState extends State<AiChatScreen> {
+  bool _isTriageComplete = false;
+  String _recommendedSpecialty = "";
   final TextEditingController _messageController = TextEditingController();
   bool _isTyping = false;
   // استدعينا الـ Service عشان الشاشة تقدر تستخدمها
@@ -60,7 +62,30 @@ class _AiChatScreenState extends State<AiChatScreen> {
         );
       } else {
         // إذا الرد طبيعي وما فيه إيرور، بنضيفه كرسالة شات عادية
+        // بنضيف الرسالة زي ما هي
         _messages.insert(0, ChatMessage(text: aiResponseText, isUser: false));
+
+        // بنفحص إذا البوت قرر ينهي المحادثة
+        if (aiResponseText
+            .contains("I recommend you book an appointment with")) {
+          // استخدام الـ Regex عشان نقص كل اشي بعد كلمة with a أو with an
+          // وبنقص النقطة اللي بآخر السطر إذا موجودة
+          RegExp regExp = RegExp(r"appointment with (?:a |an )?(.*?)(?:\.|$)");
+          var match = regExp.firstMatch(aiResponseText);
+
+          String extractedSpecialty = "Specialist"; // قيمة افتراضية لو فشل القص
+
+          if (match != null && match.groupCount >= 1) {
+            // بنسحب التخصص وبنشيل المسافات الزايدة
+            extractedSpecialty = match.group(1)!.trim();
+          }
+
+          setState(() {
+            _isTriageComplete = true; // بنغير حالة الشاشة
+            _recommendedSpecialty =
+                extractedSpecialty; // بنخزن التخصص اللي قصيناه
+          });
+        }
       }
     });
   }
@@ -98,7 +123,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
               },
             ),
           ),
-          _buildMessageInput(),
+          // إذا خلص الفرز بنعرض زر الانتقال، إذا لسه بنعرض مربع الكتابة
+          _isTriageComplete ? _buildCompletionButton() : _buildMessageInput(),
         ],
       ),
     );
@@ -195,6 +221,35 @@ class _AiChatScreenState extends State<AiChatScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletionButton() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white,
+      width: double.infinity,
+      child: SafeArea(
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kPrimaryBlue,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onPressed: () {
+            // هون رح يجي كود الانتقال (Navigator)
+            print(
+                "Routing to doctors list with filter: $_recommendedSpecialty");
+          },
+          child: Text(
+            // هون دمجنا اسم التخصص اللي استخرجناه جوا النص تبع الزر
+            "Find $_recommendedSpecialty Doctors",
+            style: const TextStyle(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
     );
