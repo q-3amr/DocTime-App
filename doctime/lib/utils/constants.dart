@@ -33,5 +33,10 @@ const List<String> kSpecialties = [
   'Pediatrics',
   'Internal Medicine',
   'Ophthalmology',
-  'Neurologist',
+  'Neurology',
+  'Gastroenterology',
+  'ENT',
+  'Pulmonology',
+  'Endocrinology',
+  'Otolaryngology'
 ];
