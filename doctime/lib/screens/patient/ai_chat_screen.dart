@@ -44,7 +44,24 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
     setState(() {
       _isTyping = false;
-      _messages.insert(0, ChatMessage(text: aiResponseText, isUser: false));
+      if (aiResponseText.startsWith('Server error') ||
+          aiResponseText.startsWith('Connection issue')) {
+        // إذا إيرور: بنشيل رسالة المريض اللي انبعثت عشان يقدر يرجع يبعثها
+        _messages.removeAt(0);
+
+        // وبنطلعله الإيرور كإشعار أحمر منبثق تحت مش كرسالة شات
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text('Connection error, check your connection and try again!'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        // إذا الرد طبيعي وما فيه إيرور، بنضيفه كرسالة شات عادية
+        _messages.insert(0, ChatMessage(text: aiResponseText, isUser: false));
+      }
     });
   }
 
