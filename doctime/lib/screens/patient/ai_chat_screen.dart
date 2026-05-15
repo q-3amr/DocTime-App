@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 import '../../services/ai_service.dart'; // تأكد من مسار الملف عندك صح
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'doctor_search_screen.dart';
 
 // 1. الكلاس تبع الرسالة (الهيكل)
 class ChatMessage {
@@ -240,9 +241,18 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: () {
-            // هون رح يجي كود الانتقال (Navigator)
-            print(
-                "Routing to doctors list with filter: $_recommendedSpecialty");
+            // بنطفي الكيبورد إذا كان شغال
+            FocusScope.of(context).unfocus();
+
+            // بننتقل لشاشة البحث، وبنبعثلها التخصص اللي استخرجناه
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DoctorSearchScreen(
+                  initialSpecialty: _recommendedSpecialty,
+                ),
+              ),
+            );
           },
           child: Text(
             // هون دمجنا اسم التخصص اللي استخرجناه جوا النص تبع الزر

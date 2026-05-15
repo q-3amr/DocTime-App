@@ -9,7 +9,8 @@ import '../../utils/constants.dart';
 import 'doctor_details_screen.dart';
 
 class DoctorSearchScreen extends StatefulWidget {
-  const DoctorSearchScreen({super.key});
+  final String? initialSpecialty;
+  const DoctorSearchScreen({super.key, this.initialSpecialty});
 
   @override
   State<DoctorSearchScreen> createState() => _DoctorSearchScreenState();
@@ -20,11 +21,25 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   String searchQuery = '';
-  String selectedFilter = 'Top Rated';
-  String? selectedSpecialty = 'All Specialties';
+  String selectedFilter = 'Select Filter';
+  String? selectedSpecialty; // شلنا القيمة الافتراضية من هون
 
   // 📍 تعليق: متغير لتخزين إحداثيات موقع المريض (Latitude & Longitude)
   Position? _userPosition;
+  @override
+  void initState() {
+    super.initState();
+
+    // برمجة دفاعية: بنفحص إذا التخصص اللي إجا من الـ AI موجود فعلاً بلستة التخصصات تبعتك
+    // عشان لو الـ AI هبد تخصص غريب، الـ Dropdown ما يكرش بوجه المريض
+    if (widget.initialSpecialty != null &&
+        _filterSpecialties.contains(widget.initialSpecialty)) {
+      selectedSpecialty = widget.initialSpecialty;
+    } else {
+      selectedSpecialty =
+          'All Specialties'; // إذا ما وصلنا إشي، أو التخصص غلط، بنرجع للوضع الطبيعي
+    }
+  }
 
   static const List<String> _filterSpecialties = [
     'All Specialties',
@@ -191,15 +206,18 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
               child: DropdownButton<String>(
                 value: selectedFilter,
                 isExpanded: true,
-                items: ['Top Rated', 'By Nearest']
+                items: ['Select Filter', 'Top Rated', 'By Nearest']
                     .map((f) => DropdownMenuItem(value: f, child: Text(f)))
                     .toList(),
                 onChanged: (String? newValue) {
                   if (newValue == 'By Nearest') {
                     // 📍 تعليق: استدعاء دالة جلب الموقع عند اختيار فلتر الأقرب
                     _getCurrentLocation();
+                  } else if (newValue == 'Top Rated') {
+                    // TODO: implement top rated
+                    setState(() => selectedFilter = 'Top Rated');
                   } else {
-                    setState(() => selectedFilter = newValue!);
+                    setState(() => selectedFilter = 'Select Filter');
                   }
                 },
               ),
