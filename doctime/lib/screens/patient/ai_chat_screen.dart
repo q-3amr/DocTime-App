@@ -19,6 +19,7 @@ class AiChatScreen extends StatefulWidget {
 
 class _AiChatScreenState extends State<AiChatScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   bool _isTyping = false;
   // استدعينا الـ Service عشان الشاشة تقدر تستخدمها
   final AiService _aiService = AiService();
@@ -45,7 +46,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
       );
       _isTyping = true;
     });
-
+    _scrollToBottom();
     final String aiResponseText = await _aiService.getAiResponse(userText);
 
     setState(() {
@@ -58,11 +59,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
         ),
       );
     });
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    // هاد السطر بيحكي للفلاتر: "بس تخلص رسم الرسالة الجديدة عالشاشة، نفذ أمر النزول"
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent, // انزل لأقصى حد تحت
+          duration: const Duration(milliseconds: 300), // حركة ناعمة مش نتعة
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -84,6 +100,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
