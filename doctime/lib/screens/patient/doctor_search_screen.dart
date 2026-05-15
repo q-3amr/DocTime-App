@@ -20,7 +20,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   String searchQuery = '';
-  String selectedFilter = 'By Specialty';
+  String selectedFilter = 'Top Rated';
   String? selectedSpecialty = 'All Specialties';
 
   // 📍 تعليق: متغير لتخزين إحداثيات موقع المريض (Latitude & Longitude)
@@ -191,7 +191,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
               child: DropdownButton<String>(
                 value: selectedFilter,
                 isExpanded: true,
-                items: ['By Specialty', 'By Nearest']
+                items: ['Top Rated', 'By Nearest']
                     .map((f) => DropdownMenuItem(value: f, child: Text(f)))
                     .toList(),
                 onChanged: (String? newValue) {
