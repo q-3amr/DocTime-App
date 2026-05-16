@@ -127,6 +127,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     super.dispose();
   }
 
+  // related to rating system
+  // related to rating system
   void _startUniversalFeedbackListener() {
     if (user?.uid == null) return;
 
@@ -272,6 +274,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       ),
     );
   }
+  // related to rating system
 
   @override
   Widget build(BuildContext context) {
@@ -328,11 +331,13 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                         return const Center(child: CircularProgressIndicator());
                       final docs = snapshot.data!.docs;
 
+                      // related to rating system
                       final bool hasNewReview = docs.any((d) {
                         final data = d.data() as Map<String, dynamic>;
                         return data['hasFeedback'] == true &&
                             data['isReviewSeen'] != true;
                       });
+                      // related to rating system
 
                       final int upcoming = docs
                           .where((d) =>
@@ -423,6 +428,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                           const SizedBox(height: 15),
                           Column(
                             children: [
+                              // related to rating system
                               ActionButton(
                                 icon: Stack(
                                   clipBehavior: Clip.none,
@@ -452,6 +458,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                         builder: (c) =>
                                             const DoctorReviewsScreen())),
                               ),
+                              // related to rating system
                               const SizedBox(height: 15),
                               ActionButton(
                                 icon: const Icon(Icons.chat_bubble_rounded,

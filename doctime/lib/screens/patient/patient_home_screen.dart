@@ -147,6 +147,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     super.dispose();
   }
 
+  // related to rating system
   void _startFeedbackListener() {
     if (user?.uid == null) return;
     _feedbackListener = FirebaseFirestore.instance
@@ -280,6 +281,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
       },
     );
   }
+  // related to rating system
 
   @override
   Widget build(BuildContext context) {

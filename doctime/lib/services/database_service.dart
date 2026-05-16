@@ -55,6 +55,7 @@ class DatabaseService {
   // APPOINTMENTS & REVIEWS
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // related to rating system
   /// دالة تقديم التقييم: تُحدث الموعد وتفعل النقطة الزرقاء للدكتور
   Future<void> submitAppointmentFeedback({
     required String appointmentId,
@@ -89,6 +90,7 @@ class DatabaseService {
     }
     if (hasUpdates) await batch.commit();
   }
+  // related to rating system
 
   Stream<QuerySnapshot> streamAppointmentsForDoctor(String doctorId) {
     return _db
