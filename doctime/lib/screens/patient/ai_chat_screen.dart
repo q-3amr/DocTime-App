@@ -3,6 +3,7 @@ import '../../utils/constants.dart';
 import '../../services/ai_service.dart'; // تأكد من مسار الملف عندك صح
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'doctor_search_screen.dart';
+import 'dart:convert';
 
 // 1. الكلاس تبع الرسالة (الهيكل)
 class ChatMessage {
@@ -21,6 +22,7 @@ class AiChatScreen extends StatefulWidget {
 class _AiChatScreenState extends State<AiChatScreen> {
   bool _isTriageComplete = false;
   String _recommendedSpecialty = "";
+  String _triageUrgency = "none";
   final TextEditingController _messageController = TextEditingController();
   bool _isTyping = false;
   // استدعينا الـ Service عشان الشاشة تقدر تستخدمها
@@ -62,30 +64,32 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ),
         );
       } else {
-        // إذا الرد طبيعي وما فيه إيرور، بنضيفه كرسالة شات عادية
-        // بنضيف الرسالة زي ما هي
-        _messages.insert(0, ChatMessage(text: aiResponseText, isUser: false));
+        try {
+          // 1. فك تشفير الـ JSON اللي إجا من السيرفر
+          final Map<String, dynamic> aiData = jsonDecode(aiResponseText);
+          
+          // 2. سحب القيم بأمان (مع قيم افتراضية عشان ما يضرب null)
+          final String displayMessage = aiData['message'] ?? "Error parsing message.";
+          final String status = aiData['status'] ?? "asking";
+          final String urgency = aiData['urgency'] ?? "none";
+          final String specialty = aiData['specialty'] ?? "none";
 
-        // بنفحص إذا البوت قرر ينهي المحادثة
-        if (aiResponseText
-            .contains("I recommend you book an appointment with")) {
-          // استخدام الـ Regex عشان نقص كل اشي بعد كلمة with a أو with an
-          // وبنقص النقطة اللي بآخر السطر إذا موجودة
-          RegExp regExp = RegExp(r"appointment with (?:a |an )?(.*?)(?:\.|$)");
-          var match = regExp.firstMatch(aiResponseText);
+          // 3. إضافة الرسالة النظيفة (السؤال أو النصيحة) للواجهة عشان المريض يشوفها
+          _messages.insert(0, ChatMessage(text: displayMessage, isUser: false));
 
-          String extractedSpecialty = "Specialist"; // قيمة افتراضية لو فشل القص
-
-          if (match != null && match.groupCount >= 1) {
-            // بنسحب التخصص وبنشيل المسافات الزايدة
-            extractedSpecialty = match.group(1)!.trim();
+          // 4. إذا البوت قرر ينهي الفرز الطبي بناءً على الـ status
+          if (status == "finished") {
+            _isTriageComplete = true; // عشان نخفي الكيبورد ونطلع الزر
+            _triageUrgency = urgency; // بنخزن مستوى الخطورة عشان الزر يلون حاله (أحمر، أصفر، أخضر)
+            
+            if (specialty != "none") {
+              _recommendedSpecialty = specialty; // بنخزن التخصص عشان نمرره لشاشة الفلترة
+            }
           }
-
-          setState(() {
-            _isTriageComplete = true; // بنغير حالة الشاشة
-            _recommendedSpecialty =
-                extractedSpecialty; // بنخزن التخصص اللي قصيناه
-          });
+        } catch (e) {
+          // برمجة دفاعية: لو الموديل هبد ورجع نص عادي مش JSON
+           _messages.insert(0, ChatMessage(text: "System Error: Couldn't parse response.", isUser: false));
+           print("JSON Parse Error: $e");
         }
       }
     });
@@ -227,41 +231,99 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
-  Widget _buildCompletionButton() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
-      width: double.infinity,
-      child: SafeArea(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: kPrimaryBlue,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onPressed: () {
-            // بنطفي الكيبورد إذا كان شغال
-            FocusScope.of(context).unfocus();
+Widget _buildCompletionButton() {
+  // --- Determine button properties based on triage urgency ---
+  final Color backgroundColor;
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
 
-            // بننتقل لشاشة البحث، وبنبعثلها التخصص اللي استخرجناه
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DoctorSearchScreen(
-                  initialSpecialty: _recommendedSpecialty,
+  switch (_triageUrgency) {
+    case 'red':
+      backgroundColor = Colors.red;
+      icon = Icons.warning_amber_rounded;
+      label = 'EMERGENCY: Call Ambulance';
+      onPressed = () {
+        print('Calling ambulance...');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.white),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Go to the Emergency Room immediately or call your local emergency number!',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
-              ),
-            );
-          },
-          child: Text(
-            // هون دمجنا اسم التخصص اللي استخرجناه جوا النص تبع الزر
-            "Find $_recommendedSpecialty Doctors",
+              ],
+            ),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      };
+      break;
+
+    case 'yellow':
+      backgroundColor = kPrimaryBlue;
+      icon = Icons.search_rounded;
+      label = 'Find $_recommendedSpecialty Doctors';
+      onPressed = () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DoctorSearchScreen(
+              initialSpecialty: _recommendedSpecialty,
+            ),
+          ),
+        );
+      };
+      break;
+
+    case 'green':
+    default:
+      backgroundColor = Colors.green;
+      icon = Icons.home_rounded;
+      label = 'Understood, Back to Home';
+      onPressed = () => Navigator.pop(context);
+      break;
+  }
+
+  // --- Build the button UI ---
+  return SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon, color: Colors.white),
+          label: Text(
+            label,
             style: const TextStyle(
-                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: backgroundColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 3,
           ),
         ),
       ),
-    );
-  }
-}
+    ),
+  );
+}}
