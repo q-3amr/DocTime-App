@@ -264,6 +264,11 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                 ],
               ),
             ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -271,6 +276,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Specialty
                   Text(
                     widget.specialty,
                     style: TextStyle(
@@ -281,22 +287,28 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // ── Live aggregate rating pulled from the doctor's user doc ──
-                  StreamBuilder<DocumentSnapshot>(
+                  // ── Live aggregate computed directly from review docs ──
+                  // (does NOT depend on the cached 'rating' field on the user
+                  //  document, so it's always correct even for old reviews)
+                  StreamBuilder<QuerySnapshot>(
                     stream: widget.doctorId != null
-                        ? FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(widget.doctorId)
-                            .snapshots()
+                        ? _db.streamReviewsForDoctor(widget.doctorId!)
                         : null,
                     builder: (context, snap) {
                       double avg = 0.0;
                       int count = 0;
-                      if (snap.hasData && snap.data!.exists) {
-                        final d =
-                            snap.data!.data() as Map<String, dynamic>;
-                        avg = (d['rating'] as num?)?.toDouble() ?? 0.0;
-                        count = (d['reviewCount'] as num?)?.toInt() ?? 0;
+                      if (snap.hasData && snap.data!.docs.isNotEmpty) {
+                        final ratings = snap.data!.docs
+                            .map((d) =>
+                                (d.data() as Map<String, dynamic>)['rating'])
+                            .where((r) => r != null)
+                            .map((r) => (r as num).toDouble())
+                            .where((r) => r > 0) // exclude dismissed (0.0)
+                            .toList();
+                        count = ratings.length;
+                        if (count > 0) {
+                          avg = ratings.reduce((a, b) => a + b) / count;
+                        }
                       }
 
                       return Row(
@@ -304,19 +316,27 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                         children: [
                           Row(
                             children: [
-                              StarRatingWidget(
-                                initialRating: avg > 0 ? avg : 5.0,
-                                starSize: 20,
-                                isReadOnly: true,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                avg > 0
-                                    ? '${avg.toStringAsFixed(1)}  ($count ${count == 1 ? 'Review' : 'Reviews'})'
-                                    : 'No reviews yet',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
-                              ),
+                              // Only show filled stars when there is a real avg
+                              if (avg > 0) ...[
+                                StarRatingWidget(
+                                  initialRating: avg,
+                                  starSize: 20,
+                                  isReadOnly: true,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${avg.toStringAsFixed(1)}  ($count ${count == 1 ? 'Review' : 'Reviews'})',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ] else
+                                const Text(
+                                  'No reviews yet',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey,
+                                  ),
+                                ),
                             ],
                           ),
                           // 📍 تعليق: عرض المسافة إذا كانت متوفرة
@@ -471,8 +491,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   // ── Patient Reviews section ──────────────────────────────
                   const Text(
                     'Patient Reviews',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   StreamBuilder<QuerySnapshot>(
@@ -487,7 +506,12 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                         );
                       }
 
-                      final reviews = snap.data!.docs;
+                      // Filter out dismissed entries (hasFeedback:true but no real rating)
+                      final reviews = snap.data!.docs.where((doc) {
+                        final d = doc.data() as Map<String, dynamic>;
+                        final r = (d['rating'] as num?)?.toDouble() ?? 0.0;
+                        return r > 0;
+                      }).toList();
 
                       if (reviews.isEmpty) {
                         return Padding(
@@ -513,8 +537,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                             decoration: BoxDecoration(
                               color: Colors.grey.shade50,
                               borderRadius: BorderRadius.circular(16),
-                              border:
-                                  Border.all(color: Colors.grey.shade100),
+                              border: Border.all(color: Colors.grey.shade100),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,17 +570,16 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                                     ),
                                   ],
                                 ),
-                                if ((d['feedback_text'] ?? '').isNotEmpty) ...
-                                  [
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      d['feedback_text'],
-                                      style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          height: 1.4,
-                                          fontSize: 13),
-                                    ),
-                                  ],
+                                if ((d['feedback_text'] ?? '').isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    d['feedback_text'],
+                                    style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        height: 1.4,
+                                        fontSize: 13),
+                                  ),
+                                ],
                               ],
                             ),
                           );
