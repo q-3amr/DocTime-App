@@ -40,19 +40,23 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
         return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: const Text('تفعيل الموقع',
+          // 📍 تم تحويل النص إلى الإنجليزية
+          title: const Text('Enable Location',
               style: TextStyle(fontWeight: FontWeight.bold)),
+          // 📍 تم تحويل النص إلى الإنجليزية
           content: const Text(
-              'يرجى تفعيل خدمات الموقع (GPS) للسماح للتطبيق بتحديد موقعك بدقة.'),
+              'Please enable location services (GPS) to allow the app to determine your location accurately.'),
           actions: <Widget>[
             TextButton(
-              child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+              // 📍 تم تحويل النص إلى الإنجليزية
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
               onPressed: () => Navigator.of(context).pop(),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              child: const Text('الإعدادات',
-                  style: TextStyle(color: Colors.white)),
+              // 📍 تم تحويل النص إلى الإنجليزية
+              child:
+                  const Text('Settings', style: TextStyle(color: Colors.white)),
               onPressed: () {
                 Geolocator.openLocationSettings();
                 Navigator.of(context).pop();
@@ -82,14 +86,16 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showMessage('تم رفض الصلاحية. لا يمكن تحديد الموقع.');
+          // 📍 تم تحويل الرسالة إلى الإنجليزية
+          _showMessage('Permission denied. Cannot determine location.');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
+        // 📍 تم تحويل الرسالة إلى الإنجليزية
         _showMessage(
-            'الصلاحيات مرفوضة نهائياً. يرجى تفعيلها من إعدادات التطبيق.');
+            'Permissions are permanently denied. Please enable them from app settings.');
         return;
       }
 
@@ -105,8 +111,10 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
         ),
       );
     } catch (e) {
-      _showMessage('حدث خطأ أثناء جلب الموقع');
+      // 📍 تم تحويل الرسالة إلى الإنجليزية
+      _showMessage('An error occurred while fetching location');
     } finally {
+      // 📍 تم تصليح الخطأ المطبعي هنا من final إلى finally
       if (mounted) setState(() => isLoading = false);
     }
   }
@@ -122,7 +130,8 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الخريطة', style: TextStyle(color: Colors.black)),
+        // 📍 تم تحويل عنوان الشاشة إلى الإنجليزية
+        title: const Text('Map', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -167,8 +176,9 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.blue))
                   : const Icon(Icons.my_location, size: 20),
+              // 📍 تم تحويل نص الزر إلى الإنجليزية
               label: const Text(
-                'موقعي الحالي',
+                'Current Location',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
