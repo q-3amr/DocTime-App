@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart'; // 📍 تعليق: مكتبة فتح الروابط الخارجية (خرائط جوجل)
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/date_utils.dart';
+import '../../widgets/star_rating_widget.dart';
 import '../common/chat_screen.dart';
 import '../auth/login_screen.dart';
 import '../../models/appointment.dart';
@@ -279,31 +281,57 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // 📍 تعليق: قسم الاتجاهات والمسافة الجديد
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+                  // ── Live aggregate rating pulled from the doctor's user doc ──
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: widget.doctorId != null
+                        ? FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(widget.doctorId)
+                            .snapshots()
+                        : null,
+                    builder: (context, snap) {
+                      double avg = 0.0;
+                      int count = 0;
+                      if (snap.hasData && snap.data!.exists) {
+                        final d =
+                            snap.data!.data() as Map<String, dynamic>;
+                        avg = (d['rating'] as num?)?.toDouble() ?? 0.0;
+                        count = (d['reviewCount'] as num?)?.toInt() ?? 0;
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Icon(Icons.star, color: Colors.amber, size: 20),
-                          const SizedBox(width: 5),
-                          const Text(
-                            '4.8 (120 Reviews)',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Row(
+                            children: [
+                              StarRatingWidget(
+                                initialRating: avg > 0 ? avg : 5.0,
+                                starSize: 20,
+                                isReadOnly: true,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                avg > 0
+                                    ? '${avg.toStringAsFixed(1)}  ($count ${count == 1 ? 'Review' : 'Reviews'})'
+                                    : 'No reviews yet',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
+                          // 📍 تعليق: عرض المسافة إذا كانت متوفرة
+                          if (widget.distance != null)
+                            Text(
+                              '${widget.distance!.toStringAsFixed(1)} km away',
+                              style: const TextStyle(
+                                color: kPrimaryBlue,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
                         ],
-                      ),
-                      // 📍 تعليق: عرض المسافة إذا كانت متوفرة
-                      if (widget.distance != null)
-                        Text(
-                          '${widget.distance!.toStringAsFixed(1)} km away',
-                          style: const TextStyle(
-                            color: kPrimaryBlue,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                    ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
 
@@ -438,6 +466,106 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                                 );
                               }).toList(),
                             ),
+                  const SizedBox(height: 30),
+
+                  // ── Patient Reviews section ──────────────────────────────
+                  const Text(
+                    'Patient Reviews',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: widget.doctorId != null
+                        ? _db.streamReviewsForDoctor(widget.doctorId!)
+                        : null,
+                    builder: (context, snap) {
+                      if (!snap.hasData) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+
+                      final reviews = snap.data!.docs;
+
+                      if (reviews.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: Text(
+                              'No reviews yet. Be the first!',
+                              style: TextStyle(
+                                  color: Colors.grey.shade400, fontSize: 14),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        children: reviews.map((doc) {
+                          final d = doc.data() as Map<String, dynamic>;
+                          final double r =
+                              (d['rating'] as num?)?.toDouble() ?? 0.0;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                              border:
+                                  Border.all(color: Colors.grey.shade100),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      d['patient_name'] ?? 'Patient',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15),
+                                    ),
+                                    Row(
+                                      children: [
+                                        StarRatingWidget(
+                                          initialRating: r,
+                                          starSize: 16,
+                                          isReadOnly: true,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          r.toStringAsFixed(1),
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                if ((d['feedback_text'] ?? '').isNotEmpty) ...
+                                  [
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      d['feedback_text'],
+                                      style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          height: 1.4,
+                                          fontSize: 13),
+                                    ),
+                                  ],
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+
                   const SizedBox(height: 100),
                 ],
               ),

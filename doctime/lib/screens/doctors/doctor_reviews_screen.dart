@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../widgets/star_rating_widget.dart';
 
 class DoctorReviewsScreen extends StatefulWidget {
   const DoctorReviewsScreen({super.key});
@@ -50,6 +51,76 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     }
   }
 
+  /// Builds the aggregate summary card at the top of the screen.
+  Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
+    if (docs.isEmpty) return const SizedBox.shrink();
+
+    final ratings = docs
+        .map((d) => (d.data() as Map<String, dynamic>)['rating'])
+        .where((r) => r != null)
+        .map((r) => (r as num).toDouble())
+        .toList();
+
+    if (ratings.isEmpty) return const SizedBox.shrink();
+
+    final double average = ratings.reduce((a, b) => a + b) / ratings.length;
+    final int count = ratings.length;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF407CE2), Color(0xFF6FA0FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF407CE2).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Big average number
+          Text(
+            average.toStringAsFixed(1),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 52,
+              fontWeight: FontWeight.w900,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              StarRatingWidget(
+                initialRating: average,
+                starSize: 22,
+                isReadOnly: true,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '$count ${count == 1 ? 'Review' : 'Reviews'}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -75,8 +146,9 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
             .where('hasFeedback', isEqualTo: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
+          }
 
           var docs = snapshot.data!.docs;
 
@@ -92,9 +164,16 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
+            // +1 for the aggregate summary header at index 0
+            itemCount: docs.length + 1,
             itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
+              if (index == 0) return _buildAggregateSummary(docs);
+
+              final data =
+                  docs[index - 1].data() as Map<String, dynamic>;
+              final double reviewRating =
+                  (data['rating'] as num?)?.toDouble() ?? 0.0;
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
@@ -112,13 +191,20 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                         Text(data['patient_name'] ?? 'Patient',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 16)),
-                        const Row(
+                        // Real star rating from Firestore
+                        Row(
                           children: [
-                            Icon(Icons.star_rounded,
-                                color: Colors.amber, size: 20),
-                            SizedBox(width: 4),
-                            Text("5.0",
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                            StarRatingWidget(
+                              initialRating: reviewRating,
+                              starSize: 18,
+                              isReadOnly: true,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              reviewRating.toStringAsFixed(1),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
                           ],
                         ),
                       ],

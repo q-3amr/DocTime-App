@@ -70,6 +70,46 @@ class DatabaseService {
     });
   }
 
+  /// Recalculates the doctor's average rating and review count from all
+  /// appointments that have feedback, then writes the result to the doctor's
+  /// own user document so every screen that reads UserModel gets the live value.
+  Future<void> updateDoctorAggregateRating(String doctorId) async {
+    final snapshot = await _db
+        .collection('appointments')
+        .where('doctor_id', isEqualTo: doctorId)
+        .where('hasFeedback', isEqualTo: true)
+        .get();
+
+    if (snapshot.docs.isEmpty) return;
+
+    // Only count docs that actually have a numeric rating value
+    final ratings = snapshot.docs
+        .map((d) => d.data()['rating'])
+        .where((r) => r != null)
+        .map((r) => (r as num).toDouble())
+        .toList();
+
+    if (ratings.isEmpty) return;
+
+    final double average =
+        ratings.reduce((a, b) => a + b) / ratings.length;
+
+    await _db.collection('users').doc(doctorId).update({
+      'rating': double.parse(average.toStringAsFixed(1)),
+      'reviewCount': ratings.length,
+    });
+  }
+
+  /// Stream of all appointments for a doctor that have feedback.
+  /// Used by DoctorReviewsScreen and doctor_details_screen to display reviews.
+  Stream<QuerySnapshot> streamReviewsForDoctor(String doctorId) {
+    return _db
+        .collection('appointments')
+        .where('doctor_id', isEqualTo: doctorId)
+        .where('hasFeedback', isEqualTo: true)
+        .snapshots();
+  }
+
   /// دالة تصفير التنبيهات: تُستدعى عند دخول الدكتور لشاشة المراجعات
   Future<void> markAllReviewsAsSeen(String doctorId) async {
     final querySnapshot = await _db

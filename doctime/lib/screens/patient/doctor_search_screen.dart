@@ -6,6 +6,7 @@ import 'dart:math'
 import '../../services/database_service.dart';
 import '../../models/user.dart';
 import '../../utils/constants.dart';
+import '../../widgets/star_rating_widget.dart';
 import 'doctor_details_screen.dart';
 
 class DoctorSearchScreen extends StatefulWidget {
@@ -172,6 +173,15 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       (a.distance ?? 99999).compareTo(b.distance ?? 99999));
                 }
 
+                // Sort by highest rating descending; doctors with no rating go last
+                if (selectedFilter == 'Top Rated') {
+                  filtered.sort((a, b) {
+                    final rA = a.rating ?? -1.0;
+                    final rB = b.rating ?? -1.0;
+                    return rB.compareTo(rA); // highest first
+                  });
+                }
+
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   itemCount: filtered.length,
@@ -214,7 +224,6 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                     // 📍 تعليق: استدعاء دالة جلب الموقع عند اختيار فلتر الأقرب
                     _getCurrentLocation();
                   } else if (newValue == 'Top Rated') {
-                    // TODO: implement top rated
                     setState(() => selectedFilter = 'Top Rated');
                   } else {
                     setState(() => selectedFilter = 'Select Filter');
@@ -299,6 +308,29 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                           fontSize: 18, fontWeight: FontWeight.bold)),
                   Text(doctor.specialty ?? 'General',
                       style: TextStyle(color: Colors.grey.shade500)),
+
+                  // ── Star rating badge (visible when doctor has reviews) ──
+                  if (doctor.rating != null && doctor.rating! > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Row(
+                        children: [
+                          StarRatingWidget(
+                            initialRating: doctor.rating!,
+                            starSize: 14,
+                            isReadOnly: true,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            doctor.rating!.toStringAsFixed(1),
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   // 📍 تعليق: إظهار المسافة بالكيلومتر فقط إذا كانت محسوبة (أي عند تفعيل فلتر الأقرب)
                   if (doctor.distance != null)

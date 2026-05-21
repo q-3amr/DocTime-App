@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:async';
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/date_utils.dart';
@@ -109,172 +108,17 @@ class DoctorDashboard extends StatefulWidget {
 class _DoctorDashboardState extends State<DoctorDashboard> {
   final db = DatabaseService();
   final User? user = FirebaseAuth.instance.currentUser;
-  StreamSubscription? _universalFeedbackListener;
-  final TextEditingController _feedbackController = TextEditingController();
-
-  bool _isPopupOpen = false;
 
   @override
   void initState() {
     super.initState();
-    _startUniversalFeedbackListener();
   }
 
   @override
   void dispose() {
-    _universalFeedbackListener?.cancel();
-    _feedbackController.dispose();
     super.dispose();
   }
 
-  // related to rating system
-  // related to rating system
-  void _startUniversalFeedbackListener() {
-    if (user?.uid == null) return;
-
-    _universalFeedbackListener = FirebaseFirestore.instance
-        .collection('appointments')
-        .where('patient_id', isEqualTo: user!.uid)
-        .where('status', isEqualTo: 'completed')
-        .snapshots()
-        .listen((snapshot) {
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-
-        if (data['hasFeedback'] != true && !_isPopupOpen) {
-          bool isRecent = true;
-          try {
-            // فحص التاريخ بأمان بدون استخدام متغيرات غير ضرورية
-            if (data['date'] is Timestamp) {
-              Timestamp ts = data['date'];
-              // إذا الموعد أقدم من 3 أيام لا تظهره (لتقليل الإزعاج)
-              if (DateTime.now().difference(ts.toDate()).inDays > 3) {
-                isRecent = false;
-              }
-            }
-          } catch (e) {
-            debugPrint("Date error: $e");
-          }
-
-          if (isRecent) {
-            setState(() => _isPopupOpen = true);
-            _showFeedbackPopup(context, doc.id);
-            break;
-          }
-        }
-      }
-    });
-  }
-
-  void _showFeedbackPopup(BuildContext context, String appointmentId) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.stars_rounded,
-                      color: Colors.amber, size: 50),
-                  const SizedBox(height: 10),
-                  const Text('Rate your experience',
-                      style:
-                          TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
-                  const SizedBox(height: 15),
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.amber.withOpacity(0.2)),
-                    ),
-                    child: const Column(
-                      children: [
-                        Text("⭐⭐⭐⭐⭐", style: TextStyle(fontSize: 24)),
-                        SizedBox(height: 5),
-                        Text("Qusai: Add Stars Logic Here",
-                            style: TextStyle(
-                                color: Colors.amber,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: _feedbackController,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Write your feedback...',
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(color: Colors.grey.shade200)),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: kPrimaryBlue,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15)),
-                          padding: const EdgeInsets.symmetric(vertical: 15)),
-                      onPressed: () async {
-                        await FirebaseFirestore.instance
-                            .collection('appointments')
-                            .doc(appointmentId)
-                            .update({'hasFeedback': true});
-
-                        await db.submitAppointmentFeedback(
-                          appointmentId: appointmentId,
-                          feedbackText: _feedbackController.text,
-                          rating: 5.0,
-                        );
-
-                        _feedbackController.clear();
-                        if (mounted) setState(() => _isPopupOpen = false);
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Submit',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.grey),
-                onPressed: () async {
-                  await FirebaseFirestore.instance
-                      .collection('appointments')
-                      .doc(appointmentId)
-                      .update({'hasFeedback': true});
-
-                  if (mounted) setState(() => _isPopupOpen = false);
-                  Navigator.pop(context);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  // related to rating system
 
   @override
   Widget build(BuildContext context) {
