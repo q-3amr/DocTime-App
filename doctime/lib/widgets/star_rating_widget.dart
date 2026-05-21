@@ -12,7 +12,7 @@
 import 'package:flutter/material.dart';
 
 class StarRatingWidget extends StatefulWidget {
-  /// Current rating value (1.0 – 5.0).
+  /// Current rating value (0.0 – 5.0). 0.0 means no rating (all stars empty).
   final double initialRating;
 
   /// Called whenever the user taps a star (only fires when isReadOnly: false).
@@ -42,7 +42,7 @@ class _StarRatingWidgetState extends State<StarRatingWidget> {
   @override
   void initState() {
     super.initState();
-    _currentRating = widget.initialRating.clamp(1.0, 5.0);
+    _currentRating = widget.initialRating.clamp(0.0, 5.0);
   }
 
   void _onStarTapped(int starIndex) {
