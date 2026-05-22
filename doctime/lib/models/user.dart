@@ -11,6 +11,7 @@ class UserModel {
   final double? longitude; // إضافة جديدة: خط الطول
   final String? about;
   final bool? isVerified;
+  final int? reviewCount; // 📍 إضافة: عشان نقرأ عدد التقييمات
   double? distance; // 📍 تم إضافة هذا السطر لحساب المسافة لحظياً
 
   UserModel({
@@ -26,7 +27,8 @@ class UserModel {
     this.longitude,
     this.about,
     this.isVerified,
-    this.distance, // 📍 تم إضافته في الـ Constructor
+    this.distance,
+    this.reviewCount, // 📍 تم إضافته في الـ Constructor
   });
 
   bool get isDoctor => role == 'doctor';
@@ -50,6 +52,8 @@ class UserModel {
       about: map['about'],
       isVerified: map['isVerified'] ?? false,
       // 📍 لا داعي لجلب الـ distance من الفايربيس لأنه متغير لحظي
+      reviewCount:
+          map['reviewCount'] != null ? (map['reviewCount'] as num).toInt() : 0,
     );
   }
 
@@ -68,6 +72,7 @@ class UserModel {
       map['longitude'] = longitude;
       map['about'] = about ?? '';
       map['isVerified'] = isVerified ?? false;
+      map['reviewCount'] = reviewCount ?? 0; // 📍 إضافته هنا
     }
 
     return map;
@@ -86,7 +91,8 @@ class UserModel {
     double? longitude,
     String? about,
     bool? isVerified,
-    double? distance, // 📍 تم إضافته هنا أيضاً
+    double? distance,
+    int? reviewCount,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -101,7 +107,8 @@ class UserModel {
       longitude: longitude ?? this.longitude,
       about: about ?? this.about,
       isVerified: isVerified ?? this.isVerified,
-      distance: distance ?? this.distance, // 📍 تم إضافته هنا
+      distance: distance ?? this.distance,
+      reviewCount: reviewCount ?? this.reviewCount,
     );
   }
 }

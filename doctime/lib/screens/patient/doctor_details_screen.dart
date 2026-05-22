@@ -9,6 +9,7 @@ import '../../widgets/star_rating_widget.dart';
 import '../common/chat_screen.dart';
 import '../auth/login_screen.dart';
 import '../../models/appointment.dart';
+import '../../models/user.dart';
 
 class DoctorDetailsScreen extends StatefulWidget {
   final String doctorName;
@@ -287,36 +288,22 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // ── Live aggregate computed directly from review docs ──
-                  // (does NOT depend on the cached 'rating' field on the user
-                  //  document, so it's always correct even for old reviews)
-                  StreamBuilder<QuerySnapshot>(
+                  // ── قراءة التقييم الجاهز من بروفايل الدكتور مباشرة ──
+                  StreamBuilder<UserModel?>(
                     stream: widget.doctorId != null
-                        ? _db.streamReviewsForDoctor(widget.doctorId!)
+                        ? _db.streamUser(widget.doctorId!)
                         : null,
                     builder: (context, snap) {
-                      double avg = 0.0;
-                      int count = 0;
-                      if (snap.hasData && snap.data!.docs.isNotEmpty) {
-                        final ratings = snap.data!.docs
-                            .map((d) =>
-                                (d.data() as Map<String, dynamic>)['rating'])
-                            .where((r) => r != null)
-                            .map((r) => (r as num).toDouble())
-                            .where((r) => r > 0) // exclude dismissed (0.0)
-                            .toList();
-                        count = ratings.length;
-                        if (count > 0) {
-                          avg = ratings.reduce((a, b) => a + b) / count;
-                        }
-                      }
+                      // سحبنا المتوسط والعدد الجاهزين بدون ما نحسبهم هون
+                      double avg = snap.data?.rating ?? 0.0;
+                      int count = snap.data?.reviewCount ?? 0;
 
                       return Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
                             children: [
-                              // Only show filled stars when there is a real avg
+                              // إذا في تقييم بنعرض النجوم
                               if (avg > 0) ...[
                                 StarRatingWidget(
                                   initialRating: avg,
@@ -339,7 +326,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                                 ),
                             ],
                           ),
-                          // 📍 تعليق: عرض المسافة إذا كانت متوفرة
+                          // إظهار المسافة إذا موجودة
                           if (widget.distance != null)
                             Text(
                               '${widget.distance!.toStringAsFixed(1)} km away',
