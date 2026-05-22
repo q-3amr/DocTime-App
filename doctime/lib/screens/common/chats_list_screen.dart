@@ -121,7 +121,7 @@ class ChatsListScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade100),
+                        border: Border.all(color: Colors.grey.shade300, width: 2.0),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.grey.withOpacity(0.05),

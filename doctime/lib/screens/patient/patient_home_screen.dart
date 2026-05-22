@@ -127,7 +127,6 @@ class PatientHomeContent extends StatefulWidget {
 class _PatientHomeContentState extends State<PatientHomeContent> {
   final _db = DatabaseService();
   final User? user = FirebaseAuth.instance.currentUser;
-  Timer? _timer;
   StreamSubscription? _feedbackListener;
   final TextEditingController _feedbackController = TextEditingController();
 
@@ -135,14 +134,10 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
   void initState() {
     super.initState();
     _startFeedbackListener();
-    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      if (mounted) setState(() {});
-    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _feedbackListener?.cancel();
     _feedbackController.dispose();
     super.dispose();
@@ -180,8 +175,8 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25)),
               // insetPadding ensures the dialog shrinks away from the keyboard
-              insetPadding: const EdgeInsets.symmetric(
-                  horizontal: 24, vertical: 24),
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -204,8 +199,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                           const Text(
                             'Your appointment has finished!\nPlease share your experience with us.',
                             textAlign: TextAlign.center,
-                            style:
-                                TextStyle(color: Colors.grey, fontSize: 14),
+                            style: TextStyle(color: Colors.grey, fontSize: 14),
                           ),
                           const SizedBox(height: 20),
                           // ── Interactive star picker ──
@@ -223,8 +217,8 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                                 StarRatingWidget(
                                   initialRating: dialogRating,
                                   starSize: 36,
-                                  onRatingChanged: (val) => setDialogState(
-                                      () => dialogRating = val),
+                                  onRatingChanged: (val) =>
+                                      setDialogState(() => dialogRating = val),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
@@ -255,8 +249,8 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                               fillColor: Colors.grey.shade50,
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(15),
-                                  borderSide: BorderSide(
-                                      color: Colors.grey.shade200)),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade200)),
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -271,11 +265,10 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                                     const EdgeInsets.symmetric(vertical: 15),
                               ),
                               onPressed: () async {
-                                final apptDoc =
-                                    await FirebaseFirestore.instance
-                                        .collection('appointments')
-                                        .doc(appointmentId)
-                                        .get();
+                                final apptDoc = await FirebaseFirestore.instance
+                                    .collection('appointments')
+                                    .doc(appointmentId)
+                                    .get();
                                 final doctorId =
                                     apptDoc.data()?['doctor_id'] as String?;
 
@@ -289,8 +282,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                                   'rating': dialogRating,
                                 });
 
-                                if (doctorId != null &&
-                                    doctorId.isNotEmpty) {
+                                if (doctorId != null && doctorId.isNotEmpty) {
                                   await _db
                                       .updateDoctorAggregateRating(doctorId);
                                 }
@@ -313,8 +305,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                     right: 10,
                     top: 10,
                     child: IconButton(
-                      icon: const Icon(Icons.close_rounded,
-                          color: Colors.grey),
+                      icon: const Icon(Icons.close_rounded, color: Colors.grey),
                       onPressed: () async {
                         await FirebaseFirestore.instance
                             .collection('appointments')
@@ -403,8 +394,10 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       future.sort((a, b) => (a['date'] as DateTime)
                           .compareTo(b['date'] as DateTime));
                       final next = future.first;
-                      return _buildTimerBanner(next['date'] as DateTime,
-                          (next['data'] as Map)['doctor_name'] ?? 'Doctor');
+                      return LiveTimerBanner(
+                          date: next['date'] as DateTime,
+                          doctorName:
+                              (next['data'] as Map)['doctor_name'] ?? 'Doctor');
                     },
                   ),
                   const SizedBox(height: 25),
@@ -457,42 +450,6 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     );
   }
 
-  Widget _buildTimerBanner(DateTime date, String name) {
-    Duration diff = date.difference(DateTime.now());
-    String timeText = diff.inDays > 0
-        ? '${diff.inDays} Days, ${diff.inHours % 24} Hours'
-        : '${diff.inHours} Hours, ${diff.inMinutes % 60} Minutes';
-    return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: [kPrimaryBlue, kPrimaryBlue.withOpacity(0.8)]),
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                  color: kPrimaryBlue.withOpacity(0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10))
-            ]),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Upcoming Appointment',
-              style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 5),
-          Text(timeText,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900)),
-          const SizedBox(height: 5),
-          Text('with Dr. $name',
-              style: const TextStyle(color: Colors.white, fontSize: 16))
-        ]));
-  }
-
   Widget _buildEmptyBanner() {
     return Container(
         width: double.infinity,
@@ -530,6 +487,78 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                   color: Colors.grey.shade100, shape: BoxShape.circle),
               child: const Icon(Icons.calendar_month_rounded,
                   color: Colors.grey, size: 30))
+        ]));
+  }
+}
+
+class LiveTimerBanner extends StatefulWidget {
+  final DateTime date;
+  final String doctorName;
+
+  const LiveTimerBanner(
+      {super.key, required this.date, required this.doctorName});
+
+  @override
+  State<LiveTimerBanner> createState() => _LiveTimerBannerState();
+}
+
+class _LiveTimerBannerState extends State<LiveTimerBanner> {
+  Timer? _bannerTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // التايمر هسا محبوس هون، بيحدث بس المربع الأزرق كل دقيقة
+    _bannerTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _bannerTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Duration diff = widget.date.difference(DateTime.now());
+
+    // حماية: إذا الموعد صار بالماضي، بنخفي المربع
+    if (diff.isNegative) return const SizedBox.shrink();
+
+    String timeText = diff.inDays > 0
+        ? '${diff.inDays} Days, ${diff.inHours % 24} Hours'
+        : '${diff.inHours} Hours, ${diff.inMinutes % 60} Minutes';
+
+    return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+            gradient: LinearGradient(
+                colors: [kPrimaryBlue, kPrimaryBlue.withOpacity(0.8)]),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                  color: kPrimaryBlue.withOpacity(0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10))
+            ]),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Upcoming Appointment',
+              style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 5),
+          Text(timeText,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900)),
+          const SizedBox(height: 5),
+          Text('with Dr. ${widget.doctorName}',
+              style: const TextStyle(color: Colors.white, fontSize: 16))
         ]));
   }
 }
