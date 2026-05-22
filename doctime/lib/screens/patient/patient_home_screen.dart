@@ -154,7 +154,8 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
         .listen((snapshot) {
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        if (data['hasFeedback'] != true) {
+        // هون بنشيك: إذا مافي فيدباك + المريض ما سكره من قبل، بنطلعه
+        if (data['hasFeedback'] != true && data['isDismissed'] != true) {
           _showFeedbackPopup(context, doc.id);
           break;
         }
@@ -307,10 +308,13 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                     child: IconButton(
                       icon: const Icon(Icons.close_rounded, color: Colors.grey),
                       onPressed: () async {
+                        // بنسجل إن المريض "تجاهل" التقييم عشان ما نرجع نزعجه، بس بنخلي hasFeedback = false عشان ما يدخل بحسبة الدكتور
                         await FirebaseFirestore.instance
                             .collection('appointments')
                             .doc(appointmentId)
-                            .update({'hasFeedback': true});
+                            .update({
+                          'isDismissed': true, // حقل جديد بنضيفه للموعد
+                        });
                         if (context.mounted) Navigator.pop(context);
                       },
                     ),
