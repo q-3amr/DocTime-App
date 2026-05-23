@@ -45,6 +45,17 @@ class _StarRatingWidgetState extends State<StarRatingWidget> {
     _currentRating = widget.initialRating.clamp(0.0, 5.0);
   }
 
+  // هاي الدالة بتجبر النجوم تتحدث لو تغيرت قيمة initialRating من السيرفر
+  @override
+  void didUpdateWidget(StarRatingWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialRating != oldWidget.initialRating) {
+      setState(() {
+        _currentRating = widget.initialRating.clamp(0.0, 5.0);
+      });
+    }
+  }
+
   void _onStarTapped(int starIndex) {
     if (widget.isReadOnly) return;
     final newRating = starIndex.toDouble();
