@@ -55,8 +55,6 @@ class DatabaseService {
   // APPOINTMENTS & REVIEWS
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // related to rating system
-  /// دالة تقديم التقييم: تُحدث الموعد وتفعل النقطة الزرقاء للدكتور
   Future<void> submitAppointmentFeedback({
     required String appointmentId,
     required String feedbackText,
@@ -66,13 +64,10 @@ class DatabaseService {
       'hasFeedback': true,
       'feedback_text': feedbackText,
       'rating': rating,
-      'isReviewSeen': false, // تفعيل التنبيه للدكتور
+      'isReviewSeen': false,
     });
   }
 
-  /// Recalculates the doctor's average rating and review count from all
-  /// appointments that have feedback, then writes the result to the doctor's
-  /// own user document so every screen that reads UserModel gets the live value.
   Future<void> updateDoctorAggregateRating(String doctorId) async {
     final snapshot = await _db
         .collection('appointments')
@@ -82,7 +77,6 @@ class DatabaseService {
 
     if (snapshot.docs.isEmpty) return;
 
-    // Only count docs that actually have a numeric rating value
     final ratings = snapshot.docs
         .map((d) => d.data()['rating'])
         .where((r) => r != null)
@@ -91,8 +85,7 @@ class DatabaseService {
 
     if (ratings.isEmpty) return;
 
-    final double average =
-        ratings.reduce((a, b) => a + b) / ratings.length;
+    final double average = ratings.reduce((a, b) => a + b) / ratings.length;
 
     await _db.collection('users').doc(doctorId).update({
       'rating': double.parse(average.toStringAsFixed(1)),
@@ -100,8 +93,6 @@ class DatabaseService {
     });
   }
 
-  /// Stream of all appointments for a doctor that have feedback.
-  /// Used by DoctorReviewsScreen and doctor_details_screen to display reviews.
   Stream<QuerySnapshot> streamReviewsForDoctor(String doctorId) {
     return _db
         .collection('appointments')
@@ -110,7 +101,6 @@ class DatabaseService {
         .snapshots();
   }
 
-  /// دالة تصفير التنبيهات: تُستدعى عند دخول الدكتور لشاشة المراجعات
   Future<void> markAllReviewsAsSeen(String doctorId) async {
     final querySnapshot = await _db
         .collection('appointments')
@@ -130,7 +120,6 @@ class DatabaseService {
     }
     if (hasUpdates) await batch.commit();
   }
-  // related to rating system
 
   Stream<QuerySnapshot> streamAppointmentsForDoctor(String doctorId) {
     return _db
@@ -172,7 +161,6 @@ class DatabaseService {
         .get();
   }
 
-  /// الدالة التي كانت مفقودة في شاشة المواعيد
   Future<QuerySnapshot> getAppointmentsForDoctorByStatuses(
     String doctorId,
     List<String> statuses,
@@ -184,9 +172,12 @@ class DatabaseService {
         .get();
   }
 
-  /// دالة الحجز المحدثة: تضمن إضافة حقول التقييم والتنبيه افتراضياً
+  /// دالة الحجز المحدثة: تضمن إضافة حقول التقييم والتنبيه بالإضافة لتوكن المريض
   Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
     try {
+      // جلب التوكن الخاص بجهاز المريض وإضافته
+      String? token = await FirebaseMessaging.instance.getToken();
+
       String slotId =
           "appt_${appointment.doctorId}_${appointment.appointmentDateTime.millisecondsSinceEpoch}";
       DocumentReference apptRef = _db.collection('appointments').doc(slotId);
@@ -202,9 +193,11 @@ class DatabaseService {
         }
 
         final appointmentData = appointment.toMap();
+
         // إسناد القيم الافتراضية
         appointmentData['hasFeedback'] = false;
         appointmentData['isReviewSeen'] = false;
+        appointmentData['patientFcmToken'] = token; // تخزين التوكن في الموعد
 
         transaction.set(apptRef, appointmentData);
         return true;
