@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/user.dart';
 import '../models/appointment.dart';
@@ -287,6 +288,28 @@ class DatabaseService {
     await _db.collection('users').doc(doctorId).update({'isVerified': true});
   }
 
+  // ─── FOR RAHMAH ─────────────────────────────────────────────────────────────
+  // This function saves the device's FCM token to the user's Firestore document.
+  // It is now called in TWO places:
+  //
+  //   1. auth_wrapper.dart → called every time the user opens the app while
+  //      logged in. This keeps the token fresh in case it was refreshed by
+  //      Firebase since the last session.
+  //
+  //   2. main.dart → onTokenRefresh listener → called automatically whenever
+  //      Firebase refreshes the token mid-session (e.g. after app reinstall).
+  //
+  // WHY TWO PLACES? FCM tokens expire or get rotated. If we only save it once
+  // at booking time (bookAppointmentSafely), the token in the appointment doc
+  // becomes stale. The "pushToken" field in the user's doc acts as the source
+  // of truth — always up to date.
+  //
+  // NOTE: This stores the token in the USER document under "pushToken".
+  // The booking function (bookAppointmentSafely) copies it into the appointment
+  // document as "patientFcmToken" at booking time. For future appointments,
+  // you may want to read the user's latest pushToken from the user doc instead
+  // of relying on what was saved at booking time.
+  // ─────────────────────────────────────────────────────────────────────────────
   Future<void> updateNotificationToken(String userId) async {
     try {
       String? token = await FirebaseMessaging.instance.getToken();
@@ -295,9 +318,10 @@ class DatabaseService {
             .collection('users')
             .doc(userId)
             .set({'pushToken': token}, SetOptions(merge: true));
+        debugPrint("FCM token updated in Firestore for user: $userId");
       }
     } catch (e) {
-      print("Error updating notification token: $e");
+      debugPrint("Error updating notification token: $e");
     }
   }
 }

@@ -42,6 +42,17 @@ class AuthWrapper extends StatelessWidget {
 
           // BEFORE: FirebaseFirestore.instance.collection('users').doc(user.uid).get()
           // NOW: through DatabaseService — screens/wrappers must not touch Firestore directly.
+
+          // ─── FOR RAHMAH ─────────────────────────────────────────────────────
+          // FIX: This is where we update the FCM token in Firestore every time
+          // the user opens the app while logged in. FCM tokens can change at any
+          // time (e.g. after app reinstall or data clear), so saving the latest
+          // token here ensures the Cloud Function always has a valid token to
+          // send notifications to. Without this call, the token in Firestore
+          // would stay stale and notifications would eventually stop working.
+          // ──────────────────────────────────────────────────────────────────
+          DatabaseService().updateNotificationToken(user.uid);
+
           return FutureBuilder(
             future: DatabaseService().getUserById(user.uid),
             builder: (context, roleSnapshot) {

@@ -23,11 +23,12 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- الإضافة المطلوبة لضمان ظهور الإشعار وفتح التطبيق -->
-            <intent-filter>
-                <action android:name="FLUTTER_NOTIFICATION_CLICK" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+            <!-- FOR RAHMAH: The old FLUTTER_NOTIFICATION_CLICK intent-filter was
+                 removed from here. It was a legacy FCM click mechanism that is
+                 deprecated and no longer works reliably on Flutter 3.x + Android 12+.
+                 Notification tap handling is now done properly in main.dart using
+                 FirebaseMessaging.onMessageOpenedApp (background tap) and
+                 messaging.getInitialMessage() (terminated state tap). -->
         </activity>
 
         <meta-data android:name="flutterEmbedding" android:value="2" />
