@@ -211,11 +211,16 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
   }
 
   Widget _buildMessageList(ChatProvider chat) {
+    final bool showIndicator = chat.isListening || chat.isTyping;
     return ListView.builder(
       controller: _scrollController,
       padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      itemCount: chat.messages.length,
+      itemCount: chat.messages.length + (showIndicator ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index == chat.messages.length) {
+          if (chat.isListening) return _buildListeningIndicator();
+          return const _TypingIndicator();
+        }
         final message = chat.messages[index];
         return _ChatBubble(
           message: message,
@@ -223,6 +228,48 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
           isSpeaking: chat.isSpeaking,
         );
       },
+    );
+  }
+
+  Widget _buildListeningIndicator() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3, bottom: 3, left: 52, right: 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: kPrimaryBlue.withValues(alpha: 0.1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(4),
+              ),
+              border: Border.all(
+                color: kPrimaryBlue.withValues(alpha: 0.35),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.mic, color: kPrimaryBlue, size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  'Recording your message...',
+                  style: TextStyle(
+                    color: kPrimaryBlue,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -586,5 +633,105 @@ class _ChatBubble extends StatelessWidget {
     final h = time.hour.toString().padLeft(2, '0');
     final m = time.minute.toString().padLeft(2, '0');
     return '$h:$m';
+  }
+}
+
+class _TypingIndicator extends StatefulWidget {
+  const _TypingIndicator();
+
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 3, bottom: 3, left: 0, right: 52),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            margin: const EdgeInsets.only(right: 6, bottom: 2),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Color(0xFF407CE2),
+            ),
+            child: const Center(
+              child: Text(
+                'AI',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(18),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(4),
+                bottomRight: Radius.circular(18),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (i) {
+                return AnimatedBuilder(
+                  animation: _controller,
+                  builder: (_, __) {
+                    final delay = i * 0.3;
+                    final t = (_controller.value + delay) % 1.0;
+                    final scale = 0.6 + 0.4 * (t < 0.5 ? t * 2 : (1 - t) * 2);
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: 8 * scale,
+                      height: 8 * scale,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF407CE2).withValues(alpha: 0.7),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
