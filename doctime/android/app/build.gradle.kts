@@ -6,10 +6,10 @@ plugins {
 }
 
 android {
+    ndkVersion = "28.2.13676358"
     namespace = "com.example.doctime"
    compileSdk = 36
-    ndkVersion = "27.0.12077973"
-
+   
     compileOptions {
         // تحديث للإصدار 1.8 وتفعيل الـ Desugaring
         sourceCompatibility = JavaVersion.VERSION_1_8
