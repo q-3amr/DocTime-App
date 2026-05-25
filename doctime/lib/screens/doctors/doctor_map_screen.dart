@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../common/base_map_screen.dart';
@@ -50,7 +50,7 @@ class _DoctorMapScreenState extends BaseMapState<DoctorMapScreen> {
 
           Navigator.of(context).pop(pickedClinicLocation);
         },
-        child: const Text('تأكيد موقع العيادة',
+        child: const Text('Confirm Clinic Location',
             style: TextStyle(color: Colors.white, fontSize: 18)),
       ),
     );

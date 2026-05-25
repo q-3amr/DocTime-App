@@ -1,4 +1,4 @@
-﻿
+
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -45,7 +45,7 @@ if (pickedLocation != null) {
         _selectedLatitude = pickedLocation.latitude;
         _selectedLongitude = pickedLocation.longitude;
 
-locationController.text = '📍 تم تحديد الموقع بنجاح';
+        locationController.text = '📍 Location selected successfully';
       });
     }
   }

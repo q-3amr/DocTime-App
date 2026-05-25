@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -36,7 +36,7 @@ Future<void> _goToCurrentLocation() async {
 serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         _showSnackBar(
-            "يرجى تفعيل خدمات الموقع (GPS) من إعدادات الجهاز", Colors.orange);
+            "Please enable Location Services (GPS) from device settings", Colors.orange);
         setState(() => _isLoading = false);
         return;
       }
@@ -45,14 +45,14 @@ permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          _showSnackBar("تم رفض صلاحية الوصول للموقع", Colors.red);
+          _showSnackBar("Location permission denied", Colors.red);
           setState(() => _isLoading = false);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        _showSnackBar("صلاحية الموقع مرفوضة دائماً، يرجى تفعيلها من الإعدادات",
+        _showSnackBar("Location permission is permanently denied, please enable it from Settings",
             Colors.red);
         setState(() => _isLoading = false);
         return;
@@ -75,7 +75,7 @@ _mapController?.animateCamera(
         _isLoading = false;
       });
     } catch (e) {
-      _showSnackBar("حدث خطأ أثناء جلب الموقع: $e", Colors.red);
+      _showSnackBar("An error occurred while fetching location: $e", Colors.red);
       setState(() => _isLoading = false);
     }
   }
@@ -90,7 +90,7 @@ _mapController?.animateCamera(
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('حدد موقع العيادة'),
+        title: const Text('Pick Clinic Location'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -128,7 +128,7 @@ _mapController?.animateCamera(
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isLoading ? null : _goToCurrentLocation,
-        label: Text(_isLoading ? 'جاري التحديد...' : 'موقعي الحالي'),
+        label: Text(_isLoading ? 'Locating...' : 'My Current Location'),
         icon: _isLoading
             ? const SizedBox(
                 width: 20,
