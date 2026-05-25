@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:geolocator/geolocator.dart'; // 📍 تعليق: مكتبة تحديد الموقع الجغرافي
+import 'package:geolocator/geolocator.dart'; 
 import 'dart:math'
-    show cos, sqrt, asin; // 📍 تعليق: مكتبة الحسابات الرياضية للمعادلات
+    show cos, sqrt, asin; 
 import '../../services/database_service.dart';
 import '../../models/user.dart';
 import '../../utils/constants.dart';
@@ -23,22 +23,22 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
   String searchQuery = '';
   String selectedFilter = 'Select Filter';
-  String? selectedSpecialty; // شلنا القيمة الافتراضية من هون
+  String? selectedSpecialty; 
 
-  // 📍 تعليق: متغير لتخزين إحداثيات موقع المريض (Latitude & Longitude)
+  
   Position? _userPosition;
   @override
   void initState() {
     super.initState();
 
-    // برمجة دفاعية: بنفحص إذا التخصص اللي إجا من الـ AI موجود فعلاً بلستة التخصصات تبعتك
-    // عشان لو الـ AI هبد تخصص غريب، الـ Dropdown ما يكرش بوجه المريض
+    
+    
     if (widget.initialSpecialty != null &&
         _filterSpecialties.contains(widget.initialSpecialty)) {
       selectedSpecialty = widget.initialSpecialty;
     } else {
       selectedSpecialty =
-          'All Specialties'; // إذا ما وصلنا إشي، أو التخصص غلط، بنرجع للوضع الطبيعي
+          'All Specialties'; 
     }
   }
 
@@ -47,7 +47,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     ...kSpecialties,
   ];
 
-  // 📍 تعليق: دالة رياضية (Haversine) لحساب المسافة الجوية بين نقطتين بالكيلومتر
+  
   double _calculateDistance(
       double lat1, double lon1, double lat2, double lon2) {
     var p = 0.017453292519943295;
@@ -58,7 +58,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     return 12742 * asin(sqrt(a));
   }
 
-  // 📍 تعليق: دالة لطلب الإذن من المستخدم وجلب موقعه الحالي من الـ GPS
+  
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
@@ -74,8 +74,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
     final position = await Geolocator.getCurrentPosition();
     setState(() {
-      _userPosition = position; // حفظ الموقع
-      selectedFilter = 'By Nearest'; // تفعيل فلتر الأقرب
+      _userPosition = position; 
+      selectedFilter = 'By Nearest'; 
     });
   }
 
@@ -98,7 +98,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       ),
       body: Column(
         children: [
-          // بار البحث
+          
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: Container(
@@ -119,13 +119,13 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             ),
           ),
 
-          // قسم الفلترة
+          
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
             child: _buildFilterSection(),
           ),
 
-          // دروب داون التخصصات
+          
           _buildSpecialtyDropdown(),
 
           Expanded(
@@ -139,7 +139,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   return const Center(child: Text('No doctors found.'));
                 }
 
-                // 📍 تعليق: المرحلة الأولى - الفلترة حسب النص (البحث) وحسب التخصص المختار
+                
                 List<UserModel> filtered = snapshot.data!.where((doctor) {
                   if (currentUser != null && doctor.id == currentUser!.uid)
                     return false;
@@ -155,11 +155,11 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   return matchesSearch && matchesSpecialty;
                 }).toList();
 
-                // 📍 تعليق: المرحلة الثانية - إذا كان المريض اختار "الأقرب" وموقعه متوفر
+                
                 if (selectedFilter == 'By Nearest' && _userPosition != null) {
                   for (var doc in filtered) {
                     if (doc.latitude != null && doc.longitude != null) {
-                      // حساب المسافة لكل دكتور وتخزينها في الموديل
+                      
                       doc.distance = _calculateDistance(
                         _userPosition!.latitude,
                         _userPosition!.longitude,
@@ -168,17 +168,17 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       );
                     }
                   }
-                  // ترتيب القائمة من الأقرب للأبعد (الرقم الأصغر أولاً)
+                  
                   filtered.sort((a, b) =>
                       (a.distance ?? 99999).compareTo(b.distance ?? 99999));
                 }
 
-                // Sort by highest rating descending; doctors with no rating go last
+                
                 if (selectedFilter == 'Top Rated') {
                   filtered.sort((a, b) {
                     final rA = a.rating ?? -1.0;
                     final rB = b.rating ?? -1.0;
-                    return rB.compareTo(rA); // highest first
+                    return rB.compareTo(rA); 
                   });
                 }
 
@@ -221,7 +221,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                     .toList(),
                 onChanged: (String? newValue) {
                   if (newValue == 'By Nearest') {
-                    // 📍 تعليق: استدعاء دالة جلب الموقع عند اختيار فلتر الأقرب
+                    
                     _getCurrentLocation();
                   } else if (newValue == 'Top Rated') {
                     setState(() => selectedFilter = 'Top Rated');
@@ -243,7 +243,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          // 📍 تعليق: استخدام withValues بدل withOpacity ليتناسب مع تحديثات فلاتر الجديدة
+          
           color: kPrimaryBlue.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: kPrimaryBlue.withValues(alpha: 0.3)),
@@ -271,9 +271,9 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             doctorName: doctor.name,
             specialty: doctor.specialty ?? 'General',
             doctorId: doctor.id,
-            // ─────────────────────────────────────────────────────────
-            // 📍 تم التعديل هنا لتمرير البيانات الجغرافية لشاشة التفاصيل
-            // ─────────────────────────────────────────────────────────
+            
+            
+            
             latitude: doctor.latitude,
             longitude: doctor.longitude,
             distance: doctor.distance,
@@ -309,7 +309,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   Text(doctor.specialty ?? 'General',
                       style: TextStyle(color: Colors.grey.shade500)),
 
-                  // ── Star rating badge (visible when doctor has reviews) ──
+                  
                   if (doctor.rating != null && doctor.rating! > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
@@ -332,12 +332,12 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       ),
                     ),
 
-                  // 📍 تعليق: إظهار المسافة بالكيلومتر فقط إذا كانت محسوبة (أي عند تفعيل فلتر الأقرب)
+                  
                   if (doctor.distance != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Text(
-                        '${doctor.distance!.toStringAsFixed(1)} km away', // عرض رقم واحد بعد الفاصلة
+                        '${doctor.distance!.toStringAsFixed(1)} km away', 
                         style: const TextStyle(
                             color: kPrimaryBlue,
                             fontWeight: FontWeight.bold,

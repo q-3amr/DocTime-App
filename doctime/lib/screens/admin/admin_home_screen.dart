@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
@@ -81,14 +81,14 @@ class AdminHomeScreen extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
                         onPressed: () async {
-                          // رفض الدكتور (حذف حسابه من الداتابيز)
+                          
                           await db.deleteUser(doctor.id);
                         },
                       ),
                       IconButton(
                         icon: const Icon(Icons.check, color: Colors.green),
                         onPressed: () async {
-                          // الموافقة على الدكتور
+                          
                           await db.approveDoctor(doctor.id);
                         },
                       ),

@@ -1,4 +1,4 @@
-class UserModel {
+﻿class UserModel {
   final String id;
   final String email;
   final String name;
@@ -7,12 +7,12 @@ class UserModel {
   final String? specialty;
   final double? rating;
   final String? location;
-  final double? latitude; // إضافة جديدة: خط العرض
-  final double? longitude; // إضافة جديدة: خط الطول
+  final double? latitude; 
+  final double? longitude; 
   final String? about;
   final bool? isVerified;
-  final int? reviewCount; // 📍 إضافة: عشان نقرأ عدد التقييمات
-  double? distance; // 📍 تم إضافة هذا السطر لحساب المسافة لحظياً
+  final int? reviewCount; 
+  double? distance; 
 
   UserModel({
     required this.id,
@@ -28,7 +28,7 @@ class UserModel {
     this.about,
     this.isVerified,
     this.distance,
-    this.reviewCount, // 📍 تم إضافته في الـ Constructor
+    this.reviewCount, 
   });
 
   bool get isDoctor => role == 'doctor';
@@ -51,7 +51,7 @@ class UserModel {
           : null,
       about: map['about'],
       isVerified: map['isVerified'] ?? false,
-      // 📍 لا داعي لجلب الـ distance من الفايربيس لأنه متغير لحظي
+      
       reviewCount:
           map['reviewCount'] != null ? (map['reviewCount'] as num).toInt() : 0,
     );
@@ -72,7 +72,7 @@ class UserModel {
       map['longitude'] = longitude;
       map['about'] = about ?? '';
       map['isVerified'] = isVerified ?? false;
-      map['reviewCount'] = reviewCount ?? 0; // 📍 إضافته هنا
+      map['reviewCount'] = reviewCount ?? 0; 
     }
 
     return map;

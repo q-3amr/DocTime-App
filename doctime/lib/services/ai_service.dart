@@ -1,11 +1,11 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class AiService {
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   late final String _apiKey;
-  // مصفوفة الذاكرة اللي رح تكبر مع كل رسالة
+  
   final List<Map<String, String>> _chatHistory = [];
 
   AiService() {
@@ -14,8 +14,8 @@ class AiService {
       throw Exception('API Key for Groq is missing in .env file!');
     }
     _apiKey = key.trim();
-    // 1. أول مسج "خلق البوت"
-    // 1. أول مسج "خلق البوت"
+    
+    
     _chatHistory.add({
       "role": "system",
       "content": """You are a medical triage assistant for the DocTime app.
@@ -47,10 +47,10 @@ RULES:
           "Content-Type": "application/json",
         },
         body: jsonEncode({
-          // استخدمنا أسرع موديل عند جروق
+          
           "model": "llama-3.3-70b-versatile",
           "messages": _chatHistory,
-          "temperature": 0.5 // عشان نقلل الهلوسة ونخليه جدي
+          "temperature": 0.5 
         }),
       );
 
@@ -60,7 +60,7 @@ RULES:
 
         _chatHistory.add({"role": "assistant", "content": aiText});
 
-        return aiText; // عدل سطر الـ return القديم ليصير هيك
+        return aiText; 
       } else {
         _chatHistory.removeLast();
         return "Server error: ${response.statusCode}\nDetails: ${response.body}";

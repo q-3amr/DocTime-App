@@ -1,37 +1,14 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. UNNECESSARY FIRESTORE ROLE-CHECK REMOVED:
-//    BEFORE: every time this screen opened, _checkRole() fetched the user
-//    document from Firestore just to know if role == 'doctor'. This was wasteful
-//    because the parent screen (DoctorHomeScreen / PatientHomeScreen) already knows.
-//    NOW: required bool isDoctor parameter — parent passes it, zero network call.
-//    Also removed the isLoading state that existed just for the role fetch.
-//
-// 2. ALL FIRESTORE CALLS REPLACED:
-//    BEFORE: FirebaseFirestore.instance.collection('appointments') directly for
-//    streaming, updating status (x3), and deleting.
-//    NOW: _db.streamUserAppointments(), _db.updateAppointmentStatus(), _db.deleteAppointment()
-//
-// 3. DUPLICATE DATE HELPERS REMOVED:
-//    BEFORE: had private _parseDate(), _isExpired(), _formatDate() methods.
-//    NOW: uses parseDate(), isExpiredAppointment(), formatDateDisplay(),
-//    formatTimeFromDateTime() from shared date_utils.dart.
-//
-// 4. CONFIRM DIALOGS DEDUPLICATED:
-//    BEFORE: 3 separate identical AlertDialog blocks for cancel/complete/delete.
-//    NOW: one shared _confirmDialog() helper called by all three actions.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
-import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
-import '../../utils/date_utils.dart'; // parseDate, isExpiredAppointment, formatters
+import '../../utils/constants.dart'; 
+import '../../utils/date_utils.dart'; 
 
 class ScheduleScreen extends StatefulWidget {
-  /// Pass [isDoctor] from the parent home screen so we avoid
-  /// a redundant Firestore fetch just to determine the user's role.
+  
+  
   final bool isDoctor;
 
   const ScheduleScreen({super.key, required this.isDoctor});
@@ -49,8 +26,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   bool _isExpired(DateTime appointmentDate) =>
       isExpiredAppointment(appointmentDate);
 
-  // BEFORE: had _db.updateAppointmentStatus called inline after a direct Firestore write.
-  // NOW: _db.updateAppointmentStatus() through the service layer.
+  
+  
   void _cancelAppointment(String docId) async {
     final confirm =
         await _confirmDialog(
@@ -152,7 +129,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
           children: [
-            // Tab bar
+            
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(

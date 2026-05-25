@@ -1,25 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. ALL FIRESTORE CALLS REPLACED:
-//    BEFORE: had a FirebaseFirestore _firestore instance field and called it directly
-//    for: adding messages, updating the chat room document, and the messages stream.
-//    NOW: DatabaseService().sendMessage(), updateChatRoom(), streamMessages()
-//
-// 2. kPrimaryBlue FROM CONSTANTS:
-//    BEFORE: primaryBlue was a local Color variable.
-//    NOW: kPrimaryBlue imported from utils/constants.dart.
-//
-// NOTE: cloud_firestore is still imported here only to use Timestamp.now()
-// for the message timestamp. This is acceptable as it’s a data-type import,
-// not a database operation.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // only for Timestamp type, not DB operations
-import '../../services/database_service.dart'; // replaces all direct Firestore DB calls
-import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
+import 'package:cloud_firestore/cloud_firestore.dart'; 
+import '../../services/database_service.dart'; 
+import '../../utils/constants.dart'; 
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -39,13 +24,13 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _markAsRead(); // أول ما تفتح الشاشة بنخلي الرسائل مقروءة
+    _markAsRead(); 
   }
 
   void _markAsRead() async {
     final chatRoomId = _chatRoomId(_currentUserId, widget.receiverId);
     await _db.updateChatRoom(chatRoomId, {
-      'isRead': true, // هيك النقطة رح تختفي من الـ Dashboard والـ List
+      'isRead': true, 
     });
   }
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/star_rating_widget.dart';
@@ -14,7 +14,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
   @override
   void initState() {
     super.initState();
-    // تصفير النقطة الزرقاء بمجرد الدخول
+    
     _markReviewsAsSeen();
   }
 
@@ -23,7 +23,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     if (uid == null) return;
 
     try {
-      // جلب المواعيد الخاصة بهذا الدكتور فقط (لتجنب طلب Index معقد من فايربيس)
+      
       final querySnapshot = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: uid)
@@ -34,7 +34,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
-        // الفلترة تتم هنا برمجياً (Client-side) لحل مشكلة الـ Index
+        
         if (data['hasFeedback'] == true && data['isReviewSeen'] != true) {
           batch.update(doc.reference, {'isReviewSeen': true});
           hasUpdates = true;
@@ -43,7 +43,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
       if (hasUpdates) {
         await batch.commit();
-        // إعادة بناء الواجهة لإخفاء النقطة الزرقاء إذا كانت موجودة
+        
         if (mounted) setState(() {});
       }
     } catch (e) {
@@ -51,7 +51,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     }
   }
 
-  /// Builds the aggregate summary card at the top of the screen.
+  
   Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
     if (docs.isEmpty) return const SizedBox.shrink();
 
@@ -86,7 +86,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
       ),
       child: Row(
         children: [
-          // Big average number
+          
           Text(
             average.toStringAsFixed(1),
             style: const TextStyle(
@@ -152,7 +152,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
           var docs = snapshot.data!.docs;
 
-          // ترتيب المراجعات: الأحدث يظهر في الأعلى
+          
           docs.sort((a, b) => b['date'].compareTo(a['date']));
 
           if (docs.isEmpty) {
@@ -164,7 +164,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            // +1 for the aggregate summary header at index 0
+            
             itemCount: docs.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) return _buildAggregateSummary(docs);
@@ -191,7 +191,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                         Text(data['patient_name'] ?? 'Patient',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 16)),
-                        // Real star rating from Firestore
+                        
                         Row(
                           children: [
                             StarRatingWidget(

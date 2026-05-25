@@ -1,18 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. DIRECT FIRESTORE CALL REPLACED:
-//    BEFORE: FutureBuilder<DocumentSnapshot> calling
-//      FirebaseFirestore.instance.collection('users').doc(user.uid).get()
-//    NOW: DatabaseService().getUserById(user.uid) — goes through the service layer.
-//
-// 2. SECURITY BUG FIXED:
-//    BEFORE: AuthWrapper showed DoctorHomeScreen for ALL doctors — including
-//    unverified ones. An unverified doctor blocked at login could bypass
-//    that check by force-closing and reopening the app.
-//    NOW: isVerified is checked here too. Unverified doctors see a
-//    'Pending Approval' screen with a sign-out button until an admin approves.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -40,17 +26,17 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.hasData && snapshot.data != null) {
           final User user = snapshot.data!;
 
-          // BEFORE: FirebaseFirestore.instance.collection('users').doc(user.uid).get()
-          // NOW: through DatabaseService — screens/wrappers must not touch Firestore directly.
+          
+          
 
-          // ─── FOR RAHMAH ─────────────────────────────────────────────────────
-          // FIX: This is where we update the FCM token in Firestore every time
-          // the user opens the app while logged in. FCM tokens can change at any
-          // time (e.g. after app reinstall or data clear), so saving the latest
-          // token here ensures the Cloud Function always has a valid token to
-          // send notifications to. Without this call, the token in Firestore
-          // would stay stale and notifications would eventually stop working.
-          // ──────────────────────────────────────────────────────────────────
+          
+          
+          
+          
+          
+          
+          
+          
           DatabaseService().updateNotificationToken(user.uid);
 
           return FutureBuilder(
@@ -106,10 +92,10 @@ class AuthWrapper extends StatelessWidget {
                 return const AdminHomeScreen();
               }
               if (userModel != null && userModel.isDoctor) {
-                // BUG FIX: BEFORE this check didn't exist here — only login_screen
-                // checked isVerified. That meant on app restart (force-close + reopen),
-                // an unverified doctor skipped straight to DoctorHomeScreen.
-                // NOW: isVerified is enforced here too, closing that bypass.
+                
+                
+                
+                
                 if (userModel.isVerified != true) {
                   return Scaffold(
                     body: Center(

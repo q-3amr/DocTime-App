@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -23,15 +23,15 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   @override
   void initState() {
     super.initState();
-    // 📍 أول ما تفتح الشاشة، بنبلش نطلب الموقع
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       requestLocationAndGetPosition();
     });
   }
 
-  // ==========================================
-  // الشاشة المنبثقة (Dialog) لتفعيل الـ GPS
-  // ==========================================
+  
+  
+  
   Future<void> _showLocationServiceDialog() async {
     return showDialog<void>(
       context: context,
@@ -40,21 +40,21 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
         return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          // 📍 تم تحويل النص إلى الإنجليزية
+          
           title: const Text('Enable Location',
               style: TextStyle(fontWeight: FontWeight.bold)),
-          // 📍 تم تحويل النص إلى الإنجليزية
+          
           content: const Text(
               'Please enable location services (GPS) to allow the app to determine your location accurately.'),
           actions: <Widget>[
             TextButton(
-              // 📍 تم تحويل النص إلى الإنجليزية
+              
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
               onPressed: () => Navigator.of(context).pop(),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              // 📍 تم تحويل النص إلى الإنجليزية
+              
               child:
                   const Text('Settings', style: TextStyle(color: Colors.white)),
               onPressed: () {
@@ -68,9 +68,9 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
     );
   }
 
-  // ==========================================
-  // منطق جلب الموقع والصلاحيات
-  // ==========================================
+  
+  
+  
   Future<void> requestLocationAndGetPosition() async {
     if (!mounted) return;
     setState(() => isLoading = true);
@@ -86,14 +86,14 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          // 📍 تم تحويل الرسالة إلى الإنجليزية
+          
           _showMessage('Permission denied. Cannot determine location.');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        // 📍 تم تحويل الرسالة إلى الإنجليزية
+        
         _showMessage(
             'Permissions are permanently denied. Please enable them from app settings.');
         return;
@@ -103,18 +103,18 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // 📍 تحريك الكاميرا لموقع المستخدم
+      
       mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(currentPosition!.latitude, currentPosition!.longitude),
-          16, // زووم أوضح شوي
+          16, 
         ),
       );
     } catch (e) {
-      // 📍 تم تحويل الرسالة إلى الإنجليزية
+      
       _showMessage('An error occurred while fetching location');
     } finally {
-      // 📍 تم تصليح الخطأ المطبعي هنا من final إلى finally
+      
       if (mounted) setState(() => isLoading = false);
     }
   }
@@ -130,7 +130,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // 📍 تم تحويل عنوان الشاشة إلى الإنجليزية
+        
         title: const Text('Map', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -142,7 +142,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
             initialCameraPosition: initialPosition,
             onMapCreated: (controller) {
               mapController = controller;
-              // 📍 بمجرد ما تفتح الخريطة، بنعمل فوكس ع الموقع الحالي
+              
               requestLocationAndGetPosition();
             },
             markers: markers,
@@ -152,7 +152,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
             zoomControlsEnabled: true,
           ),
 
-          // الزر المخصص "موقعي الحالي"
+          
           Positioned(
             bottom: buildBottomPanel() != null ? 140 : 20,
             left: 16,
@@ -176,7 +176,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.blue))
                   : const Icon(Icons.my_location, size: 20),
-              // 📍 تم تحويل نص الزر إلى الإنجليزية
+              
               label: const Text(
                 'Current Location',
                 style: TextStyle(fontWeight: FontWeight.bold),

@@ -1,32 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. ALL FIRESTORE CALLS MOVED TO DatabaseService:
-//    BEFORE: called FirebaseFirestore.instance directly for reading availability,
-//    querying appointments with whereIn, and saving slots.
-//    NOW: _db.getAvailability(), _db.getAppointmentsForDoctorByStatuses(),
-//    _db.saveSlots() — all through the service.
-//
-// 2. CRASH BUG FIXED:
-//    BEFORE: (doc['date'] as Timestamp).toDate() — hard cast that CRASHES at
-//    runtime with a CastError if the date was stored as a String (which
-//    AppointmentModel.toMap() would produce via toIso8601String()).
-//    NOW: parseDate(doc['date']) from date_utils.dart — safely handles both.
-//
-// 3. print() REPLACED WITH debugPrint():
-//    BEFORE: print("Error loading slots: $e") — appears in release builds.
-//    NOW: debugPrint() — stripped in release mode.
-//
-// 4. formatDateKey() / formatTimeFromDateTime() FROM SHARED UTILS:
-//    BEFORE: date key was built inline with string interpolation each time.
-//    NOW: uses shared functions from date_utils.dart.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
-import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
-import '../../utils/date_utils.dart'; // parseDate, formatDateKey, formatTimeFromDateTime
+import '../../utils/constants.dart'; 
+import '../../utils/date_utils.dart'; 
 
 class ManageSlotsScreen extends StatefulWidget {
   const ManageSlotsScreen({super.key});
@@ -65,7 +43,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
         return;
       }
 
-      // Filter out slots that are already booked (pending or accepted).
+      
       final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
         user!.uid,
         ['pending', 'accepted'],
@@ -74,9 +52,9 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
       final List<String> bookedTimes = [];
       for (var doc in appointmentsSnap.docs) {
         final data = doc.data() as Map<String, dynamic>;
-      // BUG FIX: BEFORE was (doc['date'] as Timestamp).toDate()
-        // which crashes with CastError if date is stored as a String.
-        // parseDate() from date_utils.dart handles both Timestamp AND String safely.
+      
+        
+        
         final DateTime apptDate = parseDate(data['date']);
 
         if (apptDate.year == date.year &&
@@ -91,8 +69,8 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
 
       if (mounted) setState(() { _mySlots = freeSlots; _isLoading = false; });
     } catch (e) {
-      // BEFORE: print('Error loading slots: $e') — shows in release builds.
-      // NOW: debugPrint is stripped in release mode.
+      
+      
       debugPrint('Error loading slots: $e');
       if (mounted) setState(() => _isLoading = false);
     }
@@ -182,7 +160,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Date picker strip
+          
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
             color: Colors.grey.shade50,
@@ -249,7 +227,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
             ),
           ),
 
-          // Header + add button
+          
           Padding(
             padding: const EdgeInsets.all(24.0),
             child: Row(
@@ -275,7 +253,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
             ),
           ),
 
-          // Slots list
+          
           Expanded(
             child:
                 _isLoading

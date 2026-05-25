@@ -1,30 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. ALL FIRESTORE CALLS REPLACED:
-//    BEFORE: _loadUserData called FirebaseFirestore.instance directly to read user.
-//           _updateProfile called Firestore.update() directly.
-//           _deleteAccount called Firestore.delete() directly.
-//    NOW: DatabaseService().getUserById(), updateUser(), deleteUser().
-//
-// 2. LOGOUT USES AuthService:
-//    BEFORE: _logout() called FirebaseAuth.instance.signOut() directly.
-//    NOW: AuthService().signOut() — goes through the service.
-//
-// 3. SPECIALTIES LIST REMOVED (was a local copy):
-//    BEFORE: had its own List<String> specialties = [...] copy-pasted from other files.
-//    NOW: uses kSpecialties from utils/constants.dart.
-//
-// 4. kPrimaryBlue FROM CONSTANTS:
-//    BEFORE: no local primaryBlue here, but CircleAvatar used the hex directly.
-//    NOW: kPrimaryBlue imported from utils/constants.dart.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/auth_service.dart'; // for signOut() — was FirebaseAuth.instance.signOut() before
-import '../../services/database_service.dart'; // replaces all direct Firestore calls
-import '../../utils/constants.dart'; // kPrimaryBlue + kSpecialties — specialties was a local list before
+import '../../services/auth_service.dart'; 
+import '../../services/database_service.dart'; 
+import '../../utils/constants.dart'; 
 import '../../auth_wrapper.dart';
 
 class ProfileScreen extends StatefulWidget {

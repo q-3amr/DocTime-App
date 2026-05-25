@@ -1,30 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. DIRECT FIREBASE CALL REMOVED:
-//    BEFORE: FirebaseAuth.instance.signInWithEmailAndPassword() called here.
-//    NOW: AuthService().signIn() — one line, service handles everything.
-//
-// 2. ERROR CODE TRANSLATION REMOVED:
-//    BEFORE: a 50-line switch(e.code){...} block translated Firebase error
-//    codes to user messages right here in the UI.
-//    NOW: AuthService.signIn() throws a translated String. Screen just catches it.
-//
-// 3. MANUAL NAVIGATION FOR VERIFIED USERS REMOVED:
-//    BEFORE: after login, screen manually pushed PatientHomeScreen or DoctorHomeScreen.
-//    NOW: when AuthService().signIn() succeeds, AuthWrapper’s authStateChanges stream
-//    fires automatically and rebuilds to the correct home screen. No Navigator call needed.
-//    The screen only needs to handle the unverified-doctor edge case (sign out + dialog).
-//
-// 4. FORGOT PASSWORD EXTRACTED:
-//    BEFORE: ~60 lines of reset logic were inlined inside TextButton.onPressed.
-//    NOW: handlePasswordReset() — a clean named method.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
 
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
-import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
+import '../../utils/constants.dart'; 
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -43,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool isObscure = true;
 
-  // ── Login ──────────────────────────────────────────────────────────────
+  
 
   void handleLogin() async {
     if (emailController.text.trim().isEmpty ||
@@ -55,20 +34,20 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = true);
 
     try {
-      // BEFORE: FirebaseAuth.instance.signInWithEmailAndPassword() called directly here.
-      // NOW: AuthService().signIn() handles Firebase call + error translation.
+      
+      
       await _authService.signIn(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
 
-      // BEFORE: after sign-in, this screen manually navigated with Navigator.pushReplacement
-      // to PatientHomeScreen or DoctorHomeScreen (fetching role from Firestore to decide).
-      // NOW: AuthWrapper’s StreamBuilder listens to authStateChanges. When sign-in
-      // succeeds, the stream fires — AuthWrapper rebuilds and shows the correct screen
-      // automatically. No manual navigation needed for verified users.
-      //
-      // We only fetch the user here to handle the unverified-doctor edge case.
+      
+      
+      
+      
+      
+      
+      
       final firebaseUser = _authService.currentUser;
       if (firebaseUser != null && mounted) {
         final userModel = await _dbService.getUserById(firebaseUser.uid);
@@ -78,32 +57,32 @@ class _LoginScreenState extends State<LoginScreen> {
         if (userModel != null &&
             userModel.isDoctor &&
             userModel.isVerified != true) {
-          // Unverified doctor: sign them out and show a dialog.
-          // For everyone else, AuthWrapper’s stream has already handled routing.
+          
+          
           await _authService.signOut();
           if (!mounted) return;
           _showPendingApprovalDialog();
         } else {
-          // Verified users: pop the login screen. AuthWrapper handles the home screen.
+          
           if (mounted) {
             Navigator.pop(context);
           }
         }
       }
     } catch (e) {
-      // AuthService throws a translated String, not a FirebaseAuthException.
-      // BEFORE: this catch had a switch(e.code) block. Now it’s just one line.
+      
+      
       if (mounted) _showError(e.toString());
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
   }
 
-  // ── Forgot password ────────────────────────────────────────────────────
+  
 
-  // BEFORE: ~60 lines of password-reset logic (try/catch, switch on error codes,
-  // snackbar display) were all inlined inside TextButton.onPressed in the build method.
-  // NOW: clean named method. Calls AuthService which handles error translation.
+  
+  
+  
   void handlePasswordReset() async {
     if (emailController.text.trim().isEmpty) {
       _showError('Please enter your email address first');
@@ -129,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────
+  
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────
+  
 
   @override
   Widget build(BuildContext context) {

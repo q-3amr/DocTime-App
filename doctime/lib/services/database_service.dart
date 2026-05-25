@@ -1,9 +1,5 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHY THIS FILE EXISTS / WHAT WAS ADDED:
-//
-// Central database access layer. ALL Firestore operations go through this class.
-// Added logic for: Reviews, Notifications, and Automated Status Management.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -14,9 +10,9 @@ import '../models/appointment.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // USERS
-  // ═══════════════════════════════════════════════════════════════════════════
+  
+  
+  
 
   Stream<List<UserModel>> streamDoctors() {
     return _db
@@ -52,9 +48,9 @@ class DatabaseService {
     await _db.collection('users').doc(userId).delete();
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // APPOINTMENTS & REVIEWS
-  // ═══════════════════════════════════════════════════════════════════════════
+  
+  
+  
 
   Future<void> submitAppointmentFeedback({
     required String appointmentId,
@@ -173,10 +169,10 @@ class DatabaseService {
         .get();
   }
 
-  /// دالة الحجز المحدثة: تضمن إضافة حقول التقييم والتنبيه بالإضافة لتوكن المريض
+  
   Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
     try {
-      // جلب التوكن الخاص بجهاز المريض وإضافته
+      
       String? token = await FirebaseMessaging.instance.getToken();
 
       String slotId =
@@ -195,10 +191,10 @@ class DatabaseService {
 
         final appointmentData = appointment.toMap();
 
-        // إسناد القيم الافتراضية
+        
         appointmentData['hasFeedback'] = false;
         appointmentData['isReviewSeen'] = false;
-        appointmentData['patientFcmToken'] = token; // تخزين التوكن في الموعد
+        appointmentData['patientFcmToken'] = token; 
 
         transaction.set(apptRef, appointmentData);
         return true;
@@ -217,9 +213,9 @@ class DatabaseService {
     await _db.collection('appointments').doc(docId).delete();
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // AVAILABILITY & CHATS
-  // ═══════════════════════════════════════════════════════════════════════════
+  
+  
+  
 
   Future<DocumentSnapshot> getAvailability(String doctorId, String dateKey) {
     return _db
@@ -288,28 +284,28 @@ class DatabaseService {
     await _db.collection('users').doc(doctorId).update({'isVerified': true});
   }
 
-  // ─── FOR RAHMAH ─────────────────────────────────────────────────────────────
-  // This function saves the device's FCM token to the user's Firestore document.
-  // It is now called in TWO places:
-  //
-  //   1. auth_wrapper.dart → called every time the user opens the app while
-  //      logged in. This keeps the token fresh in case it was refreshed by
-  //      Firebase since the last session.
-  //
-  //   2. main.dart → onTokenRefresh listener → called automatically whenever
-  //      Firebase refreshes the token mid-session (e.g. after app reinstall).
-  //
-  // WHY TWO PLACES? FCM tokens expire or get rotated. If we only save it once
-  // at booking time (bookAppointmentSafely), the token in the appointment doc
-  // becomes stale. The "pushToken" field in the user's doc acts as the source
-  // of truth — always up to date.
-  //
-  // NOTE: This stores the token in the USER document under "pushToken".
-  // The booking function (bookAppointmentSafely) copies it into the appointment
-  // document as "patientFcmToken" at booking time. For future appointments,
-  // you may want to read the user's latest pushToken from the user doc instead
-  // of relying on what was saved at booking time.
-  // ─────────────────────────────────────────────────────────────────────────────
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   Future<void> updateNotificationToken(String userId) async {
     try {
       String? token = await FirebaseMessaging.instance.getToken();

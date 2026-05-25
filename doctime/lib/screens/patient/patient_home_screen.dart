@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
@@ -10,7 +10,7 @@ import '../../widgets/action_button.dart';
 import '../../widgets/star_rating_widget.dart';
 import 'doctor_search_screen.dart';
 import 'ai_chat_screen.dart';
-import 'patient_map_screen.dart'; // 📍 تم إضافة استدعاء شاشة الخريطة
+import 'patient_map_screen.dart'; 
 import '../common/schedule_screen.dart';
 import '../common/profile_screen.dart';
 import '../common/chats_list_screen.dart';
@@ -143,7 +143,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     super.dispose();
   }
 
-  // related to rating system
+  
   void _startFeedbackListener() {
     if (user?.uid == null) return;
     _feedbackListener = FirebaseFirestore.instance
@@ -154,7 +154,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
         .listen((snapshot) {
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        // هون بنشيك: إذا مافي فيدباك + المريض ما سكره من قبل، بنطلعه
+        
         if (data['hasFeedback'] != true && data['isDismissed'] != true) {
           _showFeedbackPopup(context, doc.id);
           break;
@@ -175,7 +175,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
             return Dialog(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25)),
-              // insetPadding ensures the dialog shrinks away from the keyboard
+              
               insetPadding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Stack(
@@ -183,8 +183,8 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(20.0),
-                    // SingleChildScrollView lets the content scroll when the
-                    // keyboard appears and the viewport shrinks
+                    
+                    
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -203,7 +203,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                             style: TextStyle(color: Colors.grey, fontSize: 14),
                           ),
                           const SizedBox(height: 20),
-                          // ── Interactive star picker ──
+                          
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 14),
@@ -308,12 +308,12 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                     child: IconButton(
                       icon: const Icon(Icons.close_rounded, color: Colors.grey),
                       onPressed: () async {
-                        // بنسجل إن المريض "تجاهل" التقييم عشان ما نرجع نزعجه، بس بنخلي hasFeedback = false عشان ما يدخل بحسبة الدكتور
+                        
                         await FirebaseFirestore.instance
                             .collection('appointments')
                             .doc(appointmentId)
                             .update({
-                          'isDismissed': true, // حقل جديد بنضيفه للموعد
+                          'isDismissed': true, 
                         });
                         if (context.mounted) Navigator.pop(context);
                       },
@@ -327,7 +327,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
       },
     );
   }
-  // related to rating system
+  
 
   @override
   Widget build(BuildContext context) {
@@ -409,7 +409,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       style:
                           TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
                   const SizedBox(height: 15),
-/**************************************************/
+
                   Expanded(
                     child: ListView(
                       children: [
@@ -432,7 +432,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                                 MaterialPageRoute(
                                     builder: (c) => const AiChatScreen()))),
                         const SizedBox(height: 15),
-                        // 📍 تم إضافة زر "Clinic Map" هنا لفتح شاشة الخرائط
+                        
                         ActionButton(
                             icon: Icons.map_outlined,
                             title: 'Clinic Map',
@@ -444,7 +444,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       ],
                     ),
                   ),
-/**************************************************/
+
                 ],
               ),
             ),
@@ -512,7 +512,7 @@ class _LiveTimerBannerState extends State<LiveTimerBanner> {
   @override
   void initState() {
     super.initState();
-    // التايمر هسا محبوس هون، بيحدث بس المربع الأزرق كل دقيقة
+    
     _bannerTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
     });
@@ -528,7 +528,7 @@ class _LiveTimerBannerState extends State<LiveTimerBanner> {
   Widget build(BuildContext context) {
     Duration diff = widget.date.difference(DateTime.now());
 
-    // حماية: إذا الموعد صار بالماضي، بنخفي المربع
+    
     if (diff.isNegative) return const SizedBox.shrink();
 
     String timeText = diff.inDays > 0

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart'; // 📍 تعليق: مكتبة فتح الروابط الخارجية (خرائط جوجل)
+import 'package:url_launcher/url_launcher.dart'; 
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/date_utils.dart';
@@ -15,18 +15,18 @@ class DoctorDetailsScreen extends StatefulWidget {
   final String doctorName;
   final String specialty;
   final String? doctorId;
-  final double? latitude; // 📍 تعليق: استقبال خط العرض
-  final double? longitude; // 📍 تعليق: استقبال خط الطول
-  final double? distance; // 📍 تعليق: استقبال المسافة المحسوبة من شاشة البحث
+  final double? latitude; 
+  final double? longitude; 
+  final double? distance; 
 
   const DoctorDetailsScreen({
     super.key,
     required this.doctorName,
     required this.specialty,
     this.doctorId,
-    this.latitude, // 📍
-    this.longitude, // 📍
-    this.distance, // 📍
+    this.latitude, 
+    this.longitude, 
+    this.distance, 
   });
 
   @override
@@ -48,7 +48,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
     _generateSlotsForDate(_selectedDate);
   }
 
-  // 📍 تعليق: دالة فتح تطبيق خرائط جوجل مباشرة لإظهار الاتجاهات
+  
   Future<void> _openDirections() async {
     if (widget.latitude != null && widget.longitude != null) {
       final Uri googleMapsUrl = Uri.parse(
@@ -58,7 +58,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         if (await canLaunchUrl(googleMapsUrl)) {
           await launchUrl(googleMapsUrl);
         } else {
-          // إذا لم يفتح التطبيق، نفتح المتصفح كرابط بديل
+          
           final Uri webUrl = Uri.parse(
               'https://www.google.com/maps/search/?api=1&query=${widget.latitude},${widget.longitude}');
           await launchUrl(webUrl, mode: LaunchMode.externalApplication);
@@ -256,7 +256,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 8),
-                  // 📍 تعليق: أيقونة خريطة صغيرة في العنوان لفتح الاتجاهات
+                  
                   GestureDetector(
                     onTap: _openDirections,
                     child: const Icon(Icons.location_on,
@@ -277,7 +277,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Specialty
+                  
                   Text(
                     widget.specialty,
                     style: TextStyle(
@@ -288,13 +288,13 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // ── قراءة التقييم الجاهز من بروفايل الدكتور مباشرة ──
+                  
                   StreamBuilder<UserModel?>(
                     stream: widget.doctorId != null
                         ? _db.streamUser(widget.doctorId!)
                         : null,
                     builder: (context, snap) {
-                      // سحبنا المتوسط والعدد الجاهزين بدون ما نحسبهم هون
+                      
                       double avg = snap.data?.rating ?? 0.0;
                       int count = snap.data?.reviewCount ?? 0;
 
@@ -303,7 +303,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                         children: [
                           Row(
                             children: [
-                              // إذا في تقييم بنعرض النجوم
+                              
                               if (avg > 0) ...[
                                 StarRatingWidget(
                                   initialRating: avg,
@@ -326,7 +326,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                                 ),
                             ],
                           ),
-                          // إظهار المسافة إذا موجودة
+                          
                           if (widget.distance != null)
                             Text(
                               '${widget.distance!.toStringAsFixed(1)} km away',
@@ -342,7 +342,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // 📍 تعليق: زر "أرني الاتجاهات" العريض
+                  
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -475,7 +475,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                             ),
                   const SizedBox(height: 30),
 
-                  // ── Patient Reviews section ──────────────────────────────
+                  
                   const Text(
                     'Patient Reviews',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -493,7 +493,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                         );
                       }
 
-                      // Filter out dismissed entries (hasFeedback:true but no real rating)
+                      
                       final reviews = snap.data!.docs.where((doc) {
                         final d = doc.data() as Map<String, dynamic>;
                         final r = (d['rating'] as num?)?.toDouble() ?? 0.0;

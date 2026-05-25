@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -10,7 +10,7 @@ class MapPickerScreen extends StatefulWidget {
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
-  // موقع افتراضي (عمان) في حال فشل تحديد الموقع
+  
   static const LatLng _initialPosition = LatLng(31.9539, 35.9106);
   LatLng? _pickedLocation;
   GoogleMapController? _mapController;
@@ -20,14 +20,14 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     _mapController = controller;
   }
 
-  // دالة لإظهار رسائل الخطأ للمستخدم
+  
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: color),
     );
   }
 
-  // الدالة المعدلة لجلب الموقع الحالي بدون كراش
+  
   Future<void> _goToCurrentLocation() async {
     setState(() => _isLoading = true);
 
@@ -35,7 +35,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       bool serviceEnabled;
       LocationPermission permission;
 
-      // 1. التأكد من تفعيل الـ GPS في الجهاز
+      
       serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         _showSnackBar(
@@ -44,7 +44,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         return;
       }
 
-      // 2. التأكد من الصلاحيات
+      
       permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -62,16 +62,16 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         return;
       }
 
-      // 3. جلب الموقع مع "وقت انتظار" (Timeout) لمنع تعليق التطبيق
+      
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit:
-            const Duration(seconds: 10), // إذا تأخر الرد أكتر من 10 ثواني بوقف
+            const Duration(seconds: 10), 
       );
 
       LatLng currentLatLng = LatLng(position.latitude, position.longitude);
 
-      // تحريك الكاميرا للموقع الجديد
+      
       _mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(currentLatLng, 15),
       );

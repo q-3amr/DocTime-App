@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
-import '../../services/ai_service.dart'; // تأكد من مسار الملف عندك صح
+import '../../services/ai_service.dart'; 
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'doctor_search_screen.dart';
 import 'dart:convert';
 
-// 1. الكلاس تبع الرسالة (الهيكل)
 class ChatMessage {
   final String text;
   final bool isUser;
@@ -25,7 +24,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   String _triageUrgency = "none";
   final TextEditingController _messageController = TextEditingController();
   bool _isTyping = false;
-  // استدعينا الـ Service عشان الشاشة تقدر تستخدمها
+  
   final AiService _aiService = AiService();
   final List<ChatMessage> _messages = [
     ChatMessage(
@@ -51,10 +50,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
       _isTyping = false;
       if (aiResponseText.startsWith('Server error') ||
           aiResponseText.startsWith('Connection issue')) {
-        // إذا إيرور: بنشيل رسالة المريض اللي انبعثت عشان يقدر يرجع يبعثها
+        
         _messages.removeAt(0);
 
-        // وبنطلعله الإيرور كإشعار أحمر منبثق تحت مش كرسالة شات
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
@@ -65,29 +64,29 @@ class _AiChatScreenState extends State<AiChatScreen> {
         );
       } else {
         try {
-          // 1. فك تشفير الـ JSON اللي إجا من السيرفر
+          
           final Map<String, dynamic> aiData = jsonDecode(aiResponseText);
           
-          // 2. سحب القيم بأمان (مع قيم افتراضية عشان ما يضرب null)
+          
           final String displayMessage = aiData['message'] ?? "Error parsing message.";
           final String status = aiData['status'] ?? "asking";
           final String urgency = aiData['urgency'] ?? "none";
           final String specialty = aiData['specialty'] ?? "none";
 
-          // 3. إضافة الرسالة النظيفة (السؤال أو النصيحة) للواجهة عشان المريض يشوفها
+          
           _messages.insert(0, ChatMessage(text: displayMessage, isUser: false));
 
-          // 4. إذا البوت قرر ينهي الفرز الطبي بناءً على الـ status
+          
           if (status == "finished") {
-            _isTriageComplete = true; // عشان نخفي الكيبورد ونطلع الزر
-            _triageUrgency = urgency; // بنخزن مستوى الخطورة عشان الزر يلون حاله (أحمر، أصفر، أخضر)
+            _isTriageComplete = true; 
+            _triageUrgency = urgency; 
             
             if (specialty != "none") {
-              _recommendedSpecialty = specialty; // بنخزن التخصص عشان نمرره لشاشة الفلترة
+              _recommendedSpecialty = specialty; 
             }
           }
         } catch (e) {
-          // برمجة دفاعية: لو الموديل هبد ورجع نص عادي مش JSON
+          
            _messages.insert(0, ChatMessage(text: "System Error: Couldn't parse response.", isUser: false));
            print("JSON Parse Error: $e");
         }
@@ -111,7 +110,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
-        elevation: 1, // ظل خفيف جداً عشان يفصل الـ AppBar عن الشاشة
+        elevation: 1, 
         iconTheme: const IconThemeData(color: Colors.black),
         centerTitle: true,
       ),
@@ -119,7 +118,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         children: [
           Expanded(
             child: ListView.builder(
-              reverse: true, // ضيف هاد السطر عشان اللستة تنبني من تحت لفوق
+              reverse: true, 
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -128,7 +127,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               },
             ),
           ),
-          // إذا خلص الفرز بنعرض زر الانتقال، إذا لسه بنعرض مربع الكتابة
+          
           _isTriageComplete ? _buildCompletionButton() : _buildMessageInput(),
         ],
       ),
@@ -146,7 +145,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            // حركة جمالية: الزاوية اللي تحت جهة المرسل بتكون حادة
+            
             bottomLeft:
                 message.isUser ? const Radius.circular(16) : Radius.zero,
             bottomRight:
@@ -163,12 +162,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
         child: MarkdownBody(
           data: message.text,
           styleSheet: MarkdownStyleSheet(
-            // هون بنتحكم بلون النص الأساسي (الفقرات)
+            
             p: TextStyle(
               color: message.isUser ? Colors.white : Colors.black87,
               fontSize: 16,
             ),
-            // إذا البوت قرر يبعث نقاط، بنخلي لونها صح
+            
             listBullet: TextStyle(
               color: message.isUser ? Colors.white : Colors.black87,
             ),
@@ -199,7 +198,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none, // بدون حدود واضحة
+                    borderSide: BorderSide.none, 
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -232,7 +231,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
 Widget _buildCompletionButton() {
-  // --- Determine button properties based on triage urgency ---
+  
   final Color backgroundColor;
   final IconData icon;
   final String label;
@@ -295,7 +294,7 @@ Widget _buildCompletionButton() {
       break;
   }
 
-  // --- Build the button UI ---
+  
   return SafeArea(
     child: Padding(
       padding: const EdgeInsets.all(16.0),

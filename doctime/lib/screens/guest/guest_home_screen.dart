@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../patient/doctor_search_screen.dart';
 import '../auth/login_screen.dart';
 
@@ -130,7 +130,6 @@ class GuestHomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
 
-/**************************************************/
                   Expanded(
                     child: ListView(
                       children: [
@@ -167,7 +166,7 @@ class GuestHomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-/**************************************************/
+
                 ],
               ),
             ),

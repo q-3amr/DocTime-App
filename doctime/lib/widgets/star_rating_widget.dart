@@ -1,27 +1,18 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// StarRatingWidget
-//
-// A reusable 1–5 star widget with two modes:
-//   • Interactive (isReadOnly: false): tapping a star sets the rating.
-//     Used in feedback popups in patient_home_screen.dart.
-//   • Display-only (isReadOnly: true): renders filled/half/empty stars from
-//     a double value. Used in doctor_reviews_screen.dart and
-//     doctor_details_screen.dart.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
 
 import 'package:flutter/material.dart';
 
 class StarRatingWidget extends StatefulWidget {
-  /// Current rating value (0.0 – 5.0). 0.0 means no rating (all stars empty).
+  
   final double initialRating;
 
-  /// Called whenever the user taps a star (only fires when isReadOnly: false).
+  
   final ValueChanged<double>? onRatingChanged;
 
-  /// Size of each star icon. Defaults to 32 in interactive, 20 in read-only.
+  
   final double starSize;
 
-  /// When true, the widget is non-interactive and just displays the rating.
+  
   final bool isReadOnly;
 
   const StarRatingWidget({
@@ -45,7 +36,7 @@ class _StarRatingWidgetState extends State<StarRatingWidget> {
     _currentRating = widget.initialRating.clamp(0.0, 5.0);
   }
 
-  // هاي الدالة بتجبر النجوم تتحدث لو تغيرت قيمة initialRating من السيرفر
+  
   @override
   void didUpdateWidget(StarRatingWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -63,15 +54,15 @@ class _StarRatingWidgetState extends State<StarRatingWidget> {
     widget.onRatingChanged?.call(newRating);
   }
 
-  /// Returns the correct icon for a star position given a fractional rating.
-  /// e.g. rating 3.7 → stars 1,2,3 are full; star 4 is half; star 5 is empty.
+  
+  
   IconData _iconForStar(int starIndex) {
     if (_currentRating >= starIndex) {
-      return Icons.star_rounded; // full
+      return Icons.star_rounded; 
     } else if (_currentRating >= starIndex - 0.5) {
-      return Icons.star_half_rounded; // half
+      return Icons.star_half_rounded; 
     } else {
-      return Icons.star_outline_rounded; // empty
+      return Icons.star_outline_rounded; 
     }
   }
 
@@ -92,7 +83,7 @@ class _StarRatingWidgetState extends State<StarRatingWidget> {
           );
         }
 
-        // Interactive: wrap each star in a GestureDetector
+        
         return GestureDetector(
           onTap: () => _onStarTapped(starIndex),
           child: AnimatedSwitcher(

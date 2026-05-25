@@ -1,26 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// WHAT WAS CHANGED IN THIS FILE:
-//
-// 1. DIRECT FIRESTORE CALLS REPLACED:
-//    BEFORE: had a direct Firestore stream for pending appointments, and
-//    called Firestore.doc().update({'status': ...}) directly for accept/decline.
-//    NOW: _db.streamPendingAppointments(uid), _db.updateAppointmentStatus(id, status)
-//
-// 2. DATE HELPERS FROM SHARED UTILS:
-//    BEFORE: had a private _parseDate() method (same as 3 other screens).
-//    NOW: uses parseDate(), formatDateDisplay(), formatTimeFromDateTime()
-//    from shared date_utils.dart.
-//
-// 3. kPrimaryBlue FROM CONSTANTS:
-//    BEFORE: primaryBlue was a local Color variable.
-//    NOW: kPrimaryBlue imported from utils/constants.dart.
-// ─────────────────────────────────────────────────────────────────────────────
+﻿
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/database_service.dart'; // replaces all direct Firestore calls
-import '../../utils/constants.dart'; // kPrimaryBlue — was a local variable before
-import '../../utils/date_utils.dart'; // parseDate, formatDateDisplay, formatTimeFromDateTime
+import '../../services/database_service.dart'; 
+import '../../utils/constants.dart'; 
+import '../../utils/date_utils.dart'; 
 
 class DoctorRequestsScreen extends StatefulWidget {
   const DoctorRequestsScreen({super.key});
