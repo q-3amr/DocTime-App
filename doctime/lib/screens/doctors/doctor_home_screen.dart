@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/database_service.dart';
@@ -12,6 +12,9 @@ import '../patient/doctor_search_screen.dart';
 import 'doctor_requests_screen.dart';
 import 'manage_slots_screen.dart';
 import 'doctor_reviews_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/chat_provider.dart';
+import '../chat/voice_chat.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -323,6 +326,18 @@ final int upcoming = docs
                                       MaterialPageRoute(
                                           builder: (c) =>
                                               const DoctorSearchScreen()))),
+                              const SizedBox(height: 15),
+                              ActionButton(
+                                  icon: Icons.smart_toy_rounded,
+                                  title: 'AI Assistant',
+                                  color: Colors.purple,
+                                  onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (c) => ChangeNotifierProvider(
+                                                create: (_) => ChatProvider(),
+                                                child: const VoiceChat(),
+                                              )))),
                             ],
                           ),
 
