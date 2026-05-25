@@ -88,6 +88,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
       builder: (context, chat, _) {
         if (chat.messages.isNotEmpty) _scrollToBottom();
         return Scaffold(
+          resizeToAvoidBottomInset: true,
           backgroundColor: const Color(0xFFF5F7FA),
           body: SafeArea(
             child: Column(
@@ -95,12 +96,12 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
               children: [
                 _buildAppBar(chat),
                 Expanded(child: _buildMessageList(chat)),
+                chat.isTriageComplete
+                    ? _buildCompletionButton(chat)
+                    : _buildInputBar(chat),
               ],
             ),
           ),
-          bottomNavigationBar: chat.isTriageComplete
-              ? _buildCompletionButton(chat)
-              : _buildInputBar(chat),
         );
       },
     );
@@ -455,32 +456,30 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
         break;
     }
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: onPressed,
-            icon: Icon(icon, color: Colors.white),
-            label: Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon, color: Colors.white),
+          label: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: backgroundColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 3,
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: backgroundColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
+            elevation: 3,
           ),
         ),
       ),
