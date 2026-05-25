@@ -17,6 +17,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  late ChatProvider _chatProvider;
 
   @override
   void initState() {
@@ -29,17 +30,26 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().initialize();
+      _chatProvider = context.read<ChatProvider>();
+      _chatProvider.addListener(_onProviderChange);
+      _chatProvider.initialize();
       _scrollToBottom();
     });
   }
 
   @override
   void dispose() {
+    _chatProvider.removeListener(_onProviderChange);
     _pulseController.dispose();
     _scrollController.dispose();
     _textController.dispose();
     super.dispose();
+  }
+
+  void _onProviderChange() {
+    if (_chatProvider.hasConnectionError && mounted) {
+      _showConnectionError();
+    }
   }
 
   void _scrollToBottom() {
@@ -207,63 +217,15 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
       itemCount: chat.messages.length,
       itemBuilder: (context, index) {
         final message = chat.messages[index];
-        final isFirst = index == 0;
-        final showDateDivider = isFirst ||
-            !_isSameDay(chat.messages[index - 1].timestamp, message.timestamp);
-        return Column(
-          children: [
-            if (showDateDivider) _buildDateDivider(message.timestamp),
-            _ChatBubble(
-              message: message,
-              onSpeak: () => chat.speakMessage(message),
-              isSpeaking: chat.isSpeaking,
-            ),
-          ],
+        return _ChatBubble(
+          message: message,
+          onSpeak: () => chat.speakMessage(message),
+          isSpeaking: chat.isSpeaking,
         );
       },
     );
   }
 
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
-  Widget _buildDateDivider(DateTime date) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 14),
-      child: Row(
-        children: [
-          Expanded(child: Divider(color: Color(0xFFDDDDDD))),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Color(0xFFEAEBF0),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _formatDate(date),
-                style: TextStyle(
-                  color: Color(0xFF888888),
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-          Expanded(child: Divider(color: Color(0xFFDDDDDD))),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime d) {
-    final now = DateTime.now();
-    if (d.year == now.year && d.month == now.month && d.day == now.day) {
-      return 'Today';
-    }
-    return '${d.day}/${d.month}/${d.year}';
-  }
 
   Widget _buildInputBar(ChatProvider chat) {
     return Container(

@@ -20,6 +20,7 @@ class ChatProvider extends ChangeNotifier {
   bool _isTriageComplete = false;
   String _triageUrgency = 'none';
   String _recommendedSpecialty = '';
+  bool _hasConnectionError = false;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isListening => _isListening;
@@ -28,6 +29,7 @@ class ChatProvider extends ChangeNotifier {
   bool get isTriageComplete => _isTriageComplete;
   String get triageUrgency => _triageUrgency;
   String get recommendedSpecialty => _recommendedSpecialty;
+  bool get hasConnectionError => _hasConnectionError;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -134,7 +136,9 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void _onConnectionError() {
+    _hasConnectionError = true;
     notifyListeners();
+    _hasConnectionError = false;
   }
 
   void clearMessages() {
