@@ -23,16 +23,13 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   @override
   void initState() {
     super.initState();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       requestLocationAndGetPosition();
     });
   }
 
-  
-  
-  
-  Future<void> _showLocationServiceDialog() async {
+Future<void> _showLocationServiceDialog() async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -40,21 +37,21 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
         return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          
+
           title: const Text('Enable Location',
               style: TextStyle(fontWeight: FontWeight.bold)),
-          
+
           content: const Text(
               'Please enable location services (GPS) to allow the app to determine your location accurately.'),
           actions: <Widget>[
             TextButton(
-              
+
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
               onPressed: () => Navigator.of(context).pop(),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              
+
               child:
                   const Text('Settings', style: TextStyle(color: Colors.white)),
               onPressed: () {
@@ -68,10 +65,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
     );
   }
 
-  
-  
-  
-  Future<void> requestLocationAndGetPosition() async {
+Future<void> requestLocationAndGetPosition() async {
     if (!mounted) return;
     setState(() => isLoading = true);
     try {
@@ -86,14 +80,14 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          
+
           _showMessage('Permission denied. Cannot determine location.');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        
+
         _showMessage(
             'Permissions are permanently denied. Please enable them from app settings.');
         return;
@@ -103,18 +97,17 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      
-      mapController?.animateCamera(
+mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(currentPosition!.latitude, currentPosition!.longitude),
-          16, 
+          16,
         ),
       );
     } catch (e) {
-      
+
       _showMessage('An error occurred while fetching location');
     } finally {
-      
+
       if (mounted) setState(() => isLoading = false);
     }
   }
@@ -130,7 +123,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        
+
         title: const Text('Map', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -142,7 +135,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
             initialCameraPosition: initialPosition,
             onMapCreated: (controller) {
               mapController = controller;
-              
+
               requestLocationAndGetPosition();
             },
             markers: markers,
@@ -152,8 +145,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
             zoomControlsEnabled: true,
           ),
 
-          
-          Positioned(
+Positioned(
             bottom: buildBottomPanel() != null ? 140 : 20,
             left: 16,
             child: ElevatedButton.icon(
@@ -176,7 +168,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: Colors.blue))
                   : const Icon(Icons.my_location, size: 20),
-              
+
               label: const Text(
                 'Current Location',
                 style: TextStyle(fontWeight: FontWeight.bold),

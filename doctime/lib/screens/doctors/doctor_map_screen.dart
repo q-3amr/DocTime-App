@@ -13,8 +13,7 @@ class DoctorMapScreen extends BaseMapScreen {
 class _DoctorMapScreenState extends BaseMapState<DoctorMapScreen> {
   LatLng? pickedClinicLocation;
 
-  
-  @override
+@override
   Set<Marker> get markers {
     if (pickedClinicLocation == null) return {};
     return {
@@ -25,19 +24,17 @@ class _DoctorMapScreenState extends BaseMapState<DoctorMapScreen> {
     };
   }
 
-  
-  @override
+@override
   void onMapTapped(LatLng position) {
     setState(() {
       pickedClinicLocation = position;
     });
   }
 
-  
-  @override
+@override
   Widget? buildBottomPanel() {
     if (pickedClinicLocation == null)
-      return null; 
+      return null;
 
     return Container(
       color: Colors.white,
@@ -50,7 +47,7 @@ class _DoctorMapScreenState extends BaseMapState<DoctorMapScreen> {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
         onPressed: () {
-          
+
           Navigator.of(context).pop(pickedClinicLocation);
         },
         child: const Text('تأكيد موقع العيادة',

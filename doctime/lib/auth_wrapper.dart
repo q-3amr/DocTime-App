@@ -26,18 +26,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.hasData && snapshot.data != null) {
           final User user = snapshot.data!;
 
-          
-          
-
-          
-          
-          
-          
-          
-          
-          
-          
-          DatabaseService().updateNotificationToken(user.uid);
+DatabaseService().updateNotificationToken(user.uid);
 
           return FutureBuilder(
             future: DatabaseService().getUserById(user.uid),
@@ -92,11 +81,8 @@ class AuthWrapper extends StatelessWidget {
                 return const AdminHomeScreen();
               }
               if (userModel != null && userModel.isDoctor) {
-                
-                
-                
-                
-                if (userModel.isVerified != true) {
+
+if (userModel.isVerified != true) {
                   return Scaffold(
                     body: Center(
                       child: Padding(

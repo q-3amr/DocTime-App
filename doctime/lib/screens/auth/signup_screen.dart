@@ -1,11 +1,11 @@
 ﻿
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart'; 
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import 'login_screen.dart';
-import '../doctors/doctor_map_screen.dart'; 
+import '../doctors/doctor_map_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -29,30 +29,23 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isObscureConfirm = true;
   bool isDoctor = false;
 
-  
-  
-  double? _selectedLatitude;
+double? _selectedLatitude;
   double? _selectedLongitude;
 
-  
-  Future<void> _openMapPicker() async {
-    
-    
-    
-    final LatLng? pickedLocation = await Navigator.push(
+Future<void> _openMapPicker() async {
+
+final LatLng? pickedLocation = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const DoctorMapScreen()),
     );
 
-    
-    if (pickedLocation != null) {
+if (pickedLocation != null) {
       setState(() {
-        
+
         _selectedLatitude = pickedLocation.latitude;
         _selectedLongitude = pickedLocation.longitude;
 
-        
-        locationController.text = '📍 تم تحديد الموقع بنجاح';
+locationController.text = '📍 تم تحديد الموقع بنجاح';
       });
     }
   }
@@ -69,9 +62,8 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
     if (isDoctor) {
-      
-      
-      if (selectedSpecialty == null ||
+
+if (selectedSpecialty == null ||
           locationController.text.trim().isEmpty ||
           _selectedLatitude == null) {
         _showError('Please fill all doctor fields and pick a location!');
@@ -89,16 +81,13 @@ class _SignupScreenState extends State<SignupScreen> {
         role: isDoctor ? 'doctor' : 'patient',
         specialty: isDoctor ? selectedSpecialty : null,
 
-        
-        
-        location: isDoctor ? locationController.text.trim() : null,
-        
+location: isDoctor ? locationController.text.trim() : null,
+
         latitude: isDoctor ? _selectedLatitude : null,
         longitude: isDoctor ? _selectedLongitude : null,
       );
 
-      
-      await _authService.signOut();
+await _authService.signOut();
 
       if (!mounted) return;
       setState(() => isLoading = false);
@@ -210,7 +199,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       setState(() => isObscureConfirm = !isObscureConfirm),
                 ),
                 const SizedBox(height: 25),
-                
+
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 15,
@@ -277,18 +266,17 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             const SizedBox(height: 20),
 
-                            
-                            _buildField(
+_buildField(
                               label: 'Clinic Location',
                               controller: locationController,
                               hint:
-                                  'Tap to pick location from map', 
-                              icon: Icons.map_outlined, 
+                                  'Tap to pick location from map',
+                              icon: Icons.map_outlined,
                               borderColor: borderColor,
                               labelColor: labelColor,
-                              
+
                               readOnly: true,
-                              
+
                               onTap: _openMapPicker,
                             ),
                           ],
@@ -434,9 +422,7 @@ class _SignupScreenState extends State<SignupScreen> {
     );
   }
 
-  
-  
-  Widget _buildField({
+Widget _buildField({
     required String label,
     required TextEditingController controller,
     required String hint,

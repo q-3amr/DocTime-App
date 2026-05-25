@@ -52,11 +52,11 @@ class DoctorsListScreen extends StatelessWidget {
                     doctor.name,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  
+
                   subtitle: Text(
                     '${doctor.specialty ?? 'General'} • ${doctor.location ?? 'Unknown'}\nRating: ${doctor.rating?.toStringAsFixed(1) ?? '0.0'}',
                   ),
-                  
+
                   isThreeLine: true,
                   trailing: (doctor.isVerified == true)
                       ? const Icon(Icons.verified, color: Colors.green)

@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/database_service.dart';
 import '../../models/user.dart';
 import '../../utils/constants.dart';
@@ -41,7 +41,7 @@ class ChatsListScreen extends StatelessWidget {
                 .collection('chats')
                 .where('participants', arrayContains: currentUser!.uid)
                 .orderBy('lastMessageTime',
-                    descending: true) 
+                    descending: true)
                 .snapshots()
             : null,
         builder: (context, snapshot) {
@@ -173,7 +173,7 @@ class ChatsListScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-                                
+
                                 if (chatData['lastMessageSenderId'] !=
                                         currentUser?.uid &&
                                     chatData['isRead'] == false)

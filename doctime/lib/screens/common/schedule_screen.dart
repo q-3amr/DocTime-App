@@ -3,13 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
-import '../../utils/constants.dart'; 
-import '../../utils/date_utils.dart'; 
+import '../../utils/constants.dart';
+import '../../utils/date_utils.dart';
 
 class ScheduleScreen extends StatefulWidget {
-  
-  
-  final bool isDoctor;
+
+final bool isDoctor;
 
   const ScheduleScreen({super.key, required this.isDoctor});
 
@@ -26,9 +25,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   bool _isExpired(DateTime appointmentDate) =>
       isExpiredAppointment(appointmentDate);
 
-  
-  
-  void _cancelAppointment(String docId) async {
+void _cancelAppointment(String docId) async {
     final confirm =
         await _confirmDialog(
           title: 'Cancel Appointment?',
@@ -129,7 +126,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
           children: [
-            
+
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(

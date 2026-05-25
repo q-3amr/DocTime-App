@@ -14,7 +14,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     _markReviewsAsSeen();
   }
 
@@ -23,7 +23,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     if (uid == null) return;
 
     try {
-      
+
       final querySnapshot = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: uid)
@@ -34,7 +34,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
-        
+
         if (data['hasFeedback'] == true && data['isReviewSeen'] != true) {
           batch.update(doc.reference, {'isReviewSeen': true});
           hasUpdates = true;
@@ -43,7 +43,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
       if (hasUpdates) {
         await batch.commit();
-        
+
         if (mounted) setState(() {});
       }
     } catch (e) {
@@ -51,8 +51,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     }
   }
 
-  
-  Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
+Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
     if (docs.isEmpty) return const SizedBox.shrink();
 
     final ratings = docs
@@ -86,7 +85,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
       ),
       child: Row(
         children: [
-          
+
           Text(
             average.toStringAsFixed(1),
             style: const TextStyle(
@@ -152,8 +151,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
           var docs = snapshot.data!.docs;
 
-          
-          docs.sort((a, b) => b['date'].compareTo(a['date']));
+docs.sort((a, b) => b['date'].compareTo(a['date']));
 
           if (docs.isEmpty) {
             return const Center(
@@ -164,7 +162,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            
+
             itemCount: docs.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) return _buildAggregateSummary(docs);
@@ -191,7 +189,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                         Text(data['patient_name'] ?? 'Patient',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 16)),
-                        
+
                         Row(
                           children: [
                             StarRatingWidget(

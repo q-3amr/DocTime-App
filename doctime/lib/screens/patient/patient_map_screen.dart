@@ -1,10 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart'; 
+import 'package:url_launcher/url_launcher.dart';
 
 import '../common/base_map_screen.dart';
-import '../../models/user.dart'; 
+import '../../models/user.dart';
 
 class PatientMapScreen extends BaseMapScreen {
   const PatientMapScreen({super.key});
@@ -14,20 +14,18 @@ class PatientMapScreen extends BaseMapScreen {
 }
 
 class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
-  
+
   List<UserModel> doctors = [];
 
-  
-  UserModel? selectedDoctor;
+UserModel? selectedDoctor;
 
   @override
   void initState() {
     super.initState();
-    _fetchDoctors(); 
+    _fetchDoctors();
   }
 
-  
-  Future<void> _fetchDoctors() async {
+Future<void> _fetchDoctors() async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
@@ -42,33 +40,29 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
             .where(
                 (doctor) => doctor.latitude != null && doctor.longitude != null)
             .toList();
-        
+
       });
     } catch (e) {
       debugPrint('Error fetching doctors: $e');
     }
   }
 
-  
-  
-  
-  @override
+@override
   Set<Marker> get markers {
     return doctors.map((doctor) {
       return Marker(
         markerId: MarkerId(doctor.id),
         position: LatLng(doctor.latitude!, doctor.longitude!),
-        
+
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         infoWindow: InfoWindow(title: doctor.name, snippet: doctor.specialty),
         onTap: () {
-          
+
           setState(() {
             selectedDoctor = doctor;
           });
 
-          
-          mapController?.animateCamera(
+mapController?.animateCamera(
             CameraUpdate.newLatLng(LatLng(doctor.latitude!, doctor.longitude!)),
           );
         },
@@ -76,23 +70,17 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
     }).toSet();
   }
 
-  
-  
-  
-  @override
+@override
   void onMapTapped(LatLng position) {
-    
+
     setState(() {
       selectedDoctor = null;
     });
   }
 
-  
-  
-  
-  @override
+@override
   Widget? buildBottomPanel() {
-    if (selectedDoctor == null) return null; 
+    if (selectedDoctor == null) return null;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -159,19 +147,15 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
     );
   }
 
-  
-  
-  
-  Future<void> _openGoogleMapsDirections(double lat, double lng) async {
-    
+Future<void> _openGoogleMapsDirections(double lat, double lng) async {
+
     final Uri googleMapsUrl = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
 
-    
-    try {
+try {
       if (await canLaunchUrl(googleMapsUrl)) {
         await launchUrl(googleMapsUrl);
       } else {
-        
+
         final Uri browserUrl = Uri.parse(
             'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
         if (await canLaunchUrl(browserUrl)) {

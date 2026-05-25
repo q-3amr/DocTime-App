@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 class AiService {
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   late final String _apiKey;
-  
+
   final List<Map<String, String>> _chatHistory = [];
 
   AiService() {
@@ -14,9 +14,8 @@ class AiService {
       throw Exception('API Key for Groq is missing in .env file!');
     }
     _apiKey = key.trim();
-    
-    
-    _chatHistory.add({
+
+_chatHistory.add({
       "role": "system",
       "content": """You are a medical triage assistant for the DocTime app.
 You MUST respond ONLY in valid JSON format. No markdown, no extra text.
@@ -47,10 +46,10 @@ RULES:
           "Content-Type": "application/json",
         },
         body: jsonEncode({
-          
+
           "model": "llama-3.3-70b-versatile",
           "messages": _chatHistory,
-          "temperature": 0.5 
+          "temperature": 0.5
         }),
       );
 
@@ -60,7 +59,7 @@ RULES:
 
         _chatHistory.add({"role": "assistant", "content": aiText});
 
-        return aiText; 
+        return aiText;
       } else {
         _chatHistory.removeLast();
         return "Server error: ${response.statusCode}\nDetails: ${response.body}";

@@ -10,11 +10,7 @@ import '../models/appointment.dart';
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  
-  
-  
-
-  Stream<List<UserModel>> streamDoctors() {
+Stream<List<UserModel>> streamDoctors() {
     return _db
         .collection('users')
         .where('role', isEqualTo: 'doctor')
@@ -48,11 +44,7 @@ class DatabaseService {
     await _db.collection('users').doc(userId).delete();
   }
 
-  
-  
-  
-
-  Future<void> submitAppointmentFeedback({
+Future<void> submitAppointmentFeedback({
     required String appointmentId,
     required String feedbackText,
     required double rating,
@@ -169,10 +161,9 @@ class DatabaseService {
         .get();
   }
 
-  
-  Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
+Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
     try {
-      
+
       String? token = await FirebaseMessaging.instance.getToken();
 
       String slotId =
@@ -191,10 +182,9 @@ class DatabaseService {
 
         final appointmentData = appointment.toMap();
 
-        
-        appointmentData['hasFeedback'] = false;
+appointmentData['hasFeedback'] = false;
         appointmentData['isReviewSeen'] = false;
-        appointmentData['patientFcmToken'] = token; 
+        appointmentData['patientFcmToken'] = token;
 
         transaction.set(apptRef, appointmentData);
         return true;
@@ -213,11 +203,7 @@ class DatabaseService {
     await _db.collection('appointments').doc(docId).delete();
   }
 
-  
-  
-  
-
-  Future<DocumentSnapshot> getAvailability(String doctorId, String dateKey) {
+Future<DocumentSnapshot> getAvailability(String doctorId, String dateKey) {
     return _db
         .collection('users')
         .doc(doctorId)
@@ -284,29 +270,7 @@ class DatabaseService {
     await _db.collection('users').doc(doctorId).update({'isVerified': true});
   }
 
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  Future<void> updateNotificationToken(String userId) async {
+Future<void> updateNotificationToken(String userId) async {
     try {
       String? token = await FirebaseMessaging.instance.getToken();
       if (token != null) {

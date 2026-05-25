@@ -174,15 +174,13 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                         return const Center(child: CircularProgressIndicator());
                       final docs = snapshot.data!.docs;
 
-                      
-                      final bool hasNewReview = docs.any((d) {
+final bool hasNewReview = docs.any((d) {
                         final data = d.data() as Map<String, dynamic>;
                         return data['hasFeedback'] == true &&
                             data['isReviewSeen'] != true;
                       });
-                      
 
-                      final int upcoming = docs
+final int upcoming = docs
                           .where((d) =>
                               d['status'] == 'accepted' &&
                               !isExpiredAppointment(parseDate(d['date'])))
@@ -271,7 +269,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                           const SizedBox(height: 15),
                           Column(
                             children: [
-                              
+
                               ActionButton(
                                 icon: Stack(
                                   clipBehavior: Clip.none,
@@ -301,7 +299,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                         builder: (c) =>
                                             const DoctorReviewsScreen())),
                               ),
-                              
+
                               const SizedBox(height: 15),
                               ActionButton(
                                 icon: const Icon(Icons.chat_bubble_rounded,

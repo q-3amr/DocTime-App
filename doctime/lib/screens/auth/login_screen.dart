@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
-import '../../utils/constants.dart'; 
+import '../../utils/constants.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -22,9 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool isObscure = true;
 
-  
-
-  void handleLogin() async {
+void handleLogin() async {
     if (emailController.text.trim().isEmpty ||
         passwordController.text.trim().isEmpty) {
       _showError('Please enter both Email and Password!');
@@ -34,21 +32,13 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = true);
 
     try {
-      
-      
-      await _authService.signIn(
+
+await _authService.signIn(
         emailController.text.trim(),
         passwordController.text.trim(),
       );
 
-      
-      
-      
-      
-      
-      
-      
-      final firebaseUser = _authService.currentUser;
+final firebaseUser = _authService.currentUser;
       if (firebaseUser != null && mounted) {
         final userModel = await _dbService.getUserById(firebaseUser.uid);
 
@@ -57,33 +47,26 @@ class _LoginScreenState extends State<LoginScreen> {
         if (userModel != null &&
             userModel.isDoctor &&
             userModel.isVerified != true) {
-          
-          
-          await _authService.signOut();
+
+await _authService.signOut();
           if (!mounted) return;
           _showPendingApprovalDialog();
         } else {
-          
+
           if (mounted) {
             Navigator.pop(context);
           }
         }
       }
     } catch (e) {
-      
-      
-      if (mounted) _showError(e.toString());
+
+if (mounted) _showError(e.toString());
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
   }
 
-  
-
-  
-  
-  
-  void handlePasswordReset() async {
+void handlePasswordReset() async {
     if (emailController.text.trim().isEmpty) {
       _showError('Please enter your email address first');
       return;
@@ -108,9 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  
-
-  void _showError(String message) {
+void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -135,9 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  
-
-  @override
+@override
   Widget build(BuildContext context) {
     const Color labelColor = Color(0xFF374151);
     const Color borderColor = Color(0xFFD1D5DB);

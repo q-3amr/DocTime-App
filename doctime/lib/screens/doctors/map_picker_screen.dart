@@ -10,7 +10,7 @@ class MapPickerScreen extends StatefulWidget {
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
-  
+
   static const LatLng _initialPosition = LatLng(31.9539, 35.9106);
   LatLng? _pickedLocation;
   GoogleMapController? _mapController;
@@ -20,23 +20,20 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     _mapController = controller;
   }
 
-  
-  void _showSnackBar(String message, Color color) {
+void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: color),
     );
   }
 
-  
-  Future<void> _goToCurrentLocation() async {
+Future<void> _goToCurrentLocation() async {
     setState(() => _isLoading = true);
 
     try {
       bool serviceEnabled;
       LocationPermission permission;
 
-      
-      serviceEnabled = await Geolocator.isLocationServiceEnabled();
+serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         _showSnackBar(
             "يرجى تفعيل خدمات الموقع (GPS) من إعدادات الجهاز", Colors.orange);
@@ -44,8 +41,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         return;
       }
 
-      
-      permission = await Geolocator.checkPermission();
+permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
@@ -62,17 +58,15 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
         return;
       }
 
-      
-      Position position = await Geolocator.getCurrentPosition(
+Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit:
-            const Duration(seconds: 10), 
+            const Duration(seconds: 10),
       );
 
       LatLng currentLatLng = LatLng(position.latitude, position.longitude);
 
-      
-      _mapController?.animateCamera(
+_mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(currentLatLng, 15),
       );
 

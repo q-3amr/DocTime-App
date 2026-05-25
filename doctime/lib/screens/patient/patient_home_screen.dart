@@ -10,7 +10,7 @@ import '../../widgets/action_button.dart';
 import '../../widgets/star_rating_widget.dart';
 import 'doctor_search_screen.dart';
 import 'ai_chat_screen.dart';
-import 'patient_map_screen.dart'; 
+import 'patient_map_screen.dart';
 import '../common/schedule_screen.dart';
 import '../common/profile_screen.dart';
 import '../common/chats_list_screen.dart';
@@ -143,8 +143,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
     super.dispose();
   }
 
-  
-  void _startFeedbackListener() {
+void _startFeedbackListener() {
     if (user?.uid == null) return;
     _feedbackListener = FirebaseFirestore.instance
         .collection('appointments')
@@ -154,7 +153,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
         .listen((snapshot) {
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        
+
         if (data['hasFeedback'] != true && data['isDismissed'] != true) {
           _showFeedbackPopup(context, doc.id);
           break;
@@ -175,7 +174,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
             return Dialog(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25)),
-              
+
               insetPadding:
                   const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
               child: Stack(
@@ -183,9 +182,8 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(20.0),
-                    
-                    
-                    child: SingleChildScrollView(
+
+child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -203,7 +201,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                             style: TextStyle(color: Colors.grey, fontSize: 14),
                           ),
                           const SizedBox(height: 20),
-                          
+
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 14),
@@ -308,12 +306,12 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                     child: IconButton(
                       icon: const Icon(Icons.close_rounded, color: Colors.grey),
                       onPressed: () async {
-                        
+
                         await FirebaseFirestore.instance
                             .collection('appointments')
                             .doc(appointmentId)
                             .update({
-                          'isDismissed': true, 
+                          'isDismissed': true,
                         });
                         if (context.mounted) Navigator.pop(context);
                       },
@@ -327,9 +325,8 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
       },
     );
   }
-  
 
-  @override
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
@@ -432,7 +429,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                                 MaterialPageRoute(
                                     builder: (c) => const AiChatScreen()))),
                         const SizedBox(height: 15),
-                        
+
                         ActionButton(
                             icon: Icons.map_outlined,
                             title: 'Clinic Map',
@@ -512,7 +509,7 @@ class _LiveTimerBannerState extends State<LiveTimerBanner> {
   @override
   void initState() {
     super.initState();
-    
+
     _bannerTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       if (mounted) setState(() {});
     });
@@ -528,8 +525,7 @@ class _LiveTimerBannerState extends State<LiveTimerBanner> {
   Widget build(BuildContext context) {
     Duration diff = widget.date.difference(DateTime.now());
 
-    
-    if (diff.isNegative) return const SizedBox.shrink();
+if (diff.isNegative) return const SizedBox.shrink();
 
     String timeText = diff.inDays > 0
         ? '${diff.inDays} Days, ${diff.inHours % 24} Hours'

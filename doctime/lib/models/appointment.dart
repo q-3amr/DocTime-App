@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AppointmentModel {
   final String id;
   final String doctorId;
-  final String doctorName; 
+  final String doctorName;
   final String patientId;
   final String patientName;
   final DateTime appointmentDateTime;
@@ -30,16 +30,15 @@ class AppointmentModel {
   ) {
     return AppointmentModel(
       id: documentId,
-      
+
       doctorId: map['doctor_id'] ?? '',
-      
+
       doctorName: map['doctor_name'] ?? '',
-      
+
       patientId: map['patient_id'] ?? '',
       patientName: map['patient_name'] ?? 'Unknown',
-      
-      
-      appointmentDateTime: parseDate(map['date']),
+
+appointmentDateTime: parseDate(map['date']),
       status: map['status'] ?? 'pending',
       notes: map['notes'],
     );
@@ -47,7 +46,7 @@ class AppointmentModel {
 
   Map<String, dynamic> toMap() {
     return {
-      
+
       'doctor_id': doctorId,
       'doctor_name': doctorName,
       'patient_id': patientId,
@@ -58,8 +57,7 @@ class AppointmentModel {
     };
   }
 
-  
-  AppointmentModel copyWith({
+AppointmentModel copyWith({
     String? id,
     String? doctorId,
     String? doctorName,

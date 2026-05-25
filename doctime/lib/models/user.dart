@@ -7,12 +7,12 @@
   final String? specialty;
   final double? rating;
   final String? location;
-  final double? latitude; 
-  final double? longitude; 
+  final double? latitude;
+  final double? longitude;
   final String? about;
   final bool? isVerified;
-  final int? reviewCount; 
-  double? distance; 
+  final int? reviewCount;
+  double? distance;
 
   UserModel({
     required this.id,
@@ -28,7 +28,7 @@
     this.about,
     this.isVerified,
     this.distance,
-    this.reviewCount, 
+    this.reviewCount,
   });
 
   bool get isDoctor => role == 'doctor';
@@ -51,7 +51,7 @@
           : null,
       about: map['about'],
       isVerified: map['isVerified'] ?? false,
-      
+
       reviewCount:
           map['reviewCount'] != null ? (map['reviewCount'] as num).toInt() : 0,
     );
@@ -72,7 +72,7 @@
       map['longitude'] = longitude;
       map['about'] = about ?? '';
       map['isVerified'] = isVerified ?? false;
-      map['reviewCount'] = reviewCount ?? 0; 
+      map['reviewCount'] = reviewCount ?? 0;
     }
 
     return map;

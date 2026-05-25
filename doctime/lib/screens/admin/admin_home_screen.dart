@@ -81,14 +81,14 @@ class AdminHomeScreen extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
                         onPressed: () async {
-                          
+
                           await db.deleteUser(doctor.id);
                         },
                       ),
                       IconButton(
                         icon: const Icon(Icons.check, color: Colors.green),
                         onPressed: () async {
-                          
+
                           await db.approveDoctor(doctor.id);
                         },
                       ),

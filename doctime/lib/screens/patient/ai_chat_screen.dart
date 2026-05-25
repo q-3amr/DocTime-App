@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
-import '../../services/ai_service.dart'; 
+import '../../services/ai_service.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'doctor_search_screen.dart';
 import 'dart:convert';
@@ -24,7 +24,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   String _triageUrgency = "none";
   final TextEditingController _messageController = TextEditingController();
   bool _isTyping = false;
-  
+
   final AiService _aiService = AiService();
   final List<ChatMessage> _messages = [
     ChatMessage(
@@ -50,11 +50,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
       _isTyping = false;
       if (aiResponseText.startsWith('Server error') ||
           aiResponseText.startsWith('Connection issue')) {
-        
+
         _messages.removeAt(0);
 
-        
-        ScaffoldMessenger.of(context).showSnackBar(
+ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
                 Text('Connection error, check your connection and try again!'),
@@ -64,29 +63,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
         );
       } else {
         try {
-          
+
           final Map<String, dynamic> aiData = jsonDecode(aiResponseText);
-          
-          
-          final String displayMessage = aiData['message'] ?? "Error parsing message.";
+
+final String displayMessage = aiData['message'] ?? "Error parsing message.";
           final String status = aiData['status'] ?? "asking";
           final String urgency = aiData['urgency'] ?? "none";
           final String specialty = aiData['specialty'] ?? "none";
 
-          
-          _messages.insert(0, ChatMessage(text: displayMessage, isUser: false));
+_messages.insert(0, ChatMessage(text: displayMessage, isUser: false));
 
-          
-          if (status == "finished") {
-            _isTriageComplete = true; 
-            _triageUrgency = urgency; 
-            
+if (status == "finished") {
+            _isTriageComplete = true;
+            _triageUrgency = urgency;
+
             if (specialty != "none") {
-              _recommendedSpecialty = specialty; 
+              _recommendedSpecialty = specialty;
             }
           }
         } catch (e) {
-          
+
            _messages.insert(0, ChatMessage(text: "System Error: Couldn't parse response.", isUser: false));
            print("JSON Parse Error: $e");
         }
@@ -110,7 +106,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
-        elevation: 1, 
+        elevation: 1,
         iconTheme: const IconThemeData(color: Colors.black),
         centerTitle: true,
       ),
@@ -118,7 +114,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         children: [
           Expanded(
             child: ListView.builder(
-              reverse: true, 
+              reverse: true,
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -127,7 +123,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               },
             ),
           ),
-          
+
           _isTriageComplete ? _buildCompletionButton() : _buildMessageInput(),
         ],
       ),
@@ -145,7 +141,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            
+
             bottomLeft:
                 message.isUser ? const Radius.circular(16) : Radius.zero,
             bottomRight:
@@ -162,12 +158,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
         child: MarkdownBody(
           data: message.text,
           styleSheet: MarkdownStyleSheet(
-            
+
             p: TextStyle(
               color: message.isUser ? Colors.white : Colors.black87,
               fontSize: 16,
             ),
-            
+
             listBullet: TextStyle(
               color: message.isUser ? Colors.white : Colors.black87,
             ),
@@ -198,7 +194,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none, 
+                    borderSide: BorderSide.none,
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -231,7 +227,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
 Widget _buildCompletionButton() {
-  
+
   final Color backgroundColor;
   final IconData icon;
   final String label;
@@ -294,8 +290,7 @@ Widget _buildCompletionButton() {
       break;
   }
 
-  
-  return SafeArea(
+return SafeArea(
     child: Padding(
       padding: const EdgeInsets.all(16.0),
       child: SizedBox(

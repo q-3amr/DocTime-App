@@ -1,11 +1,11 @@
 ﻿import 'package:flutter/material.dart';
 
 class ActionButton extends StatelessWidget {
-  final dynamic icon; 
+  final dynamic icon;
   final String title;
   final Color color;
   final VoidCallback onTap;
-  final bool isSquare; 
+  final bool isSquare;
 
   const ActionButton({
     super.key,
@@ -13,7 +13,7 @@ class ActionButton extends StatelessWidget {
     required this.title,
     required this.color,
     required this.onTap,
-    this.isSquare = false, 
+    this.isSquare = false,
   });
 
   @override
@@ -22,10 +22,10 @@ class ActionButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white, 
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-              color: Colors.grey.shade300, width: 2.0), 
+              color: Colors.grey.shade300, width: 2.0),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.05),
@@ -46,19 +46,19 @@ class ActionButton extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1), 
+            color: color.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: icon is Widget
               ? icon
               : Icon(icon as IconData,
-                  color: color, size: 28), 
+                  color: color, size: 28),
         ),
         const SizedBox(height: 12),
         Text(
           title,
           style: const TextStyle(
-            color: Colors.black87, 
+            color: Colors.black87,
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),

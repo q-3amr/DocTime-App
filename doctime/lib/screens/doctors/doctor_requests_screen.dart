@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../services/database_service.dart'; 
-import '../../utils/constants.dart'; 
-import '../../utils/date_utils.dart'; 
+import '../../services/database_service.dart';
+import '../../utils/constants.dart';
+import '../../utils/date_utils.dart';
 
 class DoctorRequestsScreen extends StatefulWidget {
   const DoctorRequestsScreen({super.key});

@@ -3,17 +3,14 @@
 import 'package:flutter/material.dart';
 
 class StarRatingWidget extends StatefulWidget {
-  
+
   final double initialRating;
 
-  
-  final ValueChanged<double>? onRatingChanged;
+final ValueChanged<double>? onRatingChanged;
 
-  
-  final double starSize;
+final double starSize;
 
-  
-  final bool isReadOnly;
+final bool isReadOnly;
 
   const StarRatingWidget({
     super.key,
@@ -36,8 +33,7 @@ class _StarRatingWidgetState extends State<StarRatingWidget> {
     _currentRating = widget.initialRating.clamp(0.0, 5.0);
   }
 
-  
-  @override
+@override
   void didUpdateWidget(StarRatingWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialRating != oldWidget.initialRating) {
@@ -54,15 +50,13 @@ class _StarRatingWidgetState extends State<StarRatingWidget> {
     widget.onRatingChanged?.call(newRating);
   }
 
-  
-  
-  IconData _iconForStar(int starIndex) {
+IconData _iconForStar(int starIndex) {
     if (_currentRating >= starIndex) {
-      return Icons.star_rounded; 
+      return Icons.star_rounded;
     } else if (_currentRating >= starIndex - 0.5) {
-      return Icons.star_half_rounded; 
+      return Icons.star_half_rounded;
     } else {
-      return Icons.star_outline_rounded; 
+      return Icons.star_outline_rounded;
     }
   }
 
@@ -83,8 +77,7 @@ class _StarRatingWidgetState extends State<StarRatingWidget> {
           );
         }
 
-        
-        return GestureDetector(
+return GestureDetector(
           onTap: () => _onStarTapped(starIndex),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 150),

@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; 
-import '../../services/database_service.dart'; 
-import '../../utils/constants.dart'; 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/database_service.dart';
+import '../../utils/constants.dart';
 
 class ChatScreen extends StatefulWidget {
   final String receiverId;
@@ -24,13 +24,13 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _markAsRead(); 
+    _markAsRead();
   }
 
   void _markAsRead() async {
     final chatRoomId = _chatRoomId(_currentUserId, widget.receiverId);
     await _db.updateChatRoom(chatRoomId, {
-      'isRead': true, 
+      'isRead': true,
     });
   }
 

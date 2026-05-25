@@ -1,8 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:geolocator/geolocator.dart'; 
+import 'package:geolocator/geolocator.dart';
 import 'dart:math'
-    show cos, sqrt, asin; 
+    show cos, sqrt, asin;
 import '../../services/database_service.dart';
 import '../../models/user.dart';
 import '../../utils/constants.dart';
@@ -23,22 +23,19 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
   String searchQuery = '';
   String selectedFilter = 'Select Filter';
-  String? selectedSpecialty; 
+  String? selectedSpecialty;
 
-  
-  Position? _userPosition;
+Position? _userPosition;
   @override
   void initState() {
     super.initState();
 
-    
-    
-    if (widget.initialSpecialty != null &&
+if (widget.initialSpecialty != null &&
         _filterSpecialties.contains(widget.initialSpecialty)) {
       selectedSpecialty = widget.initialSpecialty;
     } else {
       selectedSpecialty =
-          'All Specialties'; 
+          'All Specialties';
     }
   }
 
@@ -47,8 +44,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     ...kSpecialties,
   ];
 
-  
-  double _calculateDistance(
+double _calculateDistance(
       double lat1, double lon1, double lat2, double lon2) {
     var p = 0.017453292519943295;
     var c = cos;
@@ -58,8 +54,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
     return 12742 * asin(sqrt(a));
   }
 
-  
-  Future<void> _getCurrentLocation() async {
+Future<void> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -74,8 +69,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 
     final position = await Geolocator.getCurrentPosition();
     setState(() {
-      _userPosition = position; 
-      selectedFilter = 'By Nearest'; 
+      _userPosition = position;
+      selectedFilter = 'By Nearest';
     });
   }
 
@@ -98,7 +93,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       ),
       body: Column(
         children: [
-          
+
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: Container(
@@ -119,14 +114,12 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             ),
           ),
 
-          
-          Padding(
+Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
             child: _buildFilterSection(),
           ),
 
-          
-          _buildSpecialtyDropdown(),
+_buildSpecialtyDropdown(),
 
           Expanded(
             child: StreamBuilder<List<UserModel>>(
@@ -139,8 +132,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   return const Center(child: Text('No doctors found.'));
                 }
 
-                
-                List<UserModel> filtered = snapshot.data!.where((doctor) {
+List<UserModel> filtered = snapshot.data!.where((doctor) {
                   if (currentUser != null && doctor.id == currentUser!.uid)
                     return false;
                   final name = doctor.name.toLowerCase();
@@ -155,11 +147,10 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   return matchesSearch && matchesSpecialty;
                 }).toList();
 
-                
-                if (selectedFilter == 'By Nearest' && _userPosition != null) {
+if (selectedFilter == 'By Nearest' && _userPosition != null) {
                   for (var doc in filtered) {
                     if (doc.latitude != null && doc.longitude != null) {
-                      
+
                       doc.distance = _calculateDistance(
                         _userPosition!.latitude,
                         _userPosition!.longitude,
@@ -168,17 +159,16 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       );
                     }
                   }
-                  
+
                   filtered.sort((a, b) =>
                       (a.distance ?? 99999).compareTo(b.distance ?? 99999));
                 }
 
-                
-                if (selectedFilter == 'Top Rated') {
+if (selectedFilter == 'Top Rated') {
                   filtered.sort((a, b) {
                     final rA = a.rating ?? -1.0;
                     final rB = b.rating ?? -1.0;
-                    return rB.compareTo(rA); 
+                    return rB.compareTo(rA);
                   });
                 }
 
@@ -221,7 +211,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                     .toList(),
                 onChanged: (String? newValue) {
                   if (newValue == 'By Nearest') {
-                    
+
                     _getCurrentLocation();
                   } else if (newValue == 'Top Rated') {
                     setState(() => selectedFilter = 'Top Rated');
@@ -243,7 +233,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          
+
           color: kPrimaryBlue.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: kPrimaryBlue.withValues(alpha: 0.3)),
@@ -271,10 +261,8 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
             doctorName: doctor.name,
             specialty: doctor.specialty ?? 'General',
             doctorId: doctor.id,
-            
-            
-            
-            latitude: doctor.latitude,
+
+latitude: doctor.latitude,
             longitude: doctor.longitude,
             distance: doctor.distance,
           ),
@@ -309,8 +297,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                   Text(doctor.specialty ?? 'General',
                       style: TextStyle(color: Colors.grey.shade500)),
 
-                  
-                  if (doctor.rating != null && doctor.rating! > 0)
+if (doctor.rating != null && doctor.rating! > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Row(
@@ -332,12 +319,11 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
                       ),
                     ),
 
-                  
-                  if (doctor.distance != null)
+if (doctor.distance != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Text(
-                        '${doctor.distance!.toStringAsFixed(1)} km away', 
+                        '${doctor.distance!.toStringAsFixed(1)} km away',
                         style: const TextStyle(
                             color: kPrimaryBlue,
                             fontWeight: FontWeight.bold,

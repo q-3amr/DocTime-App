@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
-import '../../utils/constants.dart'; 
-import '../../utils/date_utils.dart'; 
+import '../../utils/constants.dart';
+import '../../utils/date_utils.dart';
 
 class ManageSlotsScreen extends StatefulWidget {
   const ManageSlotsScreen({super.key});
@@ -43,8 +43,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
         return;
       }
 
-      
-      final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
+final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
         user!.uid,
         ['pending', 'accepted'],
       );
@@ -52,10 +51,8 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
       final List<String> bookedTimes = [];
       for (var doc in appointmentsSnap.docs) {
         final data = doc.data() as Map<String, dynamic>;
-      
-        
-        
-        final DateTime apptDate = parseDate(data['date']);
+
+final DateTime apptDate = parseDate(data['date']);
 
         if (apptDate.year == date.year &&
             apptDate.month == date.month &&
@@ -69,9 +66,8 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
 
       if (mounted) setState(() { _mySlots = freeSlots; _isLoading = false; });
     } catch (e) {
-      
-      
-      debugPrint('Error loading slots: $e');
+
+debugPrint('Error loading slots: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -160,7 +156,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
+
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
             color: Colors.grey.shade50,
@@ -227,8 +223,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
             ),
           ),
 
-          
-          Padding(
+Padding(
             padding: const EdgeInsets.all(24.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -253,8 +248,7 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
             ),
           ),
 
-          
-          Expanded(
+Expanded(
             child:
                 _isLoading
                     ? const Center(child: CircularProgressIndicator())
