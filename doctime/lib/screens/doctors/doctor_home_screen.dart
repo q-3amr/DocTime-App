@@ -12,6 +12,7 @@ import '../patient/doctor_search_screen.dart';
 import 'doctor_requests_screen.dart';
 import 'manage_slots_screen.dart';
 import 'doctor_reviews_screen.dart';
+import '../../services/auth_service.dart';
 import '../../utils/feedback_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
@@ -28,7 +29,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final String uid = AuthService().currentUser?.uid ?? '';
     final List<Widget> pages = [
       const DoctorDashboard(),
       const ScheduleScreen(isDoctor: true),
@@ -111,7 +112,7 @@ class DoctorDashboard extends StatefulWidget {
 
 class _DoctorDashboardState extends State<DoctorDashboard> {
   final db = DatabaseService();
-  final User? user = FirebaseAuth.instance.currentUser;
+  final User? user = AuthService().currentUser;
   FeedbackHelper? _feedbackHelper;
 
   @override

@@ -15,6 +15,7 @@ import 'patient_map_screen.dart';
 import '../common/schedule_screen.dart';
 import '../common/profile_screen.dart';
 import '../common/chats_list_screen.dart';
+import '../../services/auth_service.dart';
 import '../../utils/feedback_helper.dart';
 
 class PatientHomeScreen extends StatefulWidget {
@@ -128,7 +129,7 @@ class PatientHomeContent extends StatefulWidget {
 
 class _PatientHomeContentState extends State<PatientHomeContent> {
   final _db = DatabaseService();
-  final User? user = FirebaseAuth.instance.currentUser;
+  final User? user = AuthService().currentUser;
   FeedbackHelper? _feedbackHelper;
 
   @override
