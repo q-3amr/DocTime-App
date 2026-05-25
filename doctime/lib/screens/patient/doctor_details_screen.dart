@@ -48,7 +48,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
     _generateSlotsForDate(_selectedDate);
   }
 
-Future<void> _openDirections() async {
+  Future<void> _openDirections() async {
     if (widget.latitude != null && widget.longitude != null) {
       final Uri googleMapsUrl = Uri.parse(
           'google.navigation:q=${widget.latitude},${widget.longitude}&mode=d');
@@ -57,7 +57,6 @@ Future<void> _openDirections() async {
         if (await canLaunchUrl(googleMapsUrl)) {
           await launchUrl(googleMapsUrl);
         } else {
-
           final Uri webUrl = Uri.parse(
               'https://www.google.com/maps/search/?api=1&query=${widget.latitude},${widget.longitude}');
           await launchUrl(webUrl, mode: LaunchMode.externalApplication);
@@ -255,7 +254,6 @@ Future<void> _openDirections() async {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 8),
-
                   GestureDetector(
                     onTap: _openDirections,
                     child: const Icon(Icons.location_on,
@@ -276,7 +274,6 @@ Future<void> _openDirections() async {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   Text(
                     widget.specialty,
                     style: TextStyle(
@@ -286,13 +283,11 @@ Future<void> _openDirections() async {
                     ),
                   ),
                   const SizedBox(height: 15),
-
-StreamBuilder<UserModel?>(
+                  StreamBuilder<UserModel?>(
                     stream: widget.doctorId != null
                         ? _db.streamUser(widget.doctorId!)
                         : null,
                     builder: (context, snap) {
-
                       double avg = snap.data?.rating ?? 0.0;
                       int count = snap.data?.reviewCount ?? 0;
 
@@ -301,7 +296,6 @@ StreamBuilder<UserModel?>(
                         children: [
                           Row(
                             children: [
-
                               if (avg > 0) ...[
                                 StarRatingWidget(
                                   initialRating: avg,
@@ -324,7 +318,6 @@ StreamBuilder<UserModel?>(
                                 ),
                             ],
                           ),
-
                           if (widget.distance != null)
                             Text(
                               '${widget.distance!.toStringAsFixed(1)} km away',
@@ -339,14 +332,13 @@ StreamBuilder<UserModel?>(
                     },
                   ),
                   const SizedBox(height: 20),
-
-SizedBox(
+                  SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: _openDirections,
                       icon: const Icon(Icons.map_outlined, color: kPrimaryBlue),
                       label: const Text(
-                        'أرني الاتجاهات',
+                        'Show me the directions',
                         style: TextStyle(
                           color: kPrimaryBlue,
                           fontWeight: FontWeight.bold,
@@ -364,7 +356,6 @@ SizedBox(
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 30),
                   const Text(
                     'Select Date',
@@ -471,8 +462,7 @@ SizedBox(
                               }).toList(),
                             ),
                   const SizedBox(height: 30),
-
-const Text(
+                  const Text(
                     'Patient Reviews',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
@@ -489,7 +479,7 @@ const Text(
                         );
                       }
 
-final reviews = snap.data!.docs.where((doc) {
+                      final reviews = snap.data!.docs.where((doc) {
                         final d = doc.data() as Map<String, dynamic>;
                         final r = (d['rating'] as num?)?.toDouble() ?? 0.0;
                         return r > 0;
@@ -569,7 +559,6 @@ final reviews = snap.data!.docs.where((doc) {
                       );
                     },
                   ),
-
                   const SizedBox(height: 100),
                 ],
               ),
