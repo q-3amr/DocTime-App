@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
@@ -9,7 +9,9 @@ import '../../utils/date_utils.dart';
 import '../../widgets/action_button.dart';
 import '../../widgets/star_rating_widget.dart';
 import 'doctor_search_screen.dart';
-import 'ai_chat_screen.dart';
+import 'package:provider/provider.dart';
+import '../chat/voice_chat.dart';
+import '../../providers/chat_provider.dart';
 import 'patient_map_screen.dart';
 import '../common/schedule_screen.dart';
 import '../common/profile_screen.dart';
@@ -427,7 +429,10 @@ child: SingleChildScrollView(
                             onTap: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (c) => const AiChatScreen()))),
+                                    builder: (c) => ChangeNotifierProvider(
+                                          create: (_) => ChatProvider(),
+                                          child: const VoiceChat(),
+                                        )))),
                         const SizedBox(height: 15),
 
                         ActionButton(

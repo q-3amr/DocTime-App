@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../models/chat_message.dart';
+import '../patient/doctor_search_screen.dart';
+import '../../utils/constants.dart';
 
 class VoiceChat extends StatefulWidget {
   const VoiceChat({super.key});
@@ -60,13 +62,23 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
     _scrollToBottom();
   }
 
+  void _showConnectionError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Connection error, check your connection and try again!'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ChatProvider>(
       builder: (context, chat, _) {
         if (chat.messages.isNotEmpty) _scrollToBottom();
         return Scaffold(
-          backgroundColor: Color(0xFFF5F7FA),
+          backgroundColor: const Color(0xFFF5F7FA),
           body: SafeArea(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -76,7 +88,9 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
               ],
             ),
           ),
-          bottomNavigationBar: _buildInputBar(chat),
+          bottomNavigationBar: chat.isTriageComplete
+              ? _buildCompletionButton(chat)
+              : _buildInputBar(chat),
         );
       },
     );
@@ -121,11 +135,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF6C63FF), Color(0xFF3ECFCF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: kPrimaryBlue,
                 ),
                 child: Center(
                   child: Text(
@@ -174,10 +184,10 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
                           : 'Online',
                   style: TextStyle(
                     color: chat.isListening
-                        ? Color(0xFF3ECFCF)
+                        ? kPrimaryBlue
                         : chat.isSpeaking
-                            ? Color(0xFF6C63FF)
-                            : Color(0xFF2ECC71),
+                            ? kPrimaryBlue
+                            : Colors.green,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -185,9 +195,6 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
               ],
             ),
           ),
-          Icon(Icons.call_outlined, color: Color(0xFF6C63FF), size: 22),
-          SizedBox(width: 18),
-          Icon(Icons.more_vert_rounded, color: Color(0xFF888888), size: 22),
         ],
       ),
     );
@@ -331,18 +338,11 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
                 height: 48,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: chat.isListening
-                      ? LinearGradient(
-                          colors: [Color(0xFF3ECFCF), Color(0xFF6C63FF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: chat.isListening ? null : Color(0xFFF0F2F5),
+                  color: chat.isListening ? kPrimaryBlue : Color(0xFFF0F2F5),
                   boxShadow: chat.isListening
                       ? [
                           BoxShadow(
-                            color: Color(0xFF6C63FF).withValues(alpha: 0.35),
+                            color: kPrimaryBlue.withValues(alpha: 0.35),
                             blurRadius: 18,
                             spreadRadius: 2,
                           ),
@@ -353,7 +353,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
                   chat.isListening
                       ? Icons.stop_rounded
                       : Icons.mic_none_rounded,
-                  color: chat.isListening ? Colors.white : Color(0xFF6C63FF),
+                  color: chat.isListening ? Colors.white : kPrimaryBlue,
                   size: 22,
                 ),
               ),
@@ -367,14 +367,10 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFF6C63FF), Color(0xFF3ECFCF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: kPrimaryBlue,
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0xFF6C63FF).withValues(alpha: 0.3),
+                    color: kPrimaryBlue.withValues(alpha: 0.3),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),
@@ -384,6 +380,100 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCompletionButton(ChatProvider chat) {
+    final Color backgroundColor;
+    final IconData icon;
+    final String label;
+    final VoidCallback onPressed;
+
+    switch (chat.triageUrgency) {
+      case 'red':
+        backgroundColor = Colors.red;
+        icon = Icons.warning_amber_rounded;
+        label = 'EMERGENCY: Call Ambulance';
+        onPressed = () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.white),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Go to the Emergency Room immediately or call your local emergency number!',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red.shade700,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        };
+        break;
+
+      case 'yellow':
+        backgroundColor = const Color(0xFF6C63FF);
+        icon = Icons.search_rounded;
+        label = 'Find ${chat.recommendedSpecialty} Doctors';
+        onPressed = () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DoctorSearchScreen(
+                initialSpecialty: chat.recommendedSpecialty,
+              ),
+            ),
+          );
+        };
+        break;
+
+      case 'green':
+      default:
+        backgroundColor = Colors.green;
+        icon = Icons.home_rounded;
+        label = 'Understood, Back to Home';
+        onPressed = () => Navigator.pop(context);
+        break;
+    }
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onPressed,
+            icon: Icon(icon, color: Colors.white),
+            label: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: backgroundColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -423,11 +513,7 @@ class _ChatBubble extends StatelessWidget {
               margin: EdgeInsets.only(right: 6, bottom: 2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFF6C63FF), Color(0xFF3ECFCF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: kPrimaryBlue,
               ),
               child: Center(
                 child: Text(
@@ -451,7 +537,7 @@ class _ChatBubble extends StatelessWidget {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: isUser ? Color(0xFF6C63FF) : Colors.white,
+                      color: isUser ? kPrimaryBlue : Colors.white,
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(18),
                         topRight: Radius.circular(18),
@@ -492,14 +578,7 @@ class _ChatBubble extends StatelessWidget {
                                 fontSize: 10.5,
                               ),
                             ),
-                            if (isUser) ...[
-                              SizedBox(width: 4),
-                              Icon(
-                                Icons.done_all_rounded,
-                                size: 13,
-                                color: Color(0xFF3ECFCF).withValues(alpha: 0.9),
-                              ),
-                            ],
+
                           ],
                         ),
                       ],
