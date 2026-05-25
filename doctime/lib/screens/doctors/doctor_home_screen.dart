@@ -12,6 +12,7 @@ import '../patient/doctor_search_screen.dart';
 import 'doctor_requests_screen.dart';
 import 'manage_slots_screen.dart';
 import 'doctor_reviews_screen.dart';
+import '../../utils/feedback_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../chat/voice_chat.dart';
@@ -111,14 +112,19 @@ class DoctorDashboard extends StatefulWidget {
 class _DoctorDashboardState extends State<DoctorDashboard> {
   final db = DatabaseService();
   final User? user = FirebaseAuth.instance.currentUser;
+  FeedbackHelper? _feedbackHelper;
 
   @override
   void initState() {
     super.initState();
+    if (user != null) {
+      _feedbackHelper = FeedbackHelper(context: context, userId: user!.uid);
+    }
   }
 
   @override
   void dispose() {
+    _feedbackHelper?.dispose();
     super.dispose();
   }
 
