@@ -2,6 +2,7 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'database_service.dart';
+import 'package:geolocator/geolocator.dart';
 
 class AiService {
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
@@ -122,8 +123,38 @@ RULES:
             final String sortBy = toolArgs['sort_by'] ?? "none";
 
             if (sortBy == "nearest") {
-              toolResultString =
-                  '{"error": "Please inform the user that location services are not integrated yet."}';
+              try {
+                // بنشيك إذا خدمة الـ GPS شغالة أصلاً بالتلفون
+                bool serviceEnabled =
+                    await Geolocator.isLocationServiceEnabled();
+                if (!serviceEnabled) {
+                  toolResultString =
+                      '{"error": "Location service is off. Ask the user to turn on GPS."}';
+                } else {
+                  // بنشيك الصلاحيات وبنطلبها إذا مش موجودة
+                  LocationPermission permission =
+                      await Geolocator.checkPermission();
+                  if (permission == LocationPermission.denied) {
+                    permission = await Geolocator.requestPermission();
+                  }
+
+                  if (permission == LocationPermission.denied ||
+                      permission == LocationPermission.deniedForever) {
+                    toolResultString =
+                        '{"error": "Location permission denied. Tell the user you cannot find the nearest doctor without it."}';
+                  } else {
+                    // إذا كل أمور الـ GPS تمام، بنسحب اللوكيشن وبنبعثه لدالة الفايربيز
+                    Position position = await Geolocator.getCurrentPosition(
+                        desiredAccuracy: LocationAccuracy.high);
+                    toolResultString = await _db.searchDoctorsForAi(
+                        specialty, sortBy,
+                        userLat: position.latitude,
+                        userLng: position.longitude);
+                  }
+                }
+              } catch (e) {
+                toolResultString = '{"error": "Failed to get location: $e"}';
+              }
             } else {
               toolResultString =
                   await _db.searchDoctorsForAi(specialty, sortBy);
