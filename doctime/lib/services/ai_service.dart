@@ -7,7 +7,54 @@ class AiService {
   late final String _apiKey;
 
   final List<Map<String, String>> _chatHistory = [];
-
+  // هاد هو الكتالوج اللي بيشرح للـ AI شو بيقدر يعمل، وكيف يبعث الداتا بالضبط
+  final List<Map<String, dynamic>> _tools = [
+    {
+      "type": "function",
+      "function": {
+        "name": "search_doctors",
+        "description":
+            "Search for doctors in the database based on a specific specialty. Use this when the user asks to find a doctor, asks about a specialty, or needs the nearest doctor.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "specialty": {
+              "type": "string",
+              "description": "The exact medical specialty required.",
+              // هون الحل السحري تبعك: الموديل مستحيل يبعث إشي برا هاي اللستة
+              "enum": [
+                "General Medicine",
+                "Dentistry",
+                "Cardiology",
+                "Psychiatry",
+                "Nutrition",
+                "Urology",
+                "Dermatology",
+                "Gynecology & Obstetrics",
+                "Orthopedics",
+                "Pediatrics",
+                "Internal Medicine",
+                "Ophthalmology",
+                "Neurology",
+                "Gastroenterology",
+                "ENT",
+                "Pulmonology",
+                "Endocrinology"
+              ]
+            },
+            "sort_by": {
+              "type": "string",
+              "description":
+                  "How to sort the doctors. Use 'nearest' if the user asks for the closest doctor. Use 'rating' for top rated.",
+              "enum": ["rating", "nearest", "none"]
+            }
+          },
+          "required": ["specialty"]
+        }
+      }
+    }
+    // لبعدين رح نضيف هون أدوات المواعيد (get_availability, book, cancel)
+  ];
   AiService() {
     final key = dotenv.env['GROQ_API_KEY'];
     if (key == null || key.isEmpty) {
@@ -15,24 +62,24 @@ class AiService {
     }
     _apiKey = key.trim();
 
-_chatHistory.add({
+    _chatHistory.add({
       "role": "system",
-      "content": """You are a medical triage assistant for the DocTime app.
-You MUST respond ONLY in valid JSON format. No markdown, no extra text.
-Your JSON response must strictly follow this structure:
+      "content":
+          """You are an advanced medical triage and booking AI Agent for the DocTime app.
+You have access to tools to search for doctors, check schedules, and manage appointments.
+
+IMPORTANT RULE: When you are NOT calling a tool (e.g., when asking triage questions, giving advice, or chatting with the user), you MUST respond ONLY in valid JSON format exactly like this:
 {
   "status": "asking" or "finished",
-  "message": "your next short question OR your final advice",
+  "message": "your text response to the user",
   "urgency": "none", "green", "yellow", or "red",
-  "specialty": "none" or one of [General Medicine, Dentistry, Cardiology, Psychiatry, Nutrition, Urology, Dermatology, Gynecology & Obstetrics, Orthopedics, Pediatrics, Internal Medicine, Ophthalmology, Neurology, Gastroenterology, ENT, Pulmonology, Endocrinology]
+  "specialty": "none" or the medical specialty (e.g., General Medicine, Cardiology, etc.)
 }
 
 RULES:
-1. Ask a maximum of 5 questions, one by one. While asking, set "status": "asking", "urgency": "none", "specialty": "none", and put your question in "message".
-2. If symptoms are mild (e.g., simple cold, mild headache) and you reached a conclusion, set "status": "finished", "urgency": "green", "specialty": "none". Put home care advice in "message".
-3. If symptoms require a doctor, set "status": "finished", "urgency": "yellow", and provide the EXACT specialty name.
-4. If symptoms indicate a severe emergency (e.g., chest pain, severe bleeding), IMMEDIATELY set "status": "finished", "urgency": "red", "specialty": "none". Tell the user to go to the ER in "message".
-5. Never output anything outside the JSON brackets."""
+1. If the user asks about doctors, finding a doctor, booking, or appointments, DO NOT guess. USE THE APPROPRIATE TOOL.
+2. If you are doing medical triage, ask a maximum of 5 questions one by one.
+3. Never output any markdown or text outside the JSON structure when talking to the user."""
     });
   }
 
@@ -46,7 +93,6 @@ RULES:
           "Content-Type": "application/json",
         },
         body: jsonEncode({
-
           "model": "llama-3.3-70b-versatile",
           "messages": _chatHistory,
           "temperature": 0.5
