@@ -1,11 +1,12 @@
 ﻿import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'database_service.dart';
 
 class AiService {
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   late final String _apiKey;
-
+  final DatabaseService _db = DatabaseService();
   final List<Map<String, dynamic>> _chatHistory = [];
   final List<Map<String, dynamic>> _tools = [
     {
@@ -120,8 +121,13 @@ RULES:
             final String specialty = toolArgs['specialty'];
             final String sortBy = toolArgs['sort_by'] ?? "none";
 
-            toolResultString =
-                await _mockSearchDoctorsInDatabase(specialty, sortBy);
+            if (sortBy == "nearest") {
+              toolResultString =
+                  '{"error": "Please inform the user that location services are not integrated yet."}';
+            } else {
+              toolResultString =
+                  await _db.searchDoctorsForAi(specialty, sortBy);
+            }
           } else {
             toolResultString =
                 '{"error": "Tool $toolName not found or not implemented yet."}';
@@ -172,22 +178,5 @@ RULES:
       _chatHistory.removeLast();
       return '{"status": "asking", "message": "Connection issue: $e", "urgency": "none", "specialty": "none"}';
     }
-  }
-
-  Future<String> _mockSearchDoctorsInDatabase(
-      String specialty, String sortBy) async {
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (sortBy == "nearest") {
-      return '{"error": "Location service is off. Ask patient to enable GPS."}';
-    }
-
-    return jsonEncode({
-      "success": true,
-      "doctors_found": [
-        {"name": "Dr. Amer", "rating": 4.8, "status": "Available Today"},
-        {"name": "Dr. Laith", "rating": 4.5, "status": "Available Tomorrow"}
-      ]
-    });
   }
 }
