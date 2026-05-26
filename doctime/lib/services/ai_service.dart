@@ -39,7 +39,8 @@ class AiService {
                 "Gastroenterology",
                 "ENT",
                 "Pulmonology",
-                "Endocrinology"
+                "Endocrinology",
+                "Otolaryngology"
               ]
             },
             "sort_by": {
@@ -95,24 +96,30 @@ RULES:
         body: jsonEncode({
           "model": "llama-3.3-70b-versatile",
           "messages": _chatHistory,
-          "temperature": 0.5
+          "temperature": 0.5,
+          "tools": _tools,
+          "tool_choice": "auto"
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final String aiText = data['choices'][0]['message']['content'];
+        final responseMessage = data['choices'][0]['message'];
 
-        _chatHistory.add({"role": "assistant", "content": aiText});
-
-        return aiText;
+        if (responseMessage['tool_calls'] != null) {
+          return '{"status": "asking", "message": "Processing your request in the database...", "urgency": "none", "specialty": "none"}';
+        } else {
+          final String aiText = responseMessage['content'];
+          _chatHistory.add({"role": "assistant", "content": aiText});
+          return aiText;
+        }
       } else {
         _chatHistory.removeLast();
-        return "Server error: ${response.statusCode}\nDetails: ${response.body}";
+        return '{"status": "asking", "message": "Server error: ${response.statusCode}", "urgency": "none", "specialty": "none"}';
       }
     } catch (e) {
       _chatHistory.removeLast();
-      return "Connection issue: $e";
+      return '{"status": "asking", "message": "Connection issue: $e", "urgency": "none", "specialty": "none"}';
     }
   }
 }
