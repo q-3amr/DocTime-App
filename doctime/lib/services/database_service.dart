@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import '../models/user.dart';
 import '../models/appointment.dart';
+import 'package:geolocator/geolocator.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -282,7 +283,8 @@ class DatabaseService {
     }
   }
 
-  Future<String> searchDoctorsForAi(String specialty, String sortBy) async {
+  Future<String> searchDoctorsForAi(String specialty, String sortBy,
+      {double? userLat, double? userLng}) async {
     try {
       Query query = FirebaseFirestore.instance
           .collection('users')
@@ -302,18 +304,35 @@ class DatabaseService {
 
       for (var doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
+
         if (data['isVerified'] != true) continue;
+        double docLat = data['latitude']?.toDouble() ?? 0.0;
+        double docLng = data['longitude']?.toDouble() ?? 0.0;
+        double distanceInMeters = 0.0;
+
+        if (sortBy == "nearest" && userLat != null && userLng != null) {
+          if (docLat == 0.0 && docLng == 0.0) {
+            distanceInMeters = 9999999.0;
+          } else {
+            distanceInMeters =
+                Geolocator.distanceBetween(userLat, userLng, docLat, docLng);
+          }
+        }
         doctorsList.add({
           "doctor_id": doc.id,
           "name": data['name'] ?? "Unknown",
           "rating": data['aggregate_rating'] ?? 0.0,
           "reviews_count": data['reviews_count'] ?? 0,
+          "distance_in_km": (distanceInMeters / 1000).toStringAsFixed(1),
         });
       }
 
       if (sortBy == "rating") {
         doctorsList
             .sort((a, b) => (b['rating'] as num).compareTo(a['rating'] as num));
+      } else if (sortBy == "nearest") {
+        doctorsList.sort((a, b) => double.parse(a['distance_in_km'])
+            .compareTo(double.parse(b['distance_in_km'])));
       }
 
       return jsonEncode(
