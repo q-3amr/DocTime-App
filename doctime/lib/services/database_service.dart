@@ -1,16 +1,14 @@
-﻿
-
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-
+import 'dart:convert';
 import '../models/user.dart';
 import '../models/appointment.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-Stream<List<UserModel>> streamDoctors() {
+  Stream<List<UserModel>> streamDoctors() {
     return _db
         .collection('users')
         .where('role', isEqualTo: 'doctor')
@@ -44,7 +42,7 @@ Stream<List<UserModel>> streamDoctors() {
     await _db.collection('users').doc(userId).delete();
   }
 
-Future<void> submitAppointmentFeedback({
+  Future<void> submitAppointmentFeedback({
     required String appointmentId,
     required String feedbackText,
     required double rating,
@@ -161,9 +159,8 @@ Future<void> submitAppointmentFeedback({
         .get();
   }
 
-Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
+  Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
     try {
-
       String? token = await FirebaseMessaging.instance.getToken();
 
       String slotId =
@@ -182,7 +179,7 @@ Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
 
         final appointmentData = appointment.toMap();
 
-appointmentData['hasFeedback'] = false;
+        appointmentData['hasFeedback'] = false;
         appointmentData['isReviewSeen'] = false;
         appointmentData['patientFcmToken'] = token;
 
@@ -203,7 +200,7 @@ appointmentData['hasFeedback'] = false;
     await _db.collection('appointments').doc(docId).delete();
   }
 
-Future<DocumentSnapshot> getAvailability(String doctorId, String dateKey) {
+  Future<DocumentSnapshot> getAvailability(String doctorId, String dateKey) {
     return _db
         .collection('users')
         .doc(doctorId)
@@ -270,7 +267,7 @@ Future<DocumentSnapshot> getAvailability(String doctorId, String dateKey) {
     await _db.collection('users').doc(doctorId).update({'isVerified': true});
   }
 
-Future<void> updateNotificationToken(String userId) async {
+  Future<void> updateNotificationToken(String userId) async {
     try {
       String? token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
@@ -282,6 +279,47 @@ Future<void> updateNotificationToken(String userId) async {
       }
     } catch (e) {
       debugPrint("Error updating notification token: $e");
+    }
+  }
+
+  Future<String> searchDoctorsForAi(String specialty, String sortBy) async {
+    try {
+      Query query = FirebaseFirestore.instance
+          .collection('users')
+          .where('role', isEqualTo: 'doctor')
+          .where('specialty', isEqualTo: specialty);
+
+      QuerySnapshot snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        return jsonEncode({
+          "success": false,
+          "message": "No doctors found for this specialty in the database."
+        });
+      }
+
+      List<Map<String, dynamic>> doctorsList = [];
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        if (data['isVerified'] != true) continue;
+        doctorsList.add({
+          "doctor_id": doc.id,
+          "name": data['name'] ?? "Unknown",
+          "rating": data['aggregate_rating'] ?? 0.0,
+          "reviews_count": data['reviews_count'] ?? 0,
+        });
+      }
+
+      if (sortBy == "rating") {
+        doctorsList
+            .sort((a, b) => (b['rating'] as num).compareTo(a['rating'] as num));
+      }
+
+      return jsonEncode(
+          {"success": true, "doctors_found": doctorsList.take(4).toList()});
+    } catch (e) {
+      return jsonEncode({"error": "Database error occurred: $e"});
     }
   }
 }
