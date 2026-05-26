@@ -6,8 +6,7 @@ class AiService {
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   late final String _apiKey;
 
-  final List<Map<String, String>> _chatHistory = [];
-  // هاد هو الكتالوج اللي بيشرح للـ AI شو بيقدر يعمل، وكيف يبعث الداتا بالضبط
+  final List<Map<String, dynamic>> _chatHistory = [];
   final List<Map<String, dynamic>> _tools = [
     {
       "type": "function",
@@ -21,7 +20,6 @@ class AiService {
             "specialty": {
               "type": "string",
               "description": "The exact medical specialty required.",
-              // هون الحل السحري تبعك: الموديل مستحيل يبعث إشي برا هاي اللستة
               "enum": [
                 "General Medicine",
                 "Dentistry",
@@ -54,7 +52,6 @@ class AiService {
         }
       }
     }
-    // لبعدين رح نضيف هون أدوات المواعيد (get_availability, book, cancel)
   ];
   AiService() {
     final key = dotenv.env['GROQ_API_KEY'];
@@ -107,7 +104,61 @@ RULES:
         final responseMessage = data['choices'][0]['message'];
 
         if (responseMessage['tool_calls'] != null) {
-          return '{"status": "asking", "message": "Processing your request in the database...", "urgency": "none", "specialty": "none"}';
+          final toolCalls = responseMessage['tool_calls'];
+          final toolCall = toolCalls[0];
+          final toolCallId = toolCall['id'];
+          final toolName = toolCall['function']['name'];
+
+          final toolArgs = jsonDecode(toolCall['function']['arguments']);
+
+          _chatHistory.add(
+              {"role": "assistant", "content": null, "tool_calls": toolCalls});
+
+          String toolResultString = "";
+
+          if (toolName == "search_doctors") {
+            final String specialty = toolArgs['specialty'];
+            final String sortBy = toolArgs['sort_by'] ?? "none";
+
+            toolResultString =
+                await _mockSearchDoctorsInDatabase(specialty, sortBy);
+          } else {
+            toolResultString =
+                '{"error": "Tool $toolName not found or not implemented yet."}';
+          }
+
+          _chatHistory.add({
+            "role": "tool",
+            "tool_call_id": toolCallId,
+            "name": toolName,
+            "content": toolResultString
+          });
+
+          final secondResponse = await http.post(
+            Uri.parse(_apiUrl),
+            headers: {
+              "Authorization": "Bearer $_apiKey",
+              "Content-Type": "application/json",
+            },
+            body: jsonEncode({
+              "model": "llama-3.3-70b-versatile",
+              "messages": _chatHistory,
+              "temperature": 0.5
+            }),
+          );
+
+          if (secondResponse.statusCode == 200) {
+            final secondData = jsonDecode(secondResponse.body);
+            final String finalAiText =
+                secondData['choices'][0]['message']['content'];
+
+            _chatHistory.add({"role": "assistant", "content": finalAiText});
+            return finalAiText;
+          } else {
+            _chatHistory.removeRange(
+                _chatHistory.length - 2, _chatHistory.length);
+            return '{"status": "asking", "message": "Server error in second round: ${secondResponse.statusCode}", "urgency": "none", "specialty": "none"}';
+          }
         } else {
           final String aiText = responseMessage['content'];
           _chatHistory.add({"role": "assistant", "content": aiText});
@@ -121,5 +172,22 @@ RULES:
       _chatHistory.removeLast();
       return '{"status": "asking", "message": "Connection issue: $e", "urgency": "none", "specialty": "none"}';
     }
+  }
+
+  Future<String> _mockSearchDoctorsInDatabase(
+      String specialty, String sortBy) async {
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (sortBy == "nearest") {
+      return '{"error": "Location service is off. Ask patient to enable GPS."}';
+    }
+
+    return jsonEncode({
+      "success": true,
+      "doctors_found": [
+        {"name": "Dr. Amer", "rating": 4.8, "status": "Available Today"},
+        {"name": "Dr. Laith", "rating": 4.5, "status": "Available Tomorrow"}
+      ]
+    });
   }
 }
