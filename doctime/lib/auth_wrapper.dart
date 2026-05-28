@@ -1,4 +1,4 @@
-﻿
+
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -77,7 +77,7 @@ DatabaseService().updateNotificationToken(user.uid);
               }
 
               final userModel = roleSnapshot.data;
-              if (userModel != null && userModel.role == 'admin') {
+              if (userModel != null && userModel.role.trim().toLowerCase() == 'admin') {
                 return const AdminHomeScreen();
               }
               if (userModel != null && userModel.isDoctor) {

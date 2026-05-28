@@ -1,4 +1,4 @@
-﻿class UserModel {
+class UserModel {
   final String id;
   final String email;
   final String name;
@@ -31,8 +31,8 @@
     this.reviewCount,
   });
 
-  bool get isDoctor => role == 'doctor';
-  bool get isPatient => role == 'patient';
+  bool get isDoctor => role.trim().toLowerCase() == 'doctor';
+  bool get isPatient => role.trim().toLowerCase() == 'patient';
 
   factory UserModel.fromMap(Map<String, dynamic> map, String documentId) {
     return UserModel(

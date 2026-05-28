@@ -312,21 +312,25 @@ class DatabaseService {
 
         if (sortBy == "nearest" && userLat != null && userLng != null) {
           if (docLat == 0.0 && docLng == 0.0) {
-            distanceInMeters = 9999999.0;
-          } else {
-            distanceInMeters =
-                Geolocator.distanceBetween(userLat, userLng, docLat, docLng);
+            continue;
           }
+          Geolocator.distanceBetween(userLat, userLng, docLat, docLng);
         }
         doctorsList.add({
           "doctor_id": doc.id,
           "name": data['name'] ?? "Unknown",
-          "rating": data['aggregate_rating'] ?? 0.0,
+          "rating": data['rating'] ?? 0.0,
           "reviews_count": data['reviews_count'] ?? 0,
           "distance_in_km": (distanceInMeters / 1000).toStringAsFixed(1),
         });
       }
-
+      if (doctorsList.isEmpty) {
+        return jsonEncode({
+          "success": false,
+          "message":
+              "No verified doctors found with valid locations for this specialty."
+        });
+      }
       if (sortBy == "rating") {
         doctorsList
             .sort((a, b) => (b['rating'] as num).compareTo(a['rating'] as num));

@@ -1,9 +1,10 @@
-﻿
+
 
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
+import '../../auth_wrapper.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -54,7 +55,15 @@ await _authService.signOut();
         } else {
 
           if (mounted) {
-            Navigator.pop(context);
+            if (userModel != null && !userModel.isPatient) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const AuthWrapper()),
+                (route) => false,
+              );
+            } else {
+              Navigator.pop(context);
+            }
           }
         }
       }
