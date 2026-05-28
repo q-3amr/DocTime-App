@@ -3,7 +3,7 @@ import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
 import '../../models/user.dart';
 import '../../utils/constants.dart';
-import '../auth/login_screen.dart';
+import '../../auth_wrapper.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -28,7 +28,7 @@ class AdminHomeScreen extends StatelessWidget {
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (c) => const LoginScreen()),
+                  MaterialPageRoute(builder: (c) => const AuthWrapper()),
                   (route) => false,
                 );
               }
@@ -81,14 +81,12 @@ class AdminHomeScreen extends StatelessWidget {
                       IconButton(
                         icon: const Icon(Icons.close, color: Colors.red),
                         onPressed: () async {
-
                           await db.deleteUser(doctor.id);
                         },
                       ),
                       IconButton(
                         icon: const Icon(Icons.check, color: Colors.green),
                         onPressed: () async {
-
                           await db.approveDoctor(doctor.id);
                         },
                       ),
