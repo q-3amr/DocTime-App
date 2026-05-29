@@ -359,4 +359,50 @@ class DatabaseService {
       return jsonEncode({"error": "Database error occurred: $e"});
     }
   }
+
+  Future<String> getDoctorAvailabilityForAi(
+      String doctorId, String date) async {
+    try {
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(doctorId)
+          .get();
+      if (!docSnapshot.exists) {
+        return jsonEncode({"error": "Doctor not found in the database."});
+      }
+
+      final data = docSnapshot.data() as Map<String, dynamic>;
+      List<dynamic> allSlots = data['available_slots'] ?? [];
+
+      if (allSlots.isEmpty) {
+        return jsonEncode({
+          "success": true,
+          "message": "The doctor has no working hours configured.",
+          "available_slots": []
+        });
+      }
+
+      QuerySnapshot appointments = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('doctor_id', isEqualTo: doctorId)
+          .where('date', isEqualTo: date)
+          .where('status', whereIn: ['pending', 'accepted']).get();
+
+      List<String> bookedTimes =
+          appointments.docs.map((doc) => doc['time'] as String).toList();
+
+      List<String> availableTimes = [];
+      for (String slot in allSlots) {
+        if (!bookedTimes.contains(slot)) {
+          availableTimes.add(slot);
+        }
+      }
+
+      return jsonEncode(
+          {"success": true, "date": date, "available_slots": availableTimes});
+    } catch (e) {
+      return jsonEncode(
+          {"error": "Database error while fetching availability: $e"});
+    }
+  }
 }
