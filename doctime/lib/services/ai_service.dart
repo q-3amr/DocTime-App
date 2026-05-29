@@ -79,7 +79,8 @@ IMPORTANT RULE: When you are NOT calling a tool (e.g., when asking triage questi
 RULES:
 1. If the user asks about doctors, finding a doctor, booking, or appointments, DO NOT guess. USE THE APPROPRIATE TOOL.
 2. If you are doing medical triage, ask a maximum of 5 questions one by one.
-3. Never output any markdown or text outside the JSON structure when talking to the user."""
+3. Never output any markdown or text outside the JSON structure when talking to the user.
+4. If a tool returns an error about Location/GPS being off or denied, DO NOT invent a doctor or a distance. You MUST reply to the user exactly telling them to turn on GPS or grant permissions."""
     });
   }
 
@@ -134,7 +135,7 @@ RULES:
                     await Geolocator.isLocationServiceEnabled();
                 if (!serviceEnabled) {
                   toolResultString =
-                      '{"error": "Location service is off. Ask the user to turn on GPS."}';
+                      '{"error": "Location service is off. You MUST explicitly ask the user to turn on their device GPS in order to find the nearest doctor."}';
                 } else {
                   LocationPermission permission =
                       await Geolocator.checkPermission();
@@ -145,9 +146,8 @@ RULES:
                   if (permission == LocationPermission.denied ||
                       permission == LocationPermission.deniedForever) {
                     toolResultString =
-                        '{"error": "Location permission denied. Tell the user you cannot find the nearest doctor without it."}';
+                        '{"error": "Location permission denied. You MUST tell the user that you cannot find the nearest doctor without GPS permissions."}';
                   } else {
-                    // إذا كل أمور الـ GPS تمام، بنسحب اللوكيشن وبنبعثه لدالة الفايربيز
                     Position position = await Geolocator.getCurrentPosition(
                         desiredAccuracy: LocationAccuracy.high);
                     toolResultString = await _db.searchDoctorsForAi(
@@ -157,7 +157,8 @@ RULES:
                   }
                 }
               } catch (e) {
-                toolResultString = '{"error": "Failed to get location: $e"}';
+                toolResultString =
+                    '{"error": "Failed to get location from the device: $e"}';
               }
             } else {
               toolResultString =
