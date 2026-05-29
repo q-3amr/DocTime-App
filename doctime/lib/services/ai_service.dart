@@ -50,7 +50,7 @@ class AiService {
               "enum": ["rating", "nearest", "none"]
             }
           },
-          "required": ["specialty"]
+          "required": ["specialty", "sort_by"]
         }
       }
     }
@@ -120,7 +120,8 @@ RULES:
 
           if (toolName == "search_doctors") {
             final String specialty = toolArgs['specialty'];
-            final String sortBy = toolArgs['sort_by'] ?? "none";
+            final String sortBy =
+                toolArgs['sort_by'] ?? toolArgs['sortBy'] ?? "none";
 
             if (sortBy == "nearest") {
               try {
