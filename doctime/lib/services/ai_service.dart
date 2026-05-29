@@ -120,19 +120,22 @@ RULES:
 
           if (toolName == "search_doctors") {
             final String specialty = toolArgs['specialty'];
+            String rawSort =
+                (toolArgs['sort_by'] ?? toolArgs['sortBy'] ?? "none")
+                    .toString()
+                    .toLowerCase()
+                    .trim();
             final String sortBy =
-                toolArgs['sort_by'] ?? toolArgs['sortBy'] ?? "none";
+                rawSort.contains("near") ? "nearest" : rawSort;
 
             if (sortBy == "nearest") {
               try {
-                // بنشيك إذا خدمة الـ GPS شغالة أصلاً بالتلفون
                 bool serviceEnabled =
                     await Geolocator.isLocationServiceEnabled();
                 if (!serviceEnabled) {
                   toolResultString =
                       '{"error": "Location service is off. Ask the user to turn on GPS."}';
                 } else {
-                  // بنشيك الصلاحيات وبنطلبها إذا مش موجودة
                   LocationPermission permission =
                       await Geolocator.checkPermission();
                   if (permission == LocationPermission.denied) {

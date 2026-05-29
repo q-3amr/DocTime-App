@@ -316,13 +316,17 @@ class DatabaseService {
           }
           Geolocator.distanceBetween(userLat, userLng, docLat, docLng);
         }
-        doctorsList.add({
+        Map<String, dynamic> doctorInfo = {
           "doctor_id": doc.id,
           "name": data['name'] ?? "Unknown",
           "rating": data['rating'] ?? 0.0,
           "reviews_count": data['reviews_count'] ?? 0,
-          "distance_in_km": (distanceInMeters / 1000).toStringAsFixed(1),
-        });
+        };
+        if (sortBy == "nearest") {
+          doctorInfo["distance_in_km"] =
+              (distanceInMeters / 1000).toStringAsFixed(1);
+        }
+        doctorsList.add(doctorInfo);
       }
       if (doctorsList.isEmpty) {
         return jsonEncode({
