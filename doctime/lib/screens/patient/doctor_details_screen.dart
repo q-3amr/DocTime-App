@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -116,8 +116,33 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       }
     }
 
-    final available =
-        doctorSlots.where((s) => !takenTimes.contains(s)).toList();
+    final now = DateTime.now();
+    final bool isToday = date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+
+    final available = doctorSlots.where((s) {
+      if (takenTimes.contains(s)) return false;
+      
+      if (isToday) {
+        try {
+          final parts = s.split(' ');
+          final timeParts = parts[0].split(':');
+          int hour = int.parse(timeParts[0]);
+          int minute = int.parse(timeParts[1]);
+          if (parts[1] == 'PM' && hour != 12) hour += 12;
+          if (parts[1] == 'AM' && hour == 12) hour = 0;
+          
+          final slotTime = DateTime(date.year, date.month, date.day, hour, minute);
+          if (slotTime.isBefore(now)) {
+            return false;
+          }
+        } catch (e) {
+          // In case of parsing error, fallback to showing it or handle appropriately.
+        }
+      }
+      return true;
+    }).toList();
 
     if (mounted) {
       setState(() {

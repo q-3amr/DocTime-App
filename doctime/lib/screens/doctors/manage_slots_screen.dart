@@ -1,4 +1,4 @@
-﻿
+
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -61,8 +61,32 @@ final DateTime apptDate = parseDate(data['date']);
         }
       }
 
-      final freeSlots =
-          allAddedSlots.where((s) => !bookedTimes.contains(s)).toList();
+      final now = DateTime.now();
+      final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+      
+      final freeSlots = allAddedSlots.where((s) {
+        if (bookedTimes.contains(s)) return false;
+        
+        if (isToday) {
+          try {
+            final parts = s.split(' ');
+            final timeParts = parts[0].split(':');
+            int hour = int.parse(timeParts[0]);
+            int minute = int.parse(timeParts[1]);
+            if (parts.length > 1) {
+              if (parts[1].toUpperCase() == 'PM' && hour != 12) hour += 12;
+              if (parts[1].toUpperCase() == 'AM' && hour == 12) hour = 0;
+            }
+            final slotTime = DateTime(date.year, date.month, date.day, hour, minute);
+            if (slotTime.isBefore(now)) {
+              return false;
+            }
+          } catch (e) {
+            // ignore parsing errors
+          }
+        }
+        return true;
+      }).toList();
 
       if (mounted) setState(() { _mySlots = freeSlots; _isLoading = false; });
     } catch (e) {

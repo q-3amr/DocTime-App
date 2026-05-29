@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -392,8 +392,39 @@ class DatabaseService {
           appointments.docs.map((doc) => doc['time'] as String).toList();
 
       List<String> availableTimes = [];
+      DateTime now = DateTime.now();
+      DateTime parsedDate;
+      try {
+        parsedDate = DateTime.parse(date);
+      } catch (e) {
+        // Fallback if parsing fails
+        parsedDate = now;
+      }
+      bool isToday = parsedDate.year == now.year &&
+          parsedDate.month == now.month &&
+          parsedDate.day == now.day;
+
       for (String slot in allSlots) {
         if (!bookedTimes.contains(slot)) {
+          if (isToday) {
+            try {
+              final parts = slot.split(' ');
+              final timeParts = parts[0].split(':');
+              int hour = int.parse(timeParts[0]);
+              int minute = int.parse(timeParts[1]);
+              if (parts.length > 1) {
+                if (parts[1].toUpperCase() == 'PM' && hour != 12) hour += 12;
+                if (parts[1].toUpperCase() == 'AM' && hour == 12) hour = 0;
+              }
+              final slotTime = DateTime(
+                  parsedDate.year, parsedDate.month, parsedDate.day, hour, minute);
+              if (slotTime.isBefore(now)) {
+                continue;
+              }
+            } catch (e) {
+              // ignore parse errors
+            }
+          }
           availableTimes.add(slot);
         }
       }
