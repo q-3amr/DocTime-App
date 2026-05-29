@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'database_service.dart';
@@ -51,6 +51,30 @@ class AiService {
             }
           },
           "required": ["specialty", "sort_by"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_doctor_availability",
+        "description":
+            "Check the available time slots for a specific doctor on a specific date. Use this ONLY after the user has selected a doctor and wants to know when they are available to book.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "doctor_id": {
+              "type": "string",
+              "description":
+                  "The exact ID of the doctor (obtained from the search_doctors tool)."
+            },
+            "date": {
+              "type": "string",
+              "description":
+                  "The date to check, formatted exactly as YYYY-MM-DD (e.g., 2026-05-29)."
+            }
+          },
+          "required": ["doctor_id", "date"]
         }
       }
     }
@@ -165,6 +189,28 @@ RULES:
             } else {
               toolResultString =
                   await _db.searchDoctorsForAi(specialty, sortBy);
+            }
+          } else if (toolName == "get_doctor_availability") {
+            final String doctorId = toolArgs['doctor_id'];
+            final String date = toolArgs['date'];
+            try {
+              final docSnapshot = await _db.getAvailability(doctorId, date);
+              if (docSnapshot.exists && docSnapshot.data() != null) {
+                final data = docSnapshot.data() as Map<String, dynamic>;
+                final slots = data['slots'] ?? [];
+                if (slots.isEmpty) {
+                  toolResultString =
+                      '{"success": true, "message": "No slots available on this date."}';
+                } else {
+                  toolResultString =
+                      jsonEncode({"success": true, "available_slots": slots});
+                }
+              } else {
+                toolResultString =
+                    '{"success": true, "message": "No availability configured for this date."}';
+              }
+            } catch (e) {
+              toolResultString = '{"error": "Failed to get availability: $e"}';
             }
           } else {
             toolResultString =
