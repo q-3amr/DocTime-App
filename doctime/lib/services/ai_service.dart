@@ -85,7 +85,7 @@ class AiService {
       throw Exception('API Key for Groq is missing in .env file!');
     }
     _apiKey = key.trim();
-
+    String todayDate = DateTime.now().toString().split(' ')[0];
     _chatHistory.add({
       "role": "system",
       "content":
@@ -106,7 +106,8 @@ RULES:
 3. Never output any markdown or text outside the JSON structure when talking to the user.
 4. If a tool returns an error about Location/GPS being off or denied, DO NOT invent a doctor or a distance. You MUST reply to the user exactly telling them to turn on GPS or grant permissions.
 5. CRITICAL: When using the search_doctors tool, YOU MUST READ THE EXACT "distance_in_km" provided in the JSON response. NEVER assume or change the distance to 0.0. Even if the distance is huge (e.g., 11000 km), REPORT IT EXACTLY as received. DO NOT hallucinate doctor names or distances.
-6. CRITICAL: When responding to the user after using a tool, formulate a natural, human-like sentence in the "message" field. DO NOT output code, technical logs, or raw JSON inside the "message" string. Just speak naturally."""
+6. CRITICAL: When responding to the user after using a tool, formulate a natural, human-like sentence in the "message" field. DO NOT output code, technical logs, or raw JSON inside the "message" string. Just speak naturally.
+7. CRITICAL: Today's date is $todayDate. If the user asks for "tomorrow" or "next week", calculate the exact date based on $todayDate and format it as YYYY-MM-DD before calling any tool."""
     });
   }
 
@@ -193,28 +194,14 @@ RULES:
           } else if (toolName == "get_doctor_availability") {
             final String doctorId = toolArgs['doctor_id'];
             final String date = toolArgs['date'];
+
             try {
-              final docSnapshot = await _db.getAvailability(doctorId, date);
-              if (docSnapshot.exists && docSnapshot.data() != null) {
-                final data = docSnapshot.data() as Map<String, dynamic>;
-                final slots = data['slots'] ?? [];
-                if (slots.isEmpty) {
-                  toolResultString =
-                      '{"success": true, "message": "No slots available on this date."}';
-                } else {
-                  toolResultString =
-                      jsonEncode({"success": true, "available_slots": slots});
-                }
-              } else {
-                toolResultString =
-                    '{"success": true, "message": "No availability configured for this date."}';
-              }
+              toolResultString =
+                  await _db.getDoctorAvailabilityForAi(doctorId, date);
             } catch (e) {
-              toolResultString = '{"error": "Failed to get availability: $e"}';
+              toolResultString =
+                  '{"error": "Failed to get availability from database: $e"}';
             }
-          } else {
-            toolResultString =
-                '{"error": "Tool $toolName not found or not implemented yet."}';
           }
 
           _chatHistory.add({
