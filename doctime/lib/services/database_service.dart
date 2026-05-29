@@ -306,26 +306,36 @@ class DatabaseService {
         final data = doc.data() as Map<String, dynamic>;
 
         if (data['isVerified'] != true) continue;
-        double docLat = data['latitude']?.toDouble() ?? 0.0;
-        double docLng = data['longitude']?.toDouble() ?? 0.0;
+
+        double docLat = (data['latitude'] ?? data['lat'] ?? 0.0).toDouble();
+        double docLng = (data['longitude'] ?? data['lng'] ?? 0.0).toDouble();
         double distanceInMeters = 0.0;
 
         if (sortBy == "nearest" && userLat != null && userLng != null) {
-          if (docLat == 0.0 && docLng == 0.0) {
-            continue;
-          }
-          Geolocator.distanceBetween(userLat, userLng, docLat, docLng);
+          if (docLat == 0.0 && docLng == 0.0) continue;
+          distanceInMeters =
+              Geolocator.distanceBetween(userLat, userLng, docLat, docLng);
         }
+
+        var rawRating = data['rating'] ??
+            data['rating'] ??
+            data['Rating'] ??
+            data['rate'] ??
+            0.0;
+        double doctorRating = double.tryParse(rawRating.toString()) ?? 0.0;
+
         Map<String, dynamic> doctorInfo = {
           "doctor_id": doc.id,
           "name": data['name'] ?? "Unknown",
-          "rating": data['rating'] ?? 0.0,
-          "reviews_count": data['reviews_count'] ?? 0,
+          "rating": doctorRating,
+          "reviews_count": data['reviews_count'] ?? data['Reviews_count'] ?? 0,
         };
+
         if (sortBy == "nearest") {
           doctorInfo["distance_in_km"] =
-              (distanceInMeters / 1000).toStringAsFixed(1);
+              double.parse((distanceInMeters / 1000).toStringAsFixed(1));
         }
+
         doctorsList.add(doctorInfo);
       }
       if (doctorsList.isEmpty) {
@@ -339,8 +349,8 @@ class DatabaseService {
         doctorsList
             .sort((a, b) => (b['rating'] as num).compareTo(a['rating'] as num));
       } else if (sortBy == "nearest") {
-        doctorsList.sort((a, b) => double.parse(a['distance_in_km'])
-            .compareTo(double.parse(b['distance_in_km'])));
+        doctorsList.sort((a, b) => (a['distance_in_km'] as double)
+            .compareTo(b['distance_in_km'] as double));
       }
 
       return jsonEncode(

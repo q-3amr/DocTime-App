@@ -80,7 +80,9 @@ RULES:
 1. If the user asks about doctors, finding a doctor, booking, or appointments, DO NOT guess. USE THE APPROPRIATE TOOL.
 2. If you are doing medical triage, ask a maximum of 5 questions one by one.
 3. Never output any markdown or text outside the JSON structure when talking to the user.
-4. If a tool returns an error about Location/GPS being off or denied, DO NOT invent a doctor or a distance. You MUST reply to the user exactly telling them to turn on GPS or grant permissions."""
+4. If a tool returns an error about Location/GPS being off or denied, DO NOT invent a doctor or a distance. You MUST reply to the user exactly telling them to turn on GPS or grant permissions.
+5. CRITICAL: When using the search_doctors tool, YOU MUST READ THE EXACT "distance_in_km" provided in the JSON response. NEVER assume or change the distance to 0.0. Even if the distance is huge (e.g., 11000 km), REPORT IT EXACTLY as received. DO NOT hallucinate doctor names or distances.
+6. CRITICAL: When responding to the user after using a tool, formulate a natural, human-like sentence in the "message" field. DO NOT output code, technical logs, or raw JSON inside the "message" string. Just speak naturally."""
     });
   }
 
