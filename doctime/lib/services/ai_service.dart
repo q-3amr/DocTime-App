@@ -107,7 +107,9 @@ RULES:
 4. If a tool returns an error about Location/GPS being off or denied, DO NOT invent a doctor or a distance. You MUST reply to the user exactly telling them to turn on GPS or grant permissions.
 5. CRITICAL: When using the search_doctors tool, YOU MUST READ THE EXACT "distance_in_km" provided in the JSON response. NEVER assume or change the distance to 0.0. Even if the distance is huge (e.g., 11000 km), REPORT IT EXACTLY as received. DO NOT hallucinate doctor names or distances.
 6. CRITICAL: When responding to the user after using a tool, formulate a natural, human-like sentence in the "message" field. DO NOT output code, technical logs, or raw JSON inside the "message" string. Just speak naturally.
-7. CRITICAL: Today's date is $todayDate. If the user asks for "tomorrow" or "next week", calculate the exact date based on $todayDate and format it as YYYY-MM-DD before calling any tool."""
+7. CRITICAL DATE RULE: Today's exact date is $todayDate. If the user mentions words like "today", "tomorrow", or a day of the week, DO NOT ask them for the date. You MUST silently calculate the correct date in YYYY-MM-DD format and immediately call the get_doctor_availability tool.
+8. ONLY ask the user "For which date..." if they ask for availability WITHOUT mentioning ANY timeframe at all.
+9. CRITICAL UI RULE: ALWAYS set "status": "asking" while using ANY tool (including search_doctors, get_doctor_availability, and booking appointments) or when providing information. NEVER set "status": "finished" just because you answered a question or completed a tool call. You MUST keep the conversation open so the user can continue the flow. ONLY set "status": "finished" if the patient explicitly ends the conversation (e.g., saying "I am done", "thank you", "bye", "that is all")."""
     });
   }
 
