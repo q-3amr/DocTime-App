@@ -339,11 +339,18 @@ class DatabaseService {
         doctorsList.add(doctorInfo);
       }
       if (doctorsList.isEmpty) {
-        return jsonEncode({
-          "success": false,
-          "message":
-              "No verified doctors found with valid locations for this specialty."
-        });
+        if (sortBy == "nearest") {
+          return jsonEncode({
+            "success": false,
+            "message":
+                "There are doctors for this specialty, but NONE of them have their clinic location (GPS) saved in the database. Tell the user exactly: 'I cannot find the nearest doctor because no doctors in this specialty have registered their locations yet.'"
+          });
+        } else {
+          return jsonEncode({
+            "success": false,
+            "message": "No verified doctors found for this specialty."
+          });
+        }
       }
       if (sortBy == "rating") {
         doctorsList

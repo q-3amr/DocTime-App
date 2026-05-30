@@ -139,40 +139,23 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(width: 12),
-          Stack(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: kPrimaryBlue,
-                ),
-                child: Center(
-                  child: Text(
-                    'AI',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                    ),
-                  ),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: kPrimaryBlue,
+            ),
+            child: Center(
+              child: Text(
+                'AI',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
                 ),
               ),
-              Positioned(
-                bottom: 1,
-                right: 1,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: Color(0xFF2ECC71),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           SizedBox(width: 12),
           Expanded(
@@ -187,22 +170,15 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                Text(
-                  chat.isListening
-                      ? 'Recording...'
-                      : chat.isSpeaking
-                          ? 'Playing...'
-                          : 'Online',
-                  style: TextStyle(
-                    color: chat.isListening
-                        ? kPrimaryBlue
-                        : chat.isSpeaking
-                            ? kPrimaryBlue
-                            : Colors.green,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                if (chat.isListening || chat.isSpeaking)
+                  Text(
+                    chat.isListening ? 'Recording...' : 'Playing...',
+                    style: TextStyle(
+                      color: kPrimaryBlue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
