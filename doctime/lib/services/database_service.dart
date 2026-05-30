@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -363,16 +363,28 @@ class DatabaseService {
   Future<String> getDoctorAvailabilityForAi(
       String doctorId, String date) async {
     try {
+      DateTime parsedDate = DateTime.parse(date);
+      String firestoreDate =
+          "${parsedDate.year}-${parsedDate.month}-${parsedDate.day}";
+
       DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(doctorId)
+          .collection('availability')
+          .doc(firestoreDate)
           .get();
+
       if (!docSnapshot.exists) {
-        return jsonEncode({"error": "Doctor not found in the database."});
+        return jsonEncode({
+          "success": true,
+          "message": "The doctor has no working hours configured for today.",
+          "available_slots": []
+        });
       }
 
       final data = docSnapshot.data() as Map<String, dynamic>;
-      List<dynamic> allSlots = data['available_slots'] ?? [];
+      List<dynamic> allSlots =
+          data['slots'] ?? data['time_slots'] ?? data['available_slots'] ?? [];
 
       if (allSlots.isEmpty) {
         return jsonEncode({
@@ -385,7 +397,7 @@ class DatabaseService {
       QuerySnapshot appointments = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: doctorId)
-          .where('date', isEqualTo: date)
+          .where('date', isEqualTo: firestoreDate)
           .where('status', whereIn: ['pending', 'accepted']).get();
 
       List<String> bookedTimes =
@@ -393,13 +405,7 @@ class DatabaseService {
 
       List<String> availableTimes = [];
       DateTime now = DateTime.now();
-      DateTime parsedDate;
-      try {
-        parsedDate = DateTime.parse(date);
-      } catch (e) {
-        // Fallback if parsing fails
-        parsedDate = now;
-      }
+
       bool isToday = parsedDate.year == now.year &&
           parsedDate.month == now.month &&
           parsedDate.day == now.day;
@@ -412,18 +418,18 @@ class DatabaseService {
               final timeParts = parts[0].split(':');
               int hour = int.parse(timeParts[0]);
               int minute = int.parse(timeParts[1]);
+
               if (parts.length > 1) {
                 if (parts[1].toUpperCase() == 'PM' && hour != 12) hour += 12;
                 if (parts[1].toUpperCase() == 'AM' && hour == 12) hour = 0;
               }
-              final slotTime = DateTime(
-                  parsedDate.year, parsedDate.month, parsedDate.day, hour, minute);
+
+              final slotTime = DateTime(parsedDate.year, parsedDate.month,
+                  parsedDate.day, hour, minute);
               if (slotTime.isBefore(now)) {
                 continue;
               }
-            } catch (e) {
-              // ignore parse errors
-            }
+            } catch (_) {}
           }
           availableTimes.add(slot);
         }
