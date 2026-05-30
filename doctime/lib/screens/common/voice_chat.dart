@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../models/chat_message.dart';
-import '../patient/doctor_search_screen.dart';
 import '../../utils/constants.dart';
 
 class VoiceChat extends StatefulWidget {
@@ -401,22 +400,6 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
               duration: const Duration(seconds: 5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        };
-        break;
-
-      case 'yellow':
-        backgroundColor = const Color(0xFF6C63FF);
-        icon = Icons.search_rounded;
-        label = 'Find ${chat.recommendedSpecialty} Doctors';
-        onPressed = () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DoctorSearchScreen(
-                initialSpecialty: chat.recommendedSpecialty,
               ),
             ),
           );
