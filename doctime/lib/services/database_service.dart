@@ -459,7 +459,15 @@ class DatabaseService {
         return jsonEncode(
             {"error": "User is not logged in. Cannot book appointment."});
       }
-
+      DocumentSnapshot patientDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(patientId)
+          .get();
+      String patientName = "Unknown";
+      if (patientDoc.exists) {
+        final pData = patientDoc.data() as Map<String, dynamic>;
+        patientName = pData['name'] ?? pData['fullName'] ?? "Unknown";
+      }
       DateTime parsedDate = DateTime.parse(date);
       String firestoreDate =
           "${parsedDate.year}-${parsedDate.month}-${parsedDate.day}";
@@ -482,6 +490,7 @@ class DatabaseService {
       await FirebaseFirestore.instance.collection('appointments').add({
         'doctor_id': doctorId,
         'patient_id': patientId,
+        'patient_name': patientName,
         'date': firestoreDate,
         'time': time,
         'status': 'pending',
