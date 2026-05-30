@@ -329,7 +329,7 @@ class DatabaseService {
           "doctor_id": doc.id,
           "name": data['name'] ?? "Unknown",
           "rating": doctorRating,
-          "reviews_count": data['reviews_count'] ?? data['Reviews_count'] ?? 0,
+          "reviews_count": data['reviewCount'] ?? data['reviews_count'] ?? 0,
         };
 
         if (sortBy == "nearest") {

@@ -136,7 +136,8 @@ RULES:
 6. CRITICAL: When responding to the user after using a tool, formulate a natural, human-like sentence in the "message" field. DO NOT output code, technical logs, or raw JSON inside the "message" string. Just speak naturally.
 7. CRITICAL DATE RULE: Today's exact date is $todayDate. If the user mentions ANY time format (e.g., "today", "tomorrow", "next Sunday", "1 June", "1/6", "1-6"), DO NOT ask them for the date. You are an AI, figure it out! You MUST silently interpret their input based on the current year and month, convert it EXACTLY to YYYY-MM-DD format, and immediately call the get_doctor_availability tool. Example: If today is 2026-05-30 and the user says "1 june" or "1/6", you must automatically pass "2026-06-01" to the tool.
 8. ONLY ask the user "For which date..." if they ask for availability WITHOUT mentioning ANY timeframe at all.
-9. CRITICAL UI RULE: ALWAYS set "status": "asking" while using ANY tool (including search_doctors, get_doctor_availability, and booking appointments) or when providing information. NEVER set "status": "finished" just because you answered a question or completed a tool call. You MUST keep the conversation open so the user can continue the flow. ONLY set "status": "finished" if the patient explicitly ends the conversation (e.g., saying "I am done", "thank you", "bye", "that is all")."""
+9. CRITICAL UI RULE: ALWAYS set "status": "asking" while using ANY tool (including search_doctors, get_doctor_availability, and booking appointments) or when providing information. NEVER set "status": "finished" just because you answered a question or completed a tool call. You MUST keep the conversation open so the user can continue the flow. ONLY set "status": "finished" if the patient explicitly ends the conversation (e.g., saying "I am done", "thank you", "bye", "that is all").
+10. CRITICAL RESPONSE RULE: When answering a query about a doctor (e.g., nearest or top-rated), KEEP IT BRIEF. ONLY mention the doctor's name, specialty, and the primary metric requested (e.g., rating or distance). DO NOT output the number of reviews or distance if it is 0.0. NEVER say "located 0.0 km away". If distance is 0.0, assume they do not have a location set and do not mention distance at all."""
     });
   }
 
@@ -230,6 +231,18 @@ RULES:
             } catch (e) {
               toolResultString =
                   '{"error": "Failed to get availability from database: $e"}';
+            }
+          } else if (toolName == "book_appointment") {
+            final String doctorId = toolArgs['doctor_id'];
+            final String date = toolArgs['date'];
+            final String time = toolArgs['time'];
+
+            try {
+              toolResultString =
+                  await _db.bookAppointmentForAi(doctorId, date, time);
+            } catch (e) {
+              toolResultString =
+                  '{"error": "Failed to execute booking tool: $e"}';
             }
           }
 
