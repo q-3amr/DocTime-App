@@ -16,7 +16,7 @@ import '../../services/auth_service.dart';
 import '../../utils/feedback_helper.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
-import '../chat/voice_chat.dart';
+import '../common/voice_chat.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});

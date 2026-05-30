@@ -77,6 +77,33 @@ class AiService {
           "required": ["doctor_id", "date"]
         }
       }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "book_appointment",
+        "description":
+            "Book an appointment with a doctor. Use this ONLY after you have successfully retrieved the doctor's available slots using get_doctor_availability, and the user has explicitly chosen a specific time slot from that list.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "doctor_id": {
+              "type": "string",
+              "description": "The exact ID of the doctor to book with."
+            },
+            "date": {
+              "type": "string",
+              "description": "The chosen date, formatted EXACTLY as YYYY-MM-DD."
+            },
+            "time": {
+              "type": "string",
+              "description":
+                  "The exact time slot the user picked (e.g., '10:00 PM'). It MUST be one of the available slots you previously showed them."
+            }
+          },
+          "required": ["doctor_id", "date", "time"]
+        }
+      }
     }
   ];
   AiService() {
@@ -107,7 +134,7 @@ RULES:
 4. CRITICAL GPS RULE: Differentiate between the user's GPS and the doctors' locations. If the tool returns an error specifically saying the USER'S location/GPS is off or denied, tell the user to turn it on. BUT, if the tool says that "no doctors have registered their locations", DO NOT blame the user's GPS. Simply tell the user: "There are no doctors with registered locations for this specialty near you."
 5. CRITICAL: When using the search_doctors tool, YOU MUST READ THE EXACT "distance_in_km" provided in the JSON response. NEVER assume or change the distance to 0.0. Even if the distance is huge (e.g., 11000 km), REPORT IT EXACTLY as received. DO NOT hallucinate doctor names or distances.
 6. CRITICAL: When responding to the user after using a tool, formulate a natural, human-like sentence in the "message" field. DO NOT output code, technical logs, or raw JSON inside the "message" string. Just speak naturally.
-7. CRITICAL DATE RULE: Today's exact date is $todayDate. If the user mentions ANY time format (e.g., "today", "tomorrow", "next Sunday", "1 June", "1/6", "1-6"), DO NOT ask them for the date. You are an AI, figure it out! You MUST silently interpret their input based on the current year and month, convert it EXACTLY to DD-MM-YYYY format, and immediately call the get_doctor_availability tool. Example: If today is 2026-05-30 and the user says "1 june" or "1/6", you must automatically pass "2026-06-01" to the tool.
+7. CRITICAL DATE RULE: Today's exact date is $todayDate. If the user mentions ANY time format (e.g., "today", "tomorrow", "next Sunday", "1 June", "1/6", "1-6"), DO NOT ask them for the date. You are an AI, figure it out! You MUST silently interpret their input based on the current year and month, convert it EXACTLY to YYYY-MM-DD format, and immediately call the get_doctor_availability tool. Example: If today is 2026-05-30 and the user says "1 june" or "1/6", you must automatically pass "2026-06-01" to the tool.
 8. ONLY ask the user "For which date..." if they ask for availability WITHOUT mentioning ANY timeframe at all.
 9. CRITICAL UI RULE: ALWAYS set "status": "asking" while using ANY tool (including search_doctors, get_doctor_availability, and booking appointments) or when providing information. NEVER set "status": "finished" just because you answered a question or completed a tool call. You MUST keep the conversation open so the user can continue the flow. ONLY set "status": "finished" if the patient explicitly ends the conversation (e.g., saying "I am done", "thank you", "bye", "that is all")."""
     });

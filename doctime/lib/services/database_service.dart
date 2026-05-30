@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../models/user.dart';
 import '../models/appointment.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -447,6 +448,54 @@ class DatabaseService {
     } catch (e) {
       return jsonEncode(
           {"error": "Database error while fetching availability: $e"});
+    }
+  }
+
+  Future<String> bookAppointmentForAi(
+      String doctorId, String date, String time) async {
+    try {
+      final String? patientId = FirebaseAuth.instance.currentUser?.uid;
+      if (patientId == null) {
+        return jsonEncode(
+            {"error": "User is not logged in. Cannot book appointment."});
+      }
+
+      DateTime parsedDate = DateTime.parse(date);
+      String firestoreDate =
+          "${parsedDate.year}-${parsedDate.month}-${parsedDate.day}";
+
+      QuerySnapshot checkConflict = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('doctor_id', isEqualTo: doctorId)
+          .where('date', isEqualTo: firestoreDate)
+          .where('time', isEqualTo: time)
+          .where('status', whereIn: ['pending', 'accepted']).get();
+
+      if (checkConflict.docs.isNotEmpty) {
+        return jsonEncode({
+          "success": false,
+          "error":
+              "CRITICAL: This exact time slot ($time) was just booked by someone else! Tell the user to choose another time from the available slots."
+        });
+      }
+
+      await FirebaseFirestore.instance.collection('appointments').add({
+        'doctor_id': doctorId,
+        'patient_id': patientId,
+        'date': firestoreDate,
+        'time': time,
+        'status': 'pending',
+        'created_at': FieldValue.serverTimestamp(),
+      });
+
+      return jsonEncode({
+        "success": true,
+        "message":
+            "Appointment successfully booked for $date at $time. Tell the user their appointment is now PENDING doctor approval."
+      });
+    } catch (e) {
+      return jsonEncode(
+          {"error": "Database error while booking the appointment: $e"});
     }
   }
 }
