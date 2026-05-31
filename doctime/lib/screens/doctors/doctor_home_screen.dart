@@ -14,9 +14,6 @@ import 'manage_slots_screen.dart';
 import 'doctor_reviews_screen.dart';
 import '../../services/auth_service.dart';
 import '../../utils/feedback_helper.dart';
-import 'package:provider/provider.dart';
-import '../../providers/chat_provider.dart';
-import '../common/voice_chat.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -184,13 +181,13 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                         return const Center(child: CircularProgressIndicator());
                       final docs = snapshot.data!.docs;
 
-final bool hasNewReview = docs.any((d) {
+                      final bool hasNewReview = docs.any((d) {
                         final data = d.data() as Map<String, dynamic>;
                         return data['hasFeedback'] == true &&
                             data['isReviewSeen'] != true;
                       });
 
-final int upcoming = docs
+                      final int upcoming = docs
                           .where((d) =>
                               d['status'] == 'accepted' &&
                               !isExpiredAppointment(parseDate(d['date'])))
@@ -240,15 +237,16 @@ final int upcoming = docs
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold))),
                           const SizedBox(height: 15),
-
                           Row(
                             children: [
                               Expanded(
                                 child: AspectRatio(
                                   aspectRatio: 1.1,
                                   child: ActionButton(
-                                      icon: const Icon(Icons.calendar_today_rounded,
-                                          color: Colors.orange, size: 28),
+                                      icon: const Icon(
+                                          Icons.calendar_today_rounded,
+                                          color: Colors.orange,
+                                          size: 28),
                                       title: '$upcoming Upcoming',
                                       color: Colors.orange,
                                       isSquare: true,
@@ -279,7 +277,6 @@ final int upcoming = docs
                           const SizedBox(height: 15),
                           Column(
                             children: [
-
                               ActionButton(
                                 icon: Stack(
                                   clipBehavior: Clip.none,
@@ -309,7 +306,6 @@ final int upcoming = docs
                                         builder: (c) =>
                                             const DoctorReviewsScreen())),
                               ),
-
                               const SizedBox(height: 15),
                               ActionButton(
                                 icon: const Icon(Icons.chat_bubble_rounded,
@@ -333,21 +329,8 @@ final int upcoming = docs
                                       MaterialPageRoute(
                                           builder: (c) =>
                                               const DoctorSearchScreen()))),
-                              const SizedBox(height: 15),
-                              ActionButton(
-                                  icon: Icons.smart_toy_rounded,
-                                  title: 'AI Assistant',
-                                  color: Colors.purple,
-                                  onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (c) => ChangeNotifierProvider(
-                                                create: (_) => ChatProvider(),
-                                                child: const VoiceChat(),
-                                              )))),
                             ],
                           ),
-
                         ],
                       );
                     },

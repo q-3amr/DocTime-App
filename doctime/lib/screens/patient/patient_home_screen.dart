@@ -9,7 +9,7 @@ import '../../utils/date_utils.dart';
 import '../../widgets/action_button.dart';
 import 'doctor_search_screen.dart';
 import 'package:provider/provider.dart';
-import '../common/voice_chat.dart';
+import 'voice_chat.dart';
 import '../../providers/chat_provider.dart';
 import 'patient_map_screen.dart';
 import '../common/schedule_screen.dart';
