@@ -124,7 +124,7 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
           ),
           const SizedBox(height: 20),
 
-          // 📍 ترتيب الزرين جنباً إلى جنب داخل Row متناسق وموزع بالتساوي
+          // 📍 أزرار منسقة ومتطابقة تماماً باللون والحجم والانحناء
           Row(
             children: [
               // 1. زر الملاحة والاتجاهات (Directions)
@@ -132,35 +132,35 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15)),
+                    elevation: 2,
                   ),
                   onPressed: () => _openGoogleMapsDirections(
                       selectedDoctor!.latitude!, selectedDoctor!.longitude!),
                   icon: const Icon(Icons.directions_car, color: Colors.white),
-                  // 📍 تحويل النص إلى الإنجليزية
                   label: const Text('Directions',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold)),
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 10),
 
-              // 2. زر عرض صفحة الطبيب الجديد (View Profile)
+              // 2. زر عرض صفحة الطبيب (View Profile) - تم تعديله ليطابق الزر الأول تماماً
               Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue,
-                    side: const BorderSide(color: Colors.blue, width: 1.5),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue, // 📍 نفس اللون الأزرق
+                    foregroundColor: Colors.white, // 📍 لون النص والأيقونة أبيض
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
+                        borderRadius:
+                            BorderRadius.circular(15)), // 📍 نفس الانحناء
+                    elevation: 2,
                   ),
                   onPressed: () {
-                    // الانتقال لصفحة تفاصيل الطبيب وتمرير البيانات بشكل صحيح
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -172,8 +172,7 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.person, color: Colors.blue),
-                  // 📍 اسم الزر الجديد باللغة الإنجليزية
+                  icon: const Icon(Icons.person, color: Colors.white),
                   label: const Text('View Profile',
                       style:
                           TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
