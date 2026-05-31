@@ -372,12 +372,16 @@ class _LiveTimerBannerState extends State<LiveTimerBanner> {
                   fontWeight: FontWeight.w600)),
           const SizedBox(height: 5),
           Text(timeText,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
               style: const TextStyle(
                   color: Colors.white,
                   fontSize: 26,
                   fontWeight: FontWeight.w900)),
           const SizedBox(height: 5),
           Text('with Dr. ${widget.doctorName}',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
               style: const TextStyle(color: Colors.white, fontSize: 16))
         ]));
   }

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/star_rating_widget.dart';
@@ -186,9 +186,15 @@ docs.sort((a, b) => b['date'].compareTo(a['date']));
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(data['patient_name'] ?? 'Patient',
+                        Flexible(
+                          child: Text(
+                            data['patient_name'] ?? 'Patient',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                             style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ),
 
                         Row(
                           children: [

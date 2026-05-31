@@ -1,4 +1,4 @@
-﻿
+
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -166,12 +166,16 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                           color: Colors.grey.shade500,
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          date,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                        Flexible(
+                          child: Text(
+                            date,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],

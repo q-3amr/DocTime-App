@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 class ActionButton extends StatelessWidget {
   final dynamic icon;
@@ -57,6 +57,9 @@ class ActionButton extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           title,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
