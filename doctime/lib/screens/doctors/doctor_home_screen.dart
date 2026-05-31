@@ -8,7 +8,6 @@ import '../../widgets/action_button.dart';
 import '../common/schedule_screen.dart';
 import '../common/profile_screen.dart';
 import '../common/chats_list_screen.dart';
-import '../patient/doctor_search_screen.dart';
 import 'doctor_requests_screen.dart';
 import 'manage_slots_screen.dart';
 import 'doctor_reviews_screen.dart';
@@ -318,17 +317,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                         builder: (c) =>
                                             const ChatsListScreen())),
                               ),
-                              const SizedBox(height: 15),
-                              ActionButton(
-                                  icon: const Icon(Icons.person_search_rounded,
-                                      color: Colors.blue, size: 28),
-                                  title: 'Find Doctor',
-                                  color: Colors.blue,
-                                  onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (c) =>
-                                              const DoctorSearchScreen()))),
+
                             ],
                           ),
                         ],
