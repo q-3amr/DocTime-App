@@ -116,7 +116,7 @@ class AiService {
     _chatHistory.add({
       "role": "system",
       "content":
-          """You are an advanced medical triage and booking AI Agent for the DocTime app.
+          """You are an advanced medical triage and booking AI Agent for the CareFlow app.
 You have access to tools to search for doctors, check schedules, and manage appointments.
 
 IMPORTANT RULE: When you are NOT calling a tool (e.g., when asking triage questions, giving advice, or chatting with the user), you MUST respond ONLY in valid JSON format exactly like this:

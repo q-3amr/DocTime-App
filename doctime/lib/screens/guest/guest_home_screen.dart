@@ -43,7 +43,7 @@ class GuestHomeScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            "DocTime",
+                            "CareFlow",
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
@@ -72,9 +72,7 @@ class GuestHomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 30),
-
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
@@ -122,14 +120,12 @@ class GuestHomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 25),
                   const Text(
                     "Quick Actions",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 15),
-
                   Expanded(
                     child: ListView(
                       children: [
@@ -157,7 +153,7 @@ class GuestHomeScreen extends StatelessWidget {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  "DocTime - Your Medical Appointment App",
+                                  "CareFlow - Your Medical Appointment App",
                                 ),
                               ),
                             );
@@ -166,7 +162,6 @@ class GuestHomeScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-
                 ],
               ),
             ),
@@ -220,7 +215,8 @@ class GuestHomeScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 16),
+            Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.grey.shade400, size: 16),
           ],
         ),
       ),
