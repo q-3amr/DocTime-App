@@ -262,29 +262,55 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 250.0,
+            expandedHeight: 270.0,
             floating: false,
             pinned: true,
             backgroundColor: kPrimaryBlue,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                color: kPrimaryBlue.withValues(alpha: 0.8),
-                child: const Icon(Icons.person, size: 100, color: Colors.white),
-              ),
-              title: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Dr. ${widget.doctorName}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                color: kPrimaryBlue,
+                child: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 20),
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.2),
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          size: 56,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'Dr. ${widget.doctorName}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.specialty,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _openDirections,
-                    child: const Icon(Icons.location_on,
-                        color: Colors.white, size: 18),
-                  ),
-                ],
+                ),
               ),
             ),
             leading: IconButton(
@@ -292,6 +318,13 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   color: Colors.white),
               onPressed: () => Navigator.pop(context),
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.location_on, color: Colors.white),
+                onPressed: _openDirections,
+                tooltip: 'Get Directions',
+              ),
+            ],
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -299,15 +332,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.specialty,
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 4),
                   StreamBuilder<UserModel?>(
                     stream: widget.doctorId != null
                         ? _db.streamUser(widget.doctorId!)

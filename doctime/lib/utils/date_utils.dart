@@ -1,10 +1,11 @@
-﻿
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 DateTime parseDate(dynamic dateData) {
-  if (dateData is Timestamp) return dateData.toDate();
-  if (dateData is String) return DateTime.tryParse(dateData) ?? DateTime.now();
+  if (dateData is Timestamp) return dateData.toDate().toLocal();
+  if (dateData is String) {
+    final parsed = DateTime.tryParse(dateData);
+    return parsed != null ? parsed.toLocal() : DateTime.now();
+  }
   return DateTime.now();
 }
 

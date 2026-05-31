@@ -37,7 +37,7 @@ class ChatProvider extends ChangeNotifier {
     await _ttsService.initialize();
     _messages.add(ChatMessage(
       text:
-          'Hello! I am DocTime AI Triage Assistant. How can I help you today?',
+          'Hello! I am CareFlow AI Triage Assistant. How can I help you today?',
       sender: MessageSender.bot,
     ));
     notifyListeners();
