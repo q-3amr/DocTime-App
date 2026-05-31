@@ -35,7 +35,8 @@ class DoctorDetailsScreen extends StatefulWidget {
 
 class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
   final _db = DatabaseService();
-  final User? user = FirebaseAuth.instance.currentUser;
+  // Always read live so the state refreshes after the user logs in and pops back
+  User? get _user => FirebaseAuth.instance.currentUser;
 
   DateTime _selectedDate = DateTime.now();
   String? _selectedTimeSlot;
@@ -153,7 +154,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
   }
 
   void _bookAppointment() async {
-    if (user == null) {
+    if (_user == null) {
       _showLoginDialog();
       return;
     }
@@ -180,14 +181,14 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
     );
 
     try {
-      final patient = await _db.getUserById(user!.uid);
+      final patient = await _db.getUserById(_user!.uid);
       final patientName = patient?.name ?? 'Unknown';
 
       final newAppointment = AppointmentModel(
         id: '',
         doctorId: widget.doctorId ?? '',
         doctorName: widget.doctorName,
-        patientId: user!.uid,
+        patientId: _user!.uid,
         patientName: patientName,
         appointmentDateTime: finalDate,
         status: 'pending',
@@ -641,7 +642,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                   color: kPrimaryBlue,
                 ),
                 onPressed: () {
-                  if (user == null) {
+                  if (_user == null) {
                     _showLoginDialog();
                     return;
                   }
