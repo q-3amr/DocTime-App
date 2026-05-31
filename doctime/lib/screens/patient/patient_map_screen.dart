@@ -2,9 +2,10 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../common/base_map_screen.dart';
 import '../../models/user.dart';
+// 📍 تم تعديل المسار هنا ليكون من نفس مجلد patient بالظبط بناءً على الصورة
+import 'doctor_details_screen.dart';
 
 class PatientMapScreen extends BaseMapScreen {
   const PatientMapScreen({super.key});
@@ -14,10 +15,9 @@ class PatientMapScreen extends BaseMapScreen {
 }
 
 class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
-
   List<UserModel> doctors = [];
 
-UserModel? selectedDoctor;
+  UserModel? selectedDoctor;
 
   @override
   void initState() {
@@ -25,7 +25,7 @@ UserModel? selectedDoctor;
     _fetchDoctors();
   }
 
-Future<void> _fetchDoctors() async {
+  Future<void> _fetchDoctors() async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
@@ -40,29 +40,27 @@ Future<void> _fetchDoctors() async {
             .where(
                 (doctor) => doctor.latitude != null && doctor.longitude != null)
             .toList();
-
       });
     } catch (e) {
+      // 📍 رسالة الديباج بالإنجليزية
       debugPrint('Error fetching doctors: $e');
     }
   }
 
-@override
+  @override
   Set<Marker> get markers {
     return doctors.map((doctor) {
       return Marker(
         markerId: MarkerId(doctor.id),
         position: LatLng(doctor.latitude!, doctor.longitude!),
-
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         infoWindow: InfoWindow(title: doctor.name, snippet: doctor.specialty),
         onTap: () {
-
           setState(() {
             selectedDoctor = doctor;
           });
 
-mapController?.animateCamera(
+          mapController?.animateCamera(
             CameraUpdate.newLatLng(LatLng(doctor.latitude!, doctor.longitude!)),
           );
         },
@@ -70,15 +68,14 @@ mapController?.animateCamera(
     }).toSet();
   }
 
-@override
+  @override
   void onMapTapped(LatLng position) {
-
     setState(() {
       selectedDoctor = null;
     });
   }
 
-@override
+  @override
   Widget? buildBottomPanel() {
     if (selectedDoctor == null) return null;
 
@@ -126,36 +123,76 @@ mapController?.animateCamera(
             ],
           ),
           const SizedBox(height: 20),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15)),
-            ),
-            onPressed: () => _openGoogleMapsDirections(
-                selectedDoctor!.latitude!, selectedDoctor!.longitude!),
-            icon: const Icon(Icons.directions_car, color: Colors.white),
-            label: const Text('أرني الاتجاهات',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
+
+          // 📍 ترتيب الزرين جنباً إلى جنب داخل Row متناسق وموزع بالتساوي
+          Row(
+            children: [
+              // 1. زر الملاحة والاتجاهات (Directions)
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                  ),
+                  onPressed: () => _openGoogleMapsDirections(
+                      selectedDoctor!.latitude!, selectedDoctor!.longitude!),
+                  icon: const Icon(Icons.directions_car, color: Colors.white),
+                  // 📍 تحويل النص إلى الإنجليزية
+                  label: const Text('Directions',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // 2. زر عرض صفحة الطبيب الجديد (View Profile)
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.blue,
+                    side: const BorderSide(color: Colors.blue, width: 1.5),
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                  ),
+                  onPressed: () {
+                    // الانتقال لصفحة تفاصيل الطبيب وتمرير البيانات بشكل صحيح
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DoctorDetailsScreen(
+                          doctorName: selectedDoctor!.name,
+                          specialty: selectedDoctor!.specialty ?? 'General',
+                          doctorId: selectedDoctor!.id,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.person, color: Colors.blue),
+                  // 📍 اسم الزر الجديد باللغة الإنجليزية
+                  label: const Text('View Profile',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-Future<void> _openGoogleMapsDirections(double lat, double lng) async {
-
+  Future<void> _openGoogleMapsDirections(double lat, double lng) async {
     final Uri googleMapsUrl = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
 
-try {
+    try {
       if (await canLaunchUrl(googleMapsUrl)) {
         await launchUrl(googleMapsUrl);
       } else {
-
         final Uri browserUrl = Uri.parse(
             'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
         if (await canLaunchUrl(browserUrl)) {
@@ -163,8 +200,8 @@ try {
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('لا يمكن فتح الخرائط على هذا الجهاز')),
+              // 📍 تحويل رسالة التنبيه إلى الإنجليزية
+              const SnackBar(content: Text('Cannot open maps on this device.')),
             );
           }
         }
@@ -172,7 +209,9 @@ try {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('حدث خطأ أثناء محاولة فتح الخرائط')),
+          // 📍 تحويل رسالة التنبيه إلى الإنجليزية
+          const SnackBar(
+              content: Text('An error occurred while opening maps.')),
         );
       }
     }
