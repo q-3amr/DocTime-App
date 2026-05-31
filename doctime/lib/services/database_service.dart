@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -459,6 +459,8 @@ class DatabaseService {
         return jsonEncode(
             {"error": "User is not logged in. Cannot book appointment."});
       }
+
+      // Fetch patient name
       DocumentSnapshot patientDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(patientId)
@@ -468,10 +470,39 @@ class DatabaseService {
         final pData = patientDoc.data() as Map<String, dynamic>;
         patientName = pData['name'] ?? pData['fullName'] ?? "Unknown";
       }
+
+      // Fetch doctor name  ← FIX #1: was missing, causing "Doctor" to show
+      DocumentSnapshot doctorDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(doctorId)
+          .get();
+      String doctorName = "Doctor";
+      if (doctorDoc.exists) {
+        final dData = doctorDoc.data() as Map<String, dynamic>;
+        doctorName = dData['name'] ?? dData['fullName'] ?? "Doctor";
+      }
+
       DateTime parsedDate = DateTime.parse(date);
+
+      // Parse the time slot (e.g. "10:00 PM") and combine with date
+      // FIX #2: store as Timestamp so AppointmentModel.fromMap reads it correctly
+      DateTime appointmentDateTime = parsedDate;
+      try {
+        final parts = time.trim().split(' ');
+        final timeParts = parts[0].split(':');
+        int hour = int.parse(timeParts[0]);
+        int minute = int.parse(timeParts[1]);
+        if (parts.length > 1) {
+          if (parts[1].toUpperCase() == 'PM' && hour != 12) hour += 12;
+          if (parts[1].toUpperCase() == 'AM' && hour == 12) hour = 0;
+        }
+        appointmentDateTime = DateTime(
+            parsedDate.year, parsedDate.month, parsedDate.day, hour, minute);
+      } catch (_) {}
+
+      // Conflict check (uses the legacy separate-field format for compatibility)
       String firestoreDate =
           "${parsedDate.year}-${parsedDate.month}-${parsedDate.day}";
-
       QuerySnapshot checkConflict = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: doctorId)
@@ -487,13 +518,21 @@ class DatabaseService {
         });
       }
 
-      await FirebaseFirestore.instance.collection('appointments').add({
+      // Store with the same structure as bookAppointmentSafely so the model reads correctly
+      final String slotId =
+          "appt_${doctorId}_${appointmentDateTime.millisecondsSinceEpoch}";
+      await FirebaseFirestore.instance
+          .collection('appointments')
+          .doc(slotId)
+          .set({
         'doctor_id': doctorId,
+        'doctor_name': doctorName,      // FIX #1
         'patient_id': patientId,
         'patient_name': patientName,
-        'date': firestoreDate,
-        'time': time,
+        'date': Timestamp.fromDate(appointmentDateTime), // FIX #2
         'status': 'pending',
+        'hasFeedback': false,
+        'isReviewSeen': false,
         'created_at': FieldValue.serverTimestamp(),
       });
 
