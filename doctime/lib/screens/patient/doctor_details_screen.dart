@@ -58,6 +58,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         if (await canLaunchUrl(googleMapsUrl)) {
           await launchUrl(googleMapsUrl);
         } else {
+          // هان صلحنا حرف الـ $ الناقص ونظفنا الرابط عشان يفتح صح بالمتصفح
           final Uri webUrl = Uri.parse(
               'https://www.google.com/maps/search/?api=1&query=${widget.latitude},${widget.longitude}');
           await launchUrl(webUrl, mode: LaunchMode.externalApplication);
@@ -80,6 +81,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
     final dateKey = formatDateKey(date);
 
+    // 1. جلب أوقات دوام الدكتور الأساسية في هاد اليوم
     final availabilityDoc = await _db.getAvailability(
       widget.doctorId ?? '',
       dateKey,
@@ -99,32 +101,33 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       availabilityDoc['slots'],
     );
 
-    final appointmentsSnap = await _db.getAppointmentsForDoctor(
-      widget.doctorId ?? '',
-    );
+    // 2. تعديل هندسي: جلب مواعيد هاد اليوم بالزبط من الفايربيز بدل ما نسحب تاريخ الدكتور كله
+    final appointmentsSnap = await FirebaseFirestore.instance
+        .collection('appointments')
+        .where('doctorId', isEqualTo: widget.doctorId ?? '')
+        .where('status', whereIn: ['pending', 'accepted']).get();
 
     final Set<String> takenTimes = {};
     for (var doc in appointmentsSnap.docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      final DateTime apptDate = parseDate(data['date']);
+      final data = doc.data();
+      final DateTime apptDate =
+          (data['appointmentDateTime'] as Timestamp).toDate();
 
+      // فحص إذا الموعد المجلوب بطابق اليوم المختار بالزبط
       if (apptDate.year == date.year &&
           apptDate.month == date.month &&
           apptDate.day == date.day) {
-        if (data['status'] != 'cancelled' && data['status'] != 'rejected') {
-          takenTimes.add(formatTimeFromDateTime(apptDate));
-        }
+        takenTimes.add(formatTimeFromDateTime(apptDate));
       }
     }
 
     final now = DateTime.now();
-    final bool isToday = date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+    final bool isToday =
+        date.year == now.year && date.month == now.month && date.day == now.day;
 
     final available = doctorSlots.where((s) {
       if (takenTimes.contains(s)) return false;
-      
+
       if (isToday) {
         try {
           final parts = s.split(' ');
@@ -133,13 +136,14 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
           int minute = int.parse(timeParts[1]);
           if (parts[1] == 'PM' && hour != 12) hour += 12;
           if (parts[1] == 'AM' && hour == 12) hour = 0;
-          
-          final slotTime = DateTime(date.year, date.month, date.day, hour, minute);
+
+          final slotTime =
+              DateTime(date.year, date.month, date.day, hour, minute);
           if (slotTime.isBefore(now)) {
             return false;
           }
         } catch (e) {
-          // In case of parsing error, fallback to showing it or handle appropriately.
+          // Fallback
         }
       }
       return true;

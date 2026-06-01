@@ -162,34 +162,47 @@ class DatabaseService {
   }
 
   Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
+    // 1. مفتاح القفل لمنع التضارب
+    final String appointmentKey =
+        "${appointment.doctorId}_${appointment.appointmentDateTime.millisecondsSinceEpoch}";
+
+    // شطبنا السطر الغبي اللي ماله داعي هان
+    final txRef = FirebaseFirestore.instance
+        .collection('booked_slots')
+        .doc(appointmentKey);
+
     try {
-      String? token = await FirebaseMessaging.instance.getToken();
-
-      String slotId =
-          "appt_${appointment.doctorId}_${appointment.appointmentDateTime.millisecondsSinceEpoch}";
-      DocumentReference apptRef = _db.collection('appointments').doc(slotId);
-
-      return await _db.runTransaction((transaction) async {
-        DocumentSnapshot snapshot = await transaction.get(apptRef);
+      return await FirebaseFirestore.instance
+          .runTransaction<bool>((transaction) async {
+        final snapshot = await transaction.get(txRef);
 
         if (snapshot.exists) {
-          final data = snapshot.data() as Map<String, dynamic>;
-          if (data['status'] != 'cancelled' && data['status'] != 'rejected') {
-            return false;
-          }
+          return false; // الموعد طار، حد حجزه قبلك
         }
 
-        final appointmentData = appointment.toMap();
+        // حجز الموعد بالملي ثانية
+        transaction.set(txRef, {
+          'bookedBy': appointment.patientId,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
 
-        appointmentData['hasFeedback'] = false;
-        appointmentData['isReviewSeen'] = false;
-        appointmentData['patientFcmToken'] = token;
+        // 2. إنشاء وثيقة الموعد الرسمية
+        final newApptDoc =
+            FirebaseFirestore.instance.collection('appointments').doc();
+        transaction.set(newApptDoc, {
+          'id': newApptDoc.id,
+          'doctorId': appointment.doctorId,
+          'doctorName': appointment.doctorName,
+          'patientId': appointment.patientId,
+          'patientName': appointment.patientName,
+          'appointmentDateTime':
+              Timestamp.fromDate(appointment.appointmentDateTime),
+          'status': 'pending',
+        });
 
-        transaction.set(apptRef, appointmentData);
         return true;
       });
     } catch (e) {
-      print("Transaction Error: $e");
       return false;
     }
   }
@@ -526,7 +539,7 @@ class DatabaseService {
           .doc(slotId)
           .set({
         'doctor_id': doctorId,
-        'doctor_name': doctorName,      // FIX #1
+        'doctor_name': doctorName, // FIX #1
         'patient_id': patientId,
         'patient_name': patientName,
         'date': Timestamp.fromDate(appointmentDateTime), // FIX #2
