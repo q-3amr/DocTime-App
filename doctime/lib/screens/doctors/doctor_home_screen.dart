@@ -187,9 +187,13 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       });
 
                       final int upcoming = docs
-                          .where((d) =>
-                              d['status'] == 'accepted' &&
-                              !isExpiredAppointment(parseDate(d['date'])))
+                          .where((d) {
+                            final data = d.data() as Map<String, dynamic>;
+                            final rawDate = data['appointmentDateTime'];
+                            if (rawDate == null) return false;
+                            return data['status'] == 'accepted' &&
+                                !isExpiredAppointment(parseDate(rawDate));
+                          })
                           .length;
                       final int pending =
                           docs.where((d) => d['status'] == 'pending').length;

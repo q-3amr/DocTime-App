@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../services/auth_service.dart';
@@ -29,19 +27,17 @@ class _SignupScreenState extends State<SignupScreen> {
   bool isObscureConfirm = true;
   bool isDoctor = false;
 
-double? _selectedLatitude;
+  double? _selectedLatitude;
   double? _selectedLongitude;
 
-Future<void> _openMapPicker() async {
-
-final LatLng? pickedLocation = await Navigator.push(
+  Future<void> _openMapPicker() async {
+    final LatLng? pickedLocation = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const DoctorMapScreen()),
     );
 
-if (pickedLocation != null) {
+    if (pickedLocation != null) {
       setState(() {
-
         _selectedLatitude = pickedLocation.latitude;
         _selectedLongitude = pickedLocation.longitude;
 
@@ -62,8 +58,7 @@ if (pickedLocation != null) {
       return;
     }
     if (isDoctor) {
-
-if (selectedSpecialty == null ||
+      if (selectedSpecialty == null ||
           locationController.text.trim().isEmpty ||
           _selectedLatitude == null) {
         _showError('Please fill all doctor fields and pick a location!');
@@ -80,14 +75,12 @@ if (selectedSpecialty == null ||
         name: nameController.text.trim(),
         role: isDoctor ? 'doctor' : 'patient',
         specialty: isDoctor ? selectedSpecialty : null,
-
-location: isDoctor ? locationController.text.trim() : null,
-
+        location: isDoctor ? locationController.text.trim() : null,
         latitude: isDoctor ? _selectedLatitude : null,
         longitude: isDoctor ? _selectedLongitude : null,
       );
 
-await _authService.signOut();
+      await _authService.signOut();
 
       if (!mounted) return;
       setState(() => isLoading = false);
@@ -199,7 +192,6 @@ await _authService.signOut();
                       setState(() => isObscureConfirm = !isObscureConfirm),
                 ),
                 const SizedBox(height: 25),
-
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 15,
@@ -265,18 +257,14 @@ await _authService.signOut();
                               borderColor: borderColor,
                             ),
                             const SizedBox(height: 20),
-
-_buildField(
+                            _buildField(
                               label: 'Clinic Location',
                               controller: locationController,
-                              hint:
-                                  'Tap to pick location from map',
+                              hint: 'Tap to pick location from map',
                               icon: Icons.map_outlined,
                               borderColor: borderColor,
                               labelColor: labelColor,
-
                               readOnly: true,
-
                               onTap: _openMapPicker,
                             ),
                           ],
@@ -422,7 +410,7 @@ _buildField(
     );
   }
 
-Widget _buildField({
+  Widget _buildField({
     required String label,
     required TextEditingController controller,
     required String hint,

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import '../models/user.dart';
 import '../models/appointment.dart';
+import '../utils/date_utils.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -425,14 +426,25 @@ class DatabaseService {
         });
       }
 
+      // Fetch all pending/accepted appointments for this doctor and filter by date in-memory
       QuerySnapshot appointments = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: doctorId)
-          .where('date', isEqualTo: firestoreDate)
           .where('status', whereIn: ['pending', 'accepted']).get();
 
-      List<String> bookedTimes =
-          appointments.docs.map((doc) => doc['time'] as String).toList();
+      // Collect booked time strings for the requested date
+      List<String> bookedTimes = [];
+      for (var doc in appointments.docs) {
+        final apptData = doc.data() as Map<String, dynamic>;
+        final rawDate = apptData['appointmentDateTime'];
+        if (rawDate == null) continue;
+        final DateTime apptDt = (rawDate as Timestamp).toDate();
+        if (apptDt.year == parsedDate.year &&
+            apptDt.month == parsedDate.month &&
+            apptDt.day == parsedDate.day) {
+          bookedTimes.add(formatTimeFromDateTime(apptDt));
+        }
+      }
 
       List<String> availableTimes = [];
       DateTime now = DateTime.now();
@@ -523,17 +535,25 @@ class DatabaseService {
             parsedDate.year, parsedDate.month, parsedDate.day, hour, minute);
       } catch (_) {}
 
-      // Conflict check (uses the legacy separate-field format for compatibility)
-      String firestoreDate =
-          "${parsedDate.year}-${parsedDate.month}-${parsedDate.day}";
+      // Conflict check: fetch all pending/accepted for this doctor and check for same DateTime
       QuerySnapshot checkConflict = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: doctorId)
-          .where('date', isEqualTo: firestoreDate)
-          .where('time', isEqualTo: time)
           .where('status', whereIn: ['pending', 'accepted']).get();
 
-      if (checkConflict.docs.isNotEmpty) {
+      final bool alreadyBooked = checkConflict.docs.any((doc) {
+        final d = doc.data() as Map<String, dynamic>;
+        final rawDate = d['appointmentDateTime'];
+        if (rawDate == null) return false;
+        final DateTime existing = (rawDate as Timestamp).toDate();
+        return existing.year == appointmentDateTime.year &&
+            existing.month == appointmentDateTime.month &&
+            existing.day == appointmentDateTime.day &&
+            existing.hour == appointmentDateTime.hour &&
+            existing.minute == appointmentDateTime.minute;
+      });
+
+      if (alreadyBooked) {
         return jsonEncode({
           "success": false,
           "error":
@@ -549,10 +569,10 @@ class DatabaseService {
           .doc(slotId)
           .set({
         'doctor_id': doctorId,
-        'doctor_name': doctorName, // FIX #1
+        'doctor_name': doctorName,
         'patient_id': patientId,
         'patient_name': patientName,
-        'date': Timestamp.fromDate(appointmentDateTime), // FIX #2
+        'appointmentDateTime': Timestamp.fromDate(appointmentDateTime),
         'status': 'pending',
         'hasFeedback': false,
         'isReviewSeen': false,

@@ -52,7 +52,7 @@ final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
       for (var doc in appointmentsSnap.docs) {
         final data = doc.data() as Map<String, dynamic>;
 
-final DateTime apptDate = parseDate(data['date']);
+        final DateTime apptDate = parseDate(data['appointmentDateTime']);
 
         if (apptDate.year == date.year &&
             apptDate.month == date.month &&

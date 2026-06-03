@@ -9,7 +9,8 @@ import '../patient/patient_home_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final bool returnToPrevious;
+  const LoginScreen({super.key, this.returnToPrevious = false});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -64,12 +65,18 @@ await _authService.signOut();
                 (route) => false,
               );
             } else {
-              // Patient → always go to PatientHomeScreen
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const PatientHomeScreen()),
-                (route) => false,
-              );
+              // Patient: if opened from within the app (e.g. doctor details dialog)
+              // pop back so they return to where they were.
+              // Otherwise go to PatientHomeScreen.
+              if (widget.returnToPrevious) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PatientHomeScreen()),
+                  (route) => false,
+                );
+              }
             }
           }
         }

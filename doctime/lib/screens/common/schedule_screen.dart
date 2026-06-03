@@ -166,7 +166,7 @@ void _cancelAppointment(String docId) async {
                       docs.where((doc) {
                         final data = doc.data() as Map<String, dynamic>;
                         final status = data['status'] as String;
-                        final date = parseDate(data['date']);
+                        final date = parseDate(data['appointmentDateTime']);
                         final expired = _isExpired(date);
 
                         if (_buttonIndex == 0) {
@@ -180,8 +180,8 @@ void _cancelAppointment(String docId) async {
                       }).toList();
 
                   filtered.sort((a, b) {
-                    final dateA = parseDate((a.data() as Map)['date']);
-                    final dateB = parseDate((b.data() as Map)['date']);
+                    final dateA = parseDate((a.data() as Map)['appointmentDateTime']);
+                    final dateB = parseDate((b.data() as Map)['appointmentDateTime']);
                     return _buttonIndex == 0
                         ? dateA.compareTo(dateB)
                         : dateB.compareTo(dateA);
@@ -250,7 +250,7 @@ void _cancelAppointment(String docId) async {
         widget.isDoctor
             ? (data['patient_name'] ?? 'Patient')
             : (data['doctor_name'] ?? 'Doctor');
-    final DateTime dateObj = parseDate(data['date']);
+    final DateTime dateObj = parseDate(data['appointmentDateTime']);
     final String dateStr = formatDateDisplay(dateObj);
     final String timeStr = formatTimeFromDateTime(dateObj);
 

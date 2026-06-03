@@ -204,10 +204,13 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                       if (!snapshot.hasData) return _buildEmptyBanner();
                       var docs = snapshot.data!.docs;
                       var future = docs
-                          .map((doc) => {
-                                'data': doc.data() as Map,
-                                'date': parseDate((doc.data() as Map)['date'])
-                              })
+                          .map((doc) {
+                            final d = doc.data() as Map;
+                            return {
+                              'data': d,
+                              'date': parseDate(d['appointmentDateTime']),
+                            };
+                          })
                           .where((item) => (item['date'] as DateTime)
                               .isAfter(DateTime.now()))
                           .toList();

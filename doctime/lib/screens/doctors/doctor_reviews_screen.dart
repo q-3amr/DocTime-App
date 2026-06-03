@@ -151,7 +151,12 @@ Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
 
           var docs = snapshot.data!.docs;
 
-docs.sort((a, b) => b['date'].compareTo(a['date']));
+docs.sort((a, b) {
+  final rawA = (a.data() as Map)['appointmentDateTime'];
+  final rawB = (b.data() as Map)['appointmentDateTime'];
+  if (rawA == null || rawB == null) return 0;
+  return rawB.compareTo(rawA);
+});
 
           if (docs.isEmpty) {
             return const Center(

@@ -246,7 +246,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const LoginScreen(),
+                  builder: (context) => const LoginScreen(returnToPrevious: true),
                 ),
               );
             },

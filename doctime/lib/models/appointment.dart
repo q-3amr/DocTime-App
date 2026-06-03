@@ -1,4 +1,4 @@
-﻿
+
 
 import '../utils/date_utils.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -38,7 +38,7 @@ class AppointmentModel {
       patientId: map['patient_id'] ?? '',
       patientName: map['patient_name'] ?? 'Unknown',
 
-appointmentDateTime: parseDate(map['date']),
+      appointmentDateTime: parseDate(map['appointmentDateTime']),
       status: map['status'] ?? 'pending',
       notes: map['notes'],
     );
@@ -51,7 +51,7 @@ appointmentDateTime: parseDate(map['date']),
       'doctor_name': doctorName,
       'patient_id': patientId,
       'patient_name': patientName,
-      'date': Timestamp.fromDate(appointmentDateTime),
+      'appointmentDateTime': Timestamp.fromDate(appointmentDateTime),
       'status': status,
       if (notes != null) 'notes': notes,
     };
