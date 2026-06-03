@@ -191,13 +191,15 @@ class DatabaseService {
             FirebaseFirestore.instance.collection('appointments').doc();
         transaction.set(newApptDoc, {
           'id': newApptDoc.id,
-          'doctorId': appointment.doctorId,
-          'doctorName': appointment.doctorName,
-          'patientId': appointment.patientId,
-          'patientName': appointment.patientName,
+          'doctor_id': appointment.doctorId,
+          'doctor_name': appointment.doctorName,
+          'patient_id': appointment.patientId,
+          'patient_name': appointment.patientName,
           'appointmentDateTime':
               Timestamp.fromDate(appointment.appointmentDateTime),
           'status': 'pending',
+          'hasFeedback': false,
+          'isReviewSeen': false,
         });
 
         return true;

@@ -5,6 +5,7 @@ import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
 import '../../auth_wrapper.dart';
+import '../patient/patient_home_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -56,13 +57,19 @@ await _authService.signOut();
 
           if (mounted) {
             if (userModel != null && !userModel.isPatient) {
+              // Doctor or Admin → go through AuthWrapper for role-based routing
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const AuthWrapper()),
                 (route) => false,
               );
             } else {
-              Navigator.pop(context);
+              // Patient → always go to PatientHomeScreen
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const PatientHomeScreen()),
+                (route) => false,
+              );
             }
           }
         }

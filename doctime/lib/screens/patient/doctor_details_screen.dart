@@ -104,14 +104,15 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
     // 2. تعديل هندسي: جلب مواعيد هاد اليوم بالزبط من الفايربيز بدل ما نسحب تاريخ الدكتور كله
     final appointmentsSnap = await FirebaseFirestore.instance
         .collection('appointments')
-        .where('doctorId', isEqualTo: widget.doctorId ?? '')
+        .where('doctor_id', isEqualTo: widget.doctorId ?? '')
         .where('status', whereIn: ['pending', 'accepted']).get();
 
     final Set<String> takenTimes = {};
     for (var doc in appointmentsSnap.docs) {
       final data = doc.data();
-      final DateTime apptDate =
-          (data['appointmentDateTime'] as Timestamp).toDate();
+      final rawDate = data['appointmentDateTime'];
+      if (rawDate == null) continue;
+      final DateTime apptDate = (rawDate as Timestamp).toDate();
 
       // فحص إذا الموعد المجلوب بطابق اليوم المختار بالزبط
       if (apptDate.year == date.year &&

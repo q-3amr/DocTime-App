@@ -150,7 +150,8 @@ RULES:
 - Once they answer (e.g., "nearest"), IMMEDIATELY use the `search_doctors` tool with the correct `sort_by` parameter and the specialty you determined.
 - After finding the doctor, naturally transition to checking availability using `get_doctor_availability`, and finally use `book_appointment`.
 
-13. UI STATE LOCK: During this ENTIRE flow (Triage -> Search -> Availability -> Booking), you MUST keep "status": "asking". NEVER send "status": "finished" unless the patient explicitly says they don't want to book or ends the chat."""
+13. UI STATE LOCK: During this ENTIRE flow (Triage -> Search -> Availability -> Booking), you MUST keep "status": "asking". NEVER send "status": "finished" unless the patient explicitly says they don't want to book or ends the chat.
+14. CRITICAL JSON FORMAT CONSTRAINT: You MUST respond strictly with a valid JSON object matching the required schema. NEVER wrap the JSON in markdown code blocks like ```json ... ```. NEVER output any text, punctuation, whitespace, or commentary before or after the JSON payload. The entire response must strictly be a raw, parseable JSON string. Failure to comply breaks the mobile app interface."""
     });
   }
 

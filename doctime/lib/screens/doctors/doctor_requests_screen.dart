@@ -98,7 +98,8 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
               itemBuilder: (context, index) {
                 final req = requests[index];
                 final data = req.data() as Map<String, dynamic>;
-                final dateObj = parseDate(data['date']);
+                final rawDate = data['appointmentDateTime'] ?? data['date'];
+                final dateObj = parseDate(rawDate);
 
                 return _buildRequestCard(
                   name: data['patient_name'] ?? 'Unknown',
