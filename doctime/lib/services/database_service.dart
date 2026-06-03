@@ -207,8 +207,16 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateAppointmentStatus(String docId, String status) async {
-    await _db.collection('appointments').doc(docId).update({'status': status});
+  Future<void> updateAppointmentStatus(
+    String docId,
+    String status, {
+    String? cancelledBy, // 'patient' or 'doctor' — who triggered this change
+  }) async {
+    final Map<String, dynamic> data = {'status': status};
+    if (cancelledBy != null) {
+      data['cancelledBy'] = cancelledBy;
+    }
+    await _db.collection('appointments').doc(docId).update(data);
   }
 
   Future<void> deleteAppointment(String docId) async {

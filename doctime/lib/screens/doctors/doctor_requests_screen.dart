@@ -28,7 +28,11 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   }
 
   Future<void> _declineRequest(String docId) async {
-    await _db.updateAppointmentStatus(docId, 'declined');
+    await _db.updateAppointmentStatus(
+      docId,
+      'rejected',
+      cancelledBy: 'doctor',
+    );
   }
 
   @override

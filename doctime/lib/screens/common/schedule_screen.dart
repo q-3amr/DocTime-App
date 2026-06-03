@@ -1,4 +1,4 @@
-﻿
+
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -36,10 +36,14 @@ void _cancelAppointment(String docId) async {
         false;
 
     if (confirm) {
-      await _db.updateAppointmentStatus(docId, 'cancelled');
+      await _db.updateAppointmentStatus(
+        docId,
+        'cancelled',
+        cancelledBy: 'patient', // patient is the one cancelling
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Appointment Canceled')),
+          const SnackBar(content: Text('Appointment Cancelled')),
         );
       }
     }
@@ -263,14 +267,19 @@ void _cancelAppointment(String docId) async {
       displayStatus = 'Expired';
       statusColor = Colors.orange;
     } else if (status == 'cancelled') {
+      // Patient cancelled the appointment
       displayStatus = 'Cancelled';
+      statusColor = Colors.orange;
+    } else if (status == 'rejected') {
+      // Doctor rejected the appointment request
+      displayStatus = 'Rejected';
       statusColor = Colors.red;
     } else if (status == 'completed') {
       displayStatus = 'Completed';
       statusColor = Colors.green;
     } else {
       displayStatus = status;
-      statusColor = Colors.green;
+      statusColor = Colors.grey;
     }
 
     return Container(
