@@ -9,8 +9,17 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class DatabaseService {
+<<<<<<< HEAD
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+=======
+  final FirebaseFirestore _db;
+
+  /// [firestore] is optional — defaults to [FirebaseFirestore.instance].
+  /// Pass a [FakeFirebaseFirestore] in tests to avoid touching native plugins.
+  DatabaseService({FirebaseFirestore? firestore})
+      : _db = firestore ?? FirebaseFirestore.instance;
+>>>>>>> 369c40831f5f6467f25002ff6e8710c036351067
 
   Stream<List<UserModel>> streamDoctors() {
     return _db
@@ -170,33 +179,29 @@ class DatabaseService {
   }
 
   Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
-    // 1. مفتاح القفل لمنع التضارب
+    // Composite key: doctorId + millisecond timestamp → unique slot lock document
     final String appointmentKey =
         "${appointment.doctorId}_${appointment.appointmentDateTime.millisecondsSinceEpoch}";
 
-    // شطبنا السطر الغبي اللي ماله داعي هان
-    final txRef = FirebaseFirestore.instance
-        .collection('booked_slots')
-        .doc(appointmentKey);
+    final txRef = _db.collection('booked_slots').doc(appointmentKey);
 
     try {
-      return await FirebaseFirestore.instance
-          .runTransaction<bool>((transaction) async {
+      return await _db.runTransaction<bool>((transaction) async {
         final snapshot = await transaction.get(txRef);
 
         if (snapshot.exists) {
-          return false; // الموعد طار، حد حجزه قبلك
+          // Slot already locked — abort to prevent double-booking
+          return false;
         }
 
-        // حجز الموعد بالملي ثانية
+        // Atomically lock the slot
         transaction.set(txRef, {
           'bookedBy': appointment.patientId,
           'timestamp': FieldValue.serverTimestamp(),
         });
 
-        // 2. إنشاء وثيقة الموعد الرسمية
-        final newApptDoc =
-            FirebaseFirestore.instance.collection('appointments').doc();
+        // Create the official appointment document inside the same transaction
+        final newApptDoc = _db.collection('appointments').doc();
         transaction.set(newApptDoc, {
           'id': newApptDoc.id,
           'doctor_id': appointment.doctorId,
