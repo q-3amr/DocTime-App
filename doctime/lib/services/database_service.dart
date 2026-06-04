@@ -9,17 +9,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class DatabaseService {
-<<<<<<< HEAD
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
-=======
   final FirebaseFirestore _db;
 
-  /// [firestore] is optional — defaults to [FirebaseFirestore.instance].
-  /// Pass a [FakeFirebaseFirestore] in tests to avoid touching native plugins.
   DatabaseService({FirebaseFirestore? firestore})
       : _db = firestore ?? FirebaseFirestore.instance;
->>>>>>> 369c40831f5f6467f25002ff6e8710c036351067
 
   Stream<List<UserModel>> streamDoctors() {
     return _db
