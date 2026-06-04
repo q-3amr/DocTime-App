@@ -7,6 +7,7 @@ void main() {
       final user = UserModel(
         id: 'test-id',
         email: 'patient@test.com',
+        pushToken: "",
         name: 'Test Patient',
         role: 'patient',
         profileImage: '',
@@ -25,6 +26,7 @@ void main() {
         id: 'doctor-id',
         email: 'doctor@test.com',
         name: 'Test Doctor',
+        pushToken: "",
         role: 'doctor',
         profileImage: '',
         specialty: 'Cardiology',
@@ -48,6 +50,7 @@ void main() {
         name: 'Test User',
         role: 'patient',
         profileImage: '',
+        pushToken: "",
       );
 
       final map = user.toMap();

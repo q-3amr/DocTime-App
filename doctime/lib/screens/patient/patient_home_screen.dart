@@ -156,8 +156,14 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
                   gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [kPrimaryBlue.withOpacity(0.15), Colors.white],
-                      stops: const [0.0, 0.4]))),
+                      colors: [
+                kPrimaryBlue.withValues(alpha: 0.15),
+                Colors.white
+              ],
+                      stops: const [
+                0.0,
+                0.4
+              ]))),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -284,7 +290,7 @@ class _PatientHomeContentState extends State<PatientHomeContent> {
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                  color: Colors.grey.withOpacity(0.05),
+                  color: Colors.grey.withValues(alpha: 0.05),
                   blurRadius: 20,
                   offset: const Offset(0, 10))
             ]),
@@ -359,11 +365,11 @@ class _LiveTimerBannerState extends State<LiveTimerBanner> {
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
             gradient: LinearGradient(
-                colors: [kPrimaryBlue, kPrimaryBlue.withOpacity(0.8)]),
+                colors: [kPrimaryBlue, kPrimaryBlue.withValues(alpha: 0.8)]),
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                  color: kPrimaryBlue.withOpacity(0.4),
+                  color: kPrimaryBlue.withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 10))
             ]),

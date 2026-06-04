@@ -65,7 +65,7 @@ class AdminHomeScreen extends StatelessWidget {
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(16),
                   leading: CircleAvatar(
-                    backgroundColor: kPrimaryBlue.withOpacity(0.1),
+                    backgroundColor: kPrimaryBlue.withValues(alpha: 0.1),
                     radius: 30,
                     child:
                         const Icon(Icons.medical_services, color: kPrimaryBlue),

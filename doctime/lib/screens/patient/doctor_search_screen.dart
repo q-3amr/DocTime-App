@@ -1,8 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:math'
-    show cos, sqrt, asin;
+import 'dart:math' show cos, sqrt, asin;
 import '../../services/database_service.dart';
 import '../../models/user.dart';
 import '../../utils/constants.dart';
@@ -25,17 +24,16 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
   String selectedFilter = 'Select Filter';
   String? selectedSpecialty;
 
-Position? _userPosition;
+  Position? _userPosition;
   @override
   void initState() {
     super.initState();
 
-if (widget.initialSpecialty != null &&
+    if (widget.initialSpecialty != null &&
         _filterSpecialties.contains(widget.initialSpecialty)) {
       selectedSpecialty = widget.initialSpecialty;
     } else {
-      selectedSpecialty =
-          'All Specialties';
+      selectedSpecialty = 'All Specialties';
     }
   }
 
@@ -44,7 +42,7 @@ if (widget.initialSpecialty != null &&
     ...kSpecialties,
   ];
 
-double _calculateDistance(
+  double _calculateDistance(
       double lat1, double lon1, double lat2, double lon2) {
     var p = 0.017453292519943295;
     var c = cos;
@@ -54,7 +52,7 @@ double _calculateDistance(
     return 12742 * asin(sqrt(a));
   }
 
-Future<void> _getCurrentLocation() async {
+  Future<void> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
@@ -93,7 +91,6 @@ Future<void> _getCurrentLocation() async {
       ),
       body: Column(
         children: [
-
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: Container(
@@ -113,14 +110,11 @@ Future<void> _getCurrentLocation() async {
               ),
             ),
           ),
-
-Padding(
+          Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
             child: _buildFilterSection(),
           ),
-
-_buildSpecialtyDropdown(),
-
+          _buildSpecialtyDropdown(),
           Expanded(
             child: StreamBuilder<List<UserModel>>(
               stream: _db.streamDoctors(),
@@ -132,7 +126,7 @@ _buildSpecialtyDropdown(),
                   return const Center(child: Text('No doctors found.'));
                 }
 
-List<UserModel> filtered = snapshot.data!.where((doctor) {
+                List<UserModel> filtered = snapshot.data!.where((doctor) {
                   if (currentUser != null && doctor.id == currentUser!.uid)
                     return false;
                   final name = doctor.name.toLowerCase();
@@ -147,10 +141,9 @@ List<UserModel> filtered = snapshot.data!.where((doctor) {
                   return matchesSearch && matchesSpecialty;
                 }).toList();
 
-if (selectedFilter == 'By Nearest' && _userPosition != null) {
+                if (selectedFilter == 'By Nearest' && _userPosition != null) {
                   for (var doc in filtered) {
                     if (doc.latitude != null && doc.longitude != null) {
-
                       doc.distance = _calculateDistance(
                         _userPosition!.latitude,
                         _userPosition!.longitude,
@@ -164,7 +157,7 @@ if (selectedFilter == 'By Nearest' && _userPosition != null) {
                       (a.distance ?? 99999).compareTo(b.distance ?? 99999));
                 }
 
-if (selectedFilter == 'Top Rated') {
+                if (selectedFilter == 'Top Rated') {
                   filtered.sort((a, b) {
                     final rA = a.rating ?? -1.0;
                     final rB = b.rating ?? -1.0;
@@ -211,7 +204,6 @@ if (selectedFilter == 'Top Rated') {
                     .toList(),
                 onChanged: (String? newValue) {
                   if (newValue == 'By Nearest') {
-
                     _getCurrentLocation();
                   } else if (newValue == 'Top Rated') {
                     setState(() => selectedFilter = 'Top Rated');
@@ -233,7 +225,6 @@ if (selectedFilter == 'Top Rated') {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-
           color: kPrimaryBlue.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: kPrimaryBlue.withValues(alpha: 0.3)),
@@ -261,8 +252,7 @@ if (selectedFilter == 'Top Rated') {
             doctorName: doctor.name,
             specialty: doctor.specialty ?? 'General',
             doctorId: doctor.id,
-
-latitude: doctor.latitude,
+            latitude: doctor.latitude,
             longitude: doctor.longitude,
             distance: doctor.distance,
           ),
@@ -276,7 +266,8 @@ latitude: doctor.latitude,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.grey.shade100),
           boxShadow: [
-            BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 15)
+            BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.05), blurRadius: 15)
           ],
         ),
         child: Row(
@@ -296,8 +287,7 @@ latitude: doctor.latitude,
                           fontSize: 18, fontWeight: FontWeight.bold)),
                   Text(doctor.specialty ?? 'General',
                       style: TextStyle(color: Colors.grey.shade500)),
-
-if (doctor.rating != null && doctor.rating! > 0)
+                  if (doctor.rating != null && doctor.rating! > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Row(
@@ -318,8 +308,7 @@ if (doctor.rating != null && doctor.rating! > 0)
                         ],
                       ),
                     ),
-
-if (doctor.distance != null)
+                  if (doctor.distance != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Text(

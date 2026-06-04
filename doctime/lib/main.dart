@@ -4,10 +4,10 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'auth_wrapper.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'providers/chat_provider.dart';
+import 'providers/notification_provider.dart';
 
 const AndroidNotificationChannel channel = AndroidNotificationChannel(
   'high_importance_channel',
@@ -99,12 +99,15 @@ Future<void> main() async {
     ),
   );
 
-  await dotenv.load(fileName: ".env");
+/*   await dotenv.load(fileName: ".env"); */
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<ChatProvider>(
           create: (context) => ChatProvider(),
+        ),
+        ChangeNotifierProvider<NotificationProvider>(
+          create: (context) => NotificationProvider(),
         ),
       ],
       child: const MyApp(),

@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
@@ -44,7 +42,8 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
+          icon:
+              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -59,10 +58,9 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: StreamBuilder<dynamic>(
-          stream:
-              user?.uid != null
-                  ? _db.streamPendingAppointments(user!.uid)
-                  : null,
+          stream: user?.uid != null
+              ? _db.streamPendingAppointments(user!.uid)
+              : null,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -127,7 +125,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -222,7 +220,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 5,
-                    shadowColor: kPrimaryBlue.withOpacity(0.4),
+                    shadowColor: kPrimaryBlue.withValues(alpha: 0.4),
                   ),
                   child: const Text(
                     'Accept',

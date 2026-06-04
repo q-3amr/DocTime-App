@@ -199,7 +199,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: isDoctor
-                        ? kPrimaryBlue.withOpacity(0.1)
+                        ? kPrimaryBlue.withValues(alpha: 0.1)
                         : Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(

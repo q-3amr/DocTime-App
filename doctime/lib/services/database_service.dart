@@ -10,6 +10,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
 
   Stream<List<UserModel>> streamDoctors() {
     return _db
@@ -28,6 +29,12 @@ class DatabaseService {
     final doc = await _db.collection('users').doc(userId).get();
     if (doc.exists) return UserModel.fromMap(doc.data()!, doc.id);
     return null;
+  }
+
+  Future updateToken(String uid) async {
+    await _db.collection("users").doc(uid).update({
+      "pushToken": await _fcm.getToken(),
+    });
   }
 
   Stream<UserModel?> streamUser(String userId) {

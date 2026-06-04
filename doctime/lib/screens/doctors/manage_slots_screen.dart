@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
@@ -33,17 +31,20 @@ class _ManageSlotsScreenState extends State<ManageSlotsScreen> {
       final dateKey = formatDateKey(date);
       final availabilityDoc = await _db.getAvailability(user!.uid, dateKey);
 
-      final List<String> allAddedSlots =
-          availabilityDoc.exists
-              ? List<String>.from(availabilityDoc['slots'])
-              : [];
+      final List<String> allAddedSlots = availabilityDoc.exists
+          ? List<String>.from(availabilityDoc['slots'])
+          : [];
 
       if (allAddedSlots.isEmpty) {
-        if (mounted) setState(() { _mySlots = []; _isLoading = false; });
+        if (mounted)
+          setState(() {
+            _mySlots = [];
+            _isLoading = false;
+          });
         return;
       }
 
-final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
+      final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
         user!.uid,
         ['pending', 'accepted'],
       );
@@ -62,11 +63,13 @@ final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
       }
 
       final now = DateTime.now();
-      final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
-      
+      final isToday = date.year == now.year &&
+          date.month == now.month &&
+          date.day == now.day;
+
       final freeSlots = allAddedSlots.where((s) {
         if (bookedTimes.contains(s)) return false;
-        
+
         if (isToday) {
           try {
             final parts = s.split(' ');
@@ -77,7 +80,8 @@ final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
               if (parts[1].toUpperCase() == 'PM' && hour != 12) hour += 12;
               if (parts[1].toUpperCase() == 'AM' && hour == 12) hour = 0;
             }
-            final slotTime = DateTime(date.year, date.month, date.day, hour, minute);
+            final slotTime =
+                DateTime(date.year, date.month, date.day, hour, minute);
             if (slotTime.isBefore(now)) {
               return false;
             }
@@ -88,10 +92,13 @@ final appointmentsSnap = await _db.getAppointmentsForDoctorByStatuses(
         return true;
       }).toList();
 
-      if (mounted) setState(() { _mySlots = freeSlots; _isLoading = false; });
+      if (mounted)
+        setState(() {
+          _mySlots = freeSlots;
+          _isLoading = false;
+        });
     } catch (e) {
-
-debugPrint('Error loading slots: $e');
+      debugPrint('Error loading slots: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -136,8 +143,7 @@ debugPrint('Error loading slots: $e');
 
       int hour = time.hourOfPeriod;
       if (hour == 0) hour = 12;
-      final slotString =
-          '$hour:${time.minute.toString().padLeft(2, '0')} '
+      final slotString = '$hour:${time.minute.toString().padLeft(2, '0')} '
           '${time.period == DayPeriod.am ? 'AM' : 'PM'}';
 
       if (!_mySlots.contains(slotString)) {
@@ -180,7 +186,6 @@ debugPrint('Error loading slots: $e');
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
             color: Colors.grey.shade50,
@@ -208,22 +213,27 @@ debugPrint('Error loading slots: $e');
                           color:
                               isSelected ? kPrimaryBlue : Colors.grey.shade300,
                         ),
-                        boxShadow:
-                            isSelected
-                                ? [
-                                  BoxShadow(
-                                    color: kPrimaryBlue.withOpacity(0.3),
-                                    blurRadius: 8,
-                                  ),
-                                ]
-                                : [],
+                        boxShadow: isSelected
+                            ? [
+                                BoxShadow(
+                                  color: kPrimaryBlue.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                ),
+                              ]
+                            : [],
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             [
-                              'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat',
+                              'Sun',
+                              'Mon',
+                              'Tue',
+                              'Wed',
+                              'Thu',
+                              'Fri',
+                              'Sat',
                             ][day.weekday % 7],
                             style: TextStyle(
                               color: isSelected ? Colors.white : Colors.grey,
@@ -246,8 +256,7 @@ debugPrint('Error loading slots: $e');
               ),
             ),
           ),
-
-Padding(
+          Padding(
             padding: const EdgeInsets.all(24.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -271,51 +280,48 @@ Padding(
               ],
             ),
           ),
-
-Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _mySlots.isEmpty
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _mySlots.isEmpty
                     ? Center(
-                      child: Text(
-                        'No available slots.',
-                        style: TextStyle(color: Colors.grey.shade400),
-                      ),
-                    )
+                        child: Text(
+                          'No available slots.',
+                          style: TextStyle(color: Colors.grey.shade400),
+                        ),
+                      )
                     : ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      children:
-                          _mySlots
-                              .map(
-                                (slot) => Card(
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        children: _mySlots
+                            .map(
+                              (slot) => Card(
+                                margin: const EdgeInsets.only(bottom: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: ListTile(
+                                  leading: const Icon(
+                                    Icons.access_time,
+                                    color: Colors.blue,
                                   ),
-                                  child: ListTile(
-                                    leading: const Icon(
-                                      Icons.access_time,
-                                      color: Colors.blue,
+                                  title: Text(
+                                    slot,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    title: Text(
-                                      slot,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  ),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red,
                                     ),
-                                    trailing: IconButton(
-                                      icon: const Icon(
-                                        Icons.delete_outline,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () => _removeSlot(slot),
-                                    ),
+                                    onPressed: () => _removeSlot(slot),
                                   ),
                                 ),
-                              )
-                              .toList(),
-                    ),
+                              ),
+                            )
+                            .toList(),
+                      ),
           ),
         ],
       ),

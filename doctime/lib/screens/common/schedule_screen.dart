@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
@@ -7,8 +5,7 @@ import '../../utils/constants.dart';
 import '../../utils/date_utils.dart';
 
 class ScheduleScreen extends StatefulWidget {
-
-final bool isDoctor;
+  final bool isDoctor;
 
   const ScheduleScreen({super.key, required this.isDoctor});
 
@@ -25,9 +22,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   bool _isExpired(DateTime appointmentDate) =>
       isExpiredAppointment(appointmentDate);
 
-void _cancelAppointment(String docId) async {
-    final confirm =
-        await _confirmDialog(
+  void _cancelAppointment(String docId) async {
+    final confirm = await _confirmDialog(
           title: 'Cancel Appointment?',
           message: 'Are you sure you want to cancel?',
           confirmLabel: 'Yes, Cancel',
@@ -50,8 +46,7 @@ void _cancelAppointment(String docId) async {
   }
 
   void _completeAppointment(String docId) async {
-    final confirm =
-        await _confirmDialog(
+    final confirm = await _confirmDialog(
           title: 'Complete Appointment?',
           message: 'Is the session done / patient arrived?',
           confirmLabel: 'Yes, Complete',
@@ -70,8 +65,7 @@ void _cancelAppointment(String docId) async {
   }
 
   void _deleteAppointment(String docId) async {
-    final confirm =
-        await _confirmDialog(
+    final confirm = await _confirmDialog(
           title: 'Delete from History?',
           message: 'This will remove the record permanently.',
           confirmLabel: 'Delete',
@@ -92,24 +86,23 @@ void _cancelAppointment(String docId) async {
   }) {
     return showDialog<bool>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text(title),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('No'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(
-                  confirmLabel,
-                  style: TextStyle(color: confirmColor),
-                ),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
           ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              confirmLabel,
+              style: TextStyle(color: confirmColor),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -130,7 +123,6 @@ void _cancelAppointment(String docId) async {
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
           children: [
-
             Container(
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
@@ -145,16 +137,14 @@ void _cancelAppointment(String docId) async {
               ),
             ),
             const SizedBox(height: 20),
-
             Expanded(
               child: StreamBuilder<dynamic>(
-                stream:
-                    user?.uid != null
-                        ? _db.streamUserAppointments(
-                          user!.uid,
-                          isDoctor: widget.isDoctor,
-                        )
-                        : null,
+                stream: user?.uid != null
+                    ? _db.streamUserAppointments(
+                        user!.uid,
+                        isDoctor: widget.isDoctor,
+                      )
+                    : null,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
@@ -162,26 +152,27 @@ void _cancelAppointment(String docId) async {
 
                   final docs = snapshot.data!.docs;
 
-                  final filtered =
-                      docs.where((doc) {
-                        final data = doc.data() as Map<String, dynamic>;
-                        final status = data['status'] as String;
-                        final date = parseDate(data['appointmentDateTime']);
-                        final expired = _isExpired(date);
+                  final filtered = docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final status = data['status'] as String;
+                    final date = parseDate(data['appointmentDateTime']);
+                    final expired = _isExpired(date);
 
-                        if (_buttonIndex == 0) {
-                          return status == 'accepted' && !expired;
-                        } else {
-                          return status == 'completed' ||
-                              status == 'cancelled' ||
-                              status == 'rejected' ||
-                              (status == 'accepted' && expired);
-                        }
-                      }).toList();
+                    if (_buttonIndex == 0) {
+                      return status == 'accepted' && !expired;
+                    } else {
+                      return status == 'completed' ||
+                          status == 'cancelled' ||
+                          status == 'rejected' ||
+                          (status == 'accepted' && expired);
+                    }
+                  }).toList();
 
                   filtered.sort((a, b) {
-                    final dateA = parseDate((a.data() as Map)['appointmentDateTime']);
-                    final dateB = parseDate((b.data() as Map)['appointmentDateTime']);
+                    final dateA =
+                        parseDate((a.data() as Map)['appointmentDateTime']);
+                    final dateB =
+                        parseDate((b.data() as Map)['appointmentDateTime']);
                     return _buttonIndex == 0
                         ? dateA.compareTo(dateB)
                         : dateB.compareTo(dateA);
@@ -208,7 +199,8 @@ void _cancelAppointment(String docId) async {
 
                   return ListView.builder(
                     itemCount: filtered.length,
-                    itemBuilder: (context, index) => _buildCard(filtered[index]),
+                    itemBuilder: (context, index) =>
+                        _buildCard(filtered[index]),
                   );
                 },
               ),
@@ -246,10 +238,9 @@ void _cancelAppointment(String docId) async {
 
   Widget _buildCard(dynamic doc) {
     final data = doc.data() as Map<String, dynamic>;
-    final String name =
-        widget.isDoctor
-            ? (data['patient_name'] ?? 'Patient')
-            : (data['doctor_name'] ?? 'Doctor');
+    final String name = widget.isDoctor
+        ? (data['patient_name'] ?? 'Patient')
+        : (data['doctor_name'] ?? 'Doctor');
     final DateTime dateObj = parseDate(data['appointmentDateTime']);
     final String dateStr = formatDateDisplay(dateObj);
     final String timeStr = formatTimeFromDateTime(dateObj);
@@ -291,7 +282,7 @@ void _cancelAppointment(String docId) async {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.grey.withValues(alpha: 0.05),
             blurRadius: 10,
           ),
         ],
@@ -301,7 +292,7 @@ void _cancelAppointment(String docId) async {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: statusColor.withOpacity(0.1),
+                backgroundColor: statusColor.withValues(alpha: 0.1),
                 child: Icon(Icons.person, color: statusColor),
               ),
               const SizedBox(width: 15),
@@ -329,7 +320,8 @@ void _cancelAppointment(String docId) async {
               ),
               if (!widget.isDoctor && displayStatus == 'Upcoming')
                 IconButton(
-                  icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent),
+                  icon: const Icon(Icons.cancel_outlined,
+                      color: Colors.redAccent),
                   onPressed: () => _cancelAppointment(doc.id),
                 ),
               if (widget.isDoctor && displayStatus == 'Upcoming')
@@ -354,11 +346,13 @@ void _cancelAppointment(String docId) async {
             children: [
               const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
               const SizedBox(width: 5),
-              Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(dateStr,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               const Spacer(),
               const Icon(Icons.access_time, size: 16, color: Colors.grey),
               const SizedBox(width: 5),
-              Text(timeStr, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(timeStr,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
             ],
           ),
         ],

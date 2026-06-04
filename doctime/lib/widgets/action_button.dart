@@ -24,11 +24,10 @@ class ActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: Colors.grey.shade300, width: 2.0),
+          border: Border.all(color: Colors.grey.shade300, width: 2.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.05),
+              color: Colors.grey.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -46,13 +45,12 @@ class ActionButton extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: icon is Widget
               ? icon
-              : Icon(icon as IconData,
-                  color: color, size: 28),
+              : Icon(icon as IconData, color: color, size: 28),
         ),
         const SizedBox(height: 12),
         Text(
@@ -78,7 +76,7 @@ class ActionButton extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: icon is Widget
@@ -96,7 +94,8 @@ class ActionButton extends StatelessWidget {
               ),
             ),
           ),
-          Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey.shade400, size: 16),
+          Icon(Icons.arrow_forward_ios_rounded,
+              color: Colors.grey.shade400, size: 16),
         ],
       ),
     );

@@ -25,6 +25,7 @@ void main() {
         email: 'close@doctime.com', // 📍 تم إضافة الـ email الإجباري هنا
         name: 'Dr. Close',
         role: 'doctor',
+        pushToken: "",
         latitude: 32.5400,
         longitude: 35.9250,
       );
@@ -33,6 +34,7 @@ void main() {
         id: 'doc_far',
         email: 'far@doctime.com', // 📍 تم إضافة الـ email الإجباري هنا
         name: 'Dr. Far',
+        pushToken: "",
         role: 'doctor',
         latitude: 31.9539,
         longitude: 35.9106,
@@ -100,6 +102,7 @@ void main() {
         email: 'null@doctime.com', // 📍 تم إضافة الـ email الإجباري هنا
         name: 'Dr. No Location',
         role: 'doctor',
+        pushToken: "",
         latitude: null,
         longitude: null,
       );
@@ -123,6 +126,7 @@ void main() {
         name: 'Dr. Ahmad',
         role: 'doctor',
         specialty: 'Cardiology',
+        pushToken: "",
         latitude: 32.5568,
         longitude: 35.8469,
       );

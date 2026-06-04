@@ -23,7 +23,6 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     if (uid == null) return;
 
     try {
-
       final querySnapshot = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: uid)
@@ -51,7 +50,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     }
   }
 
-Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
+  Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
     if (docs.isEmpty) return const SizedBox.shrink();
 
     final ratings = docs
@@ -77,7 +76,7 @@ Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF407CE2).withOpacity(0.3),
+            color: const Color(0xFF407CE2).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -85,7 +84,6 @@ Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
       ),
       child: Row(
         children: [
-
           Text(
             average.toStringAsFixed(1),
             style: const TextStyle(
@@ -151,12 +149,12 @@ Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
 
           var docs = snapshot.data!.docs;
 
-docs.sort((a, b) {
-  final rawA = (a.data() as Map)['appointmentDateTime'];
-  final rawB = (b.data() as Map)['appointmentDateTime'];
-  if (rawA == null || rawB == null) return 0;
-  return rawB.compareTo(rawA);
-});
+          docs.sort((a, b) {
+            final rawA = (a.data() as Map)['appointmentDateTime'];
+            final rawB = (b.data() as Map)['appointmentDateTime'];
+            if (rawA == null || rawB == null) return 0;
+            return rawB.compareTo(rawA);
+          });
 
           if (docs.isEmpty) {
             return const Center(
@@ -167,13 +165,11 @@ docs.sort((a, b) {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-
             itemCount: docs.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) return _buildAggregateSummary(docs);
 
-              final data =
-                  docs[index - 1].data() as Map<String, dynamic>;
+              final data = docs[index - 1].data() as Map<String, dynamic>;
               final double reviewRating =
                   (data['rating'] as num?)?.toDouble() ?? 0.0;
 
@@ -200,7 +196,6 @@ docs.sort((a, b) {
                                 fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                         ),
-
                         Row(
                           children: [
                             StarRatingWidget(

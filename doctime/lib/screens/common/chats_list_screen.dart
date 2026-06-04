@@ -40,8 +40,7 @@ class ChatsListScreen extends StatelessWidget {
             ? FirebaseFirestore.instance
                 .collection('chats')
                 .where('participants', arrayContains: currentUser!.uid)
-                .orderBy('lastMessageTime',
-                    descending: true)
+                .orderBy('lastMessageTime', descending: true)
                 .snapshots()
             : null,
         builder: (context, snapshot) {
@@ -121,10 +120,11 @@ class ChatsListScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.grey.shade300, width: 2.0),
+                        border:
+                            Border.all(color: Colors.grey.shade300, width: 2.0),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.05),
+                            color: Colors.grey.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
@@ -134,7 +134,8 @@ class ChatsListScreen extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 28,
-                            backgroundColor: kPrimaryBlue.withOpacity(0.1),
+                            backgroundColor:
+                                kPrimaryBlue.withValues(alpha: 0.1),
                             child: Icon(
                               Icons.person,
                               color: kPrimaryBlue,
@@ -173,7 +174,6 @@ class ChatsListScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-
                                 if (chatData['lastMessageSenderId'] !=
                                         currentUser?.uid &&
                                     chatData['isRead'] == false)

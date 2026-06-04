@@ -135,8 +135,14 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [kPrimaryBlue.withOpacity(0.15), Colors.white],
-                      stops: const [0.0, 0.4]))),
+                      colors: [
+                kPrimaryBlue.withValues(alpha: 0.15),
+                Colors.white
+              ],
+                      stops: const [
+                0.0,
+                0.4
+              ]))),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
@@ -186,15 +192,13 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                             data['isReviewSeen'] != true;
                       });
 
-                      final int upcoming = docs
-                          .where((d) {
-                            final data = d.data() as Map<String, dynamic>;
-                            final rawDate = data['appointmentDateTime'];
-                            if (rawDate == null) return false;
-                            return data['status'] == 'accepted' &&
-                                !isExpiredAppointment(parseDate(rawDate));
-                          })
-                          .length;
+                      final int upcoming = docs.where((d) {
+                        final data = d.data() as Map<String, dynamic>;
+                        final rawDate = data['appointmentDateTime'];
+                        if (rawDate == null) return false;
+                        return data['status'] == 'accepted' &&
+                            !isExpiredAppointment(parseDate(rawDate));
+                      }).length;
                       final int pending =
                           docs.where((d) => d['status'] == 'pending').length;
 
@@ -208,7 +212,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                   borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                        color: kPrimaryBlue.withOpacity(0.4),
+                                        color:
+                                            kPrimaryBlue.withValues(alpha: 0.4),
                                         blurRadius: 15,
                                         offset: const Offset(0, 8))
                                   ]),
@@ -321,7 +326,6 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                                         builder: (c) =>
                                             const ChatsListScreen())),
                               ),
-
                             ],
                           ),
                         ],

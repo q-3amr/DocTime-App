@@ -76,10 +76,10 @@ class FeedbackHelper {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 14),
                             decoration: BoxDecoration(
-                              color: Colors.amber.withOpacity(0.08),
+                              color: Colors.amber.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(15),
                               border: Border.all(
-                                  color: Colors.amber.withOpacity(0.3)),
+                                  color: Colors.amber.withValues(alpha: 0.3)),
                             ),
                             child: Column(
                               children: [

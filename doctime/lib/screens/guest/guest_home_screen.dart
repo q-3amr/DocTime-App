@@ -18,7 +18,7 @@ class GuestHomeScreen extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [primaryBlue.withOpacity(0.15), Colors.white],
+                colors: [primaryBlue.withValues(alpha: 0.15), Colors.white],
                 stops: const [0.0, 0.4],
               ),
             ),
@@ -81,12 +81,15 @@ class GuestHomeScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [primaryBlue, primaryBlue.withOpacity(0.8)],
+                        colors: [
+                          primaryBlue,
+                          primaryBlue.withValues(alpha: 0.8)
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: primaryBlue.withOpacity(0.4),
+                          color: primaryBlue.withValues(alpha: 0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 10),
                         ),
@@ -116,7 +119,7 @@ class GuestHomeScreen extends StatelessWidget {
                         Text(
                           "Browse verified doctors and book your appointment",
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 14,
                           ),
                         ),
@@ -191,7 +194,7 @@ class GuestHomeScreen extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade300, width: 2.0),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -202,7 +205,7 @@ class GuestHomeScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 28),

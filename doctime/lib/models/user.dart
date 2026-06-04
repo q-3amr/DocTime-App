@@ -9,6 +9,7 @@ class UserModel {
   final String? location;
   final double? latitude;
   final double? longitude;
+  final String? pushToken;
   final String? about;
   final bool? isVerified;
   final int? reviewCount;
@@ -19,6 +20,7 @@ class UserModel {
     required this.email,
     required this.name,
     required this.role,
+    required this.pushToken,
     this.profileImage,
     this.specialty,
     this.rating,
@@ -39,6 +41,7 @@ class UserModel {
       id: documentId,
       email: map['email'] ?? '',
       name: map['name'] ?? '',
+      pushToken: map['pushToken'] ?? '',
       role: map['role'] ?? 'patient',
       profileImage: map['profileImage'],
       specialty: map['specialty'],
@@ -51,7 +54,6 @@ class UserModel {
           : null,
       about: map['about'],
       isVerified: map['isVerified'] ?? false,
-
       reviewCount:
           map['reviewCount'] != null ? (map['reviewCount'] as num).toInt() : 0,
     );
@@ -62,6 +64,7 @@ class UserModel {
       'email': email,
       'name': name,
       'role': role,
+      'pushToken': pushToken,
       'profileImage': profileImage ?? '',
     };
     if (isDoctor) {
@@ -87,6 +90,7 @@ class UserModel {
     String? specialty,
     double? rating,
     String? location,
+    String? pushToken,
     double? latitude,
     double? longitude,
     String? about,
@@ -99,6 +103,7 @@ class UserModel {
       email: email ?? this.email,
       name: name ?? this.name,
       role: role ?? this.role,
+      pushToken: pushToken ?? this.pushToken,
       profileImage: profileImage ?? this.profileImage,
       specialty: specialty ?? this.specialty,
       rating: rating ?? this.rating,
