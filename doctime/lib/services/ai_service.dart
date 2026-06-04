@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 class AiService {
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   late final String _apiKey;
+  final http.Client _httpClient;
   final DatabaseService _db = DatabaseService();
   final List<Map<String, dynamic>> _chatHistory = [];
   final List<Map<String, dynamic>> _tools = [
@@ -106,8 +107,9 @@ class AiService {
       }
     }
   ];
-  AiService() {
-    final key = dotenv.env['GROQ_API_KEY'];
+  AiService({http.Client? httpClient, String? apiKey})
+      : _httpClient = httpClient ?? http.Client() {
+    final key = apiKey ?? dotenv.env['GROQ_API_KEY'];
     if (key == null || key.isEmpty) {
       throw Exception('API Key for Groq is missing in .env file!');
     }
@@ -158,7 +160,7 @@ RULES:
   Future<String> getAiResponse(String userMessage) async {
     _chatHistory.add({"role": "user", "content": userMessage.trim()});
     try {
-      final response = await http.post(
+      final response = await _httpClient.post(
         Uri.parse(_apiUrl),
         headers: {
           "Authorization": "Bearer $_apiKey",
@@ -267,7 +269,7 @@ RULES:
             "content": toolResultString
           });
 
-          final secondResponse = await http.post(
+          final secondResponse = await _httpClient.post(
             Uri.parse(_apiUrl),
             headers: {
               "Authorization": "Bearer $_apiKey",
