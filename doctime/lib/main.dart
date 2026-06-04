@@ -5,18 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'auth_wrapper.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
 import 'providers/chat_provider.dart';
 import 'providers/notification_provider.dart';
-
-const AndroidNotificationChannel channel = AndroidNotificationChannel(
-  'high_importance_channel',
-  'High Importance Notifications',
-  importance: Importance.high,
-);
-
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -28,62 +18,60 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
-
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
   await messaging.requestPermission(alert: true, badge: true, sound: true);
 
-  String? token;
-  try {
-    token = await messaging.getToken();
-    debugPrint("Device FCM Token: $token");
-  } catch (e) {
-    debugPrint("FCM token unavailable (emulator or no Play Services): $e");
-  }
+  var androidInitialize =
+      const AndroidInitializationSettings("@mipmap/ic_launcher");
 
-  messaging.onTokenRefresh.listen((newToken) {
-    debugPrint("FCM Token refreshed: $newToken");
-  });
+  var initializeSetting = InitializationSettings(
+    android: androidInitialize,
+  );
 
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    RemoteNotification? notification = message.notification;
-    AndroidNotification? android = message.notification?.android;
+  await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
 
-    if (notification != null && android != null) {
-      flutterLocalNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            channel.id,
-            channel.name,
-            icon: '@mipmap/ic_launcher',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-        ),
-        payload: message.data['appointmentId'],
+  FlutterLocalNotificationsPlugin().initialize(
+    initializeSetting,
+    onDidReceiveNotificationResponse: (details) {},
+  );
+
+  FirebaseMessaging.onMessage.listen((event) async {
+    if (event.notification != null) {
+      BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
+        event.notification!.body.toString(),
+        htmlFormatBigText: true,
+        contentTitle: event.notification!.title.toString(),
+        htmlFormatContentTitle: true,
+      );
+      AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'CareFlow',
+        'CareFlow',
+        importance: Importance.high,
+        playSound: true,
+        styleInformation: bigTextStyleInformation,
+        priority: Priority.high,
+      );
+
+      NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+      );
+
+      await FlutterLocalNotificationsPlugin().show(
+        event.data.hashCode,
+        event.notification?.title,
+        event.notification?.body,
+        platformChannelSpecifics,
+        payload: event.data["body"],
       );
     }
   });
-
-  FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-    debugPrint("Notification tapped (app was in background).");
-    debugPrint("Appointment ID: ${message.data['appointmentId']}");
-    debugPrint("New status: ${message.data['status']}");
-  });
-
-  RemoteMessage? initialMessage = await messaging.getInitialMessage();
-  if (initialMessage != null) {
-    debugPrint("App opened from terminated state via notification.");
-    debugPrint("Appointment ID: ${initialMessage.data['appointmentId']}");
-  }
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
