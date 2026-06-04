@@ -40,6 +40,16 @@ class DatabaseService {
     });
   }
 
+  Future<String> getToken(String uid) async {
+    await _db.collection("users").doc(uid).get().then((doc) {
+      if (doc.exists) {
+        return doc.get("pushToken");
+      }
+    });
+
+    return "";
+  }
+
   Stream<UserModel?> streamUser(String userId) {
     return _db.collection('users').doc(userId).snapshots().map((doc) {
       if (doc.exists) return UserModel.fromMap(doc.data()!, doc.id);
