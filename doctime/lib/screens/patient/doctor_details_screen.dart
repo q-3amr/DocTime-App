@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/database_service.dart';
+import '../../services/message.dart';
 import '../../utils/constants.dart';
 import '../../utils/date_utils.dart';
 import '../../widgets/star_rating_widget.dart';
@@ -35,6 +36,7 @@ class DoctorDetailsScreen extends StatefulWidget {
 
 class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
   final _db = DatabaseService();
+  final MessageServices _messageServices = MessageServices();
   // Always read live so the state refreshes after the user logs in and pops back
   User? get _user => FirebaseAuth.instance.currentUser;
 
@@ -158,6 +160,13 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
     }
   }
 
+  formatDateTime(DateTime dt) {
+    final hour = dt.hour > 12 ? dt.hour - 12 : dt.hour;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $ampm on ${dt.day}/${dt.month}/${dt.year}';
+  }
+
   void _bookAppointment() async {
     if (_user == null) {
       _showLoginDialog();
@@ -200,6 +209,17 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       );
 
       final success = await _db.bookAppointmentSafely(newAppointment);
+
+      _db.getToken(widget.doctorId ?? '').then((token) {
+        if (token.isNotEmpty) {
+          _messageServices.sendNotificationToUser(
+            fcmToken: token,
+            title: 'New Appointment Request',
+            body:
+                '$patientName requested an appointment on ${formatDateTime(finalDate)}',
+          );
+        }
+      });
 
       if (mounted) {
         if (success) {
@@ -246,7 +266,8 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const LoginScreen(returnToPrevious: true),
+                  builder: (context) =>
+                      const LoginScreen(returnToPrevious: true),
                 ),
               );
             },
