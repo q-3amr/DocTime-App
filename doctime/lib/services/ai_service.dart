@@ -109,9 +109,12 @@ class AiService {
   ];
   AiService({http.Client? httpClient, String? apiKey})
       : _httpClient = httpClient ?? http.Client() {
-    final key = apiKey ?? dotenv.env['GROQ_API_KEY'];
+    const keyFromEnv = String.fromEnvironment('GROQ_API_KEY');
+    final key = apiKey ??
+        (keyFromEnv.isNotEmpty ? keyFromEnv : dotenv.env['GROQ_API_KEY']);
     if (key == null || key.isEmpty) {
-      throw Exception('API Key for Groq is missing in .env file!');
+      throw Exception(
+          'API Key for Groq is missing! Please provide it using --dart-define=GROQ_API_KEY=your_key or in a .env file.');
     }
     _apiKey = key.trim();
     String todayDate = DateTime.now().toString().split(' ')[0];

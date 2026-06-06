@@ -1,16 +1,29 @@
-# doctime
+# CareFlow (DocTime)
 
-A new Flutter project.
+A Flutter application for medical triage and doctor booking.
 
-## Getting Started
+## Setup & Running the Application
 
-This project is a starting point for a Flutter application.
+This project requires a **Groq API Key** to power the AI Chat Assistant. 
 
-A few resources to get you started if this is your first Flutter project:
+To run the application, you must supply your own Groq API key in one of two ways:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Option 1: Run via Command Line (Recommended)
+You can pass your Groq API key directly when running or building the app using the `--dart-define` flag:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter run --dart-define=GROQ_API_KEY=your_actual_groq_api_key_here
+```
+
+### Option 2: Use a Local `.env` File
+1. In the `doctime` root folder, create a file named `.env` (you can copy `.env.example`).
+2. Add your Groq API key in the following format:
+   ```env
+   GROQ_API_KEY=your_actual_groq_api_key_here
+   ```
+3. Run the app normally:
+   ```bash
+   flutter run
+   ```
+
+*(Note: The `.env` file is ignored by Git to keep your API key secure).*
