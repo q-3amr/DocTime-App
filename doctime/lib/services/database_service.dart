@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -183,7 +183,7 @@ class DatabaseService {
   }
 
   Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
-    // Composite key: doctorId + millisecond timestamp → unique slot lock document
+    
     final String appointmentKey =
         "${appointment.doctorId}_${appointment.appointmentDateTime.millisecondsSinceEpoch}";
 
@@ -194,17 +194,17 @@ class DatabaseService {
         final snapshot = await transaction.get(txRef);
 
         if (snapshot.exists) {
-          // Slot already locked — abort to prevent double-booking
+          
           return false;
         }
 
-        // Atomically lock the slot
+        
         transaction.set(txRef, {
           'bookedBy': appointment.patientId,
           'timestamp': FieldValue.serverTimestamp(),
         });
 
-        // Create the official appointment document inside the same transaction
+        
         final newApptDoc = _db.collection('appointments').doc();
         transaction.set(newApptDoc, {
           'id': newApptDoc.id,
@@ -229,7 +229,7 @@ class DatabaseService {
   Future<void> updateAppointmentStatus(
     String docId,
     String status, {
-    String? cancelledBy, // 'patient' or 'doctor' — who triggered this change
+    String? cancelledBy, 
   }) async {
     final Map<String, dynamic> data = {'status': status};
     if (cancelledBy != null) {
@@ -442,13 +442,13 @@ class DatabaseService {
         });
       }
 
-      // Fetch all pending/accepted appointments for this doctor and filter by date in-memory
+      
       QuerySnapshot appointments = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: doctorId)
           .where('status', whereIn: ['pending', 'accepted']).get();
 
-      // Collect booked time strings for the requested date
+      
       List<String> bookedTimes = [];
       for (var doc in appointments.docs) {
         final apptData = doc.data() as Map<String, dynamic>;
@@ -511,7 +511,7 @@ class DatabaseService {
             {"error": "User is not logged in. Cannot book appointment."});
       }
 
-      // Fetch patient name
+      
       DocumentSnapshot patientDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(patientId)
@@ -522,7 +522,7 @@ class DatabaseService {
         patientName = pData['name'] ?? pData['fullName'] ?? "Unknown";
       }
 
-      // Fetch doctor name  ← FIX #1: was missing, causing "Doctor" to show
+      
       DocumentSnapshot doctorDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(doctorId)
@@ -535,8 +535,8 @@ class DatabaseService {
 
       DateTime parsedDate = DateTime.parse(date);
 
-      // Parse the time slot (e.g. "10:00 PM") and combine with date
-      // FIX #2: store as Timestamp so AppointmentModel.fromMap reads it correctly
+      
+      
       DateTime appointmentDateTime = parsedDate;
       try {
         final parts = time.trim().split(' ');
@@ -551,7 +551,7 @@ class DatabaseService {
             parsedDate.year, parsedDate.month, parsedDate.day, hour, minute);
       } catch (_) {}
 
-      // Conflict check: fetch all pending/accepted for this doctor and check for same DateTime
+      
       QuerySnapshot checkConflict = await FirebaseFirestore.instance
           .collection('appointments')
           .where('doctor_id', isEqualTo: doctorId)
@@ -577,7 +577,7 @@ class DatabaseService {
         });
       }
 
-      // Store with the same structure as bookAppointmentSafely so the model reads correctly
+      
       final String slotId =
           "appt_${doctorId}_${appointmentDateTime.millisecondsSinceEpoch}";
       await FirebaseFirestore.instance

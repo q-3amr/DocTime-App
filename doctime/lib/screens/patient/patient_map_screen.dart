@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../common/base_map_screen.dart';
 import '../../models/user.dart';
-// 📍 تم تعديل المسار هنا ليكون من نفس مجلد patient بالظبط بناءً على الصورة
+
 import 'doctor_details_screen.dart';
 
 class PatientMapScreen extends BaseMapScreen {
@@ -42,7 +42,7 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
             .toList();
       });
     } catch (e) {
-      // 📍 رسالة الديباج بالإنجليزية
+      
       debugPrint('Error fetching doctors: $e');
     }
   }
@@ -124,10 +124,10 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
           ),
           const SizedBox(height: 20),
 
-          // 📍 أزرار منسقة ومتطابقة تماماً باللون والحجم والانحناء
+          
           Row(
             children: [
-              // 1. زر الملاحة والاتجاهات (Directions)
+              
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -148,16 +148,16 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
               ),
               const SizedBox(width: 10),
 
-              // 2. زر عرض صفحة الطبيب (View Profile) - تم تعديله ليطابق الزر الأول تماماً
+              
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue, // 📍 نفس اللون الأزرق
-                    foregroundColor: Colors.white, // 📍 لون النص والأيقونة أبيض
+                    backgroundColor: Colors.blue, 
+                    foregroundColor: Colors.white, 
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
                         borderRadius:
-                            BorderRadius.circular(15)), // 📍 نفس الانحناء
+                            BorderRadius.circular(15)), 
                     elevation: 2,
                   ),
                   onPressed: () {
@@ -199,7 +199,7 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              // 📍 تحويل رسالة التنبيه إلى الإنجليزية
+              
               const SnackBar(content: Text('Cannot open maps on this device.')),
             );
           }
@@ -208,7 +208,7 @@ class _PatientMapScreenState extends BaseMapState<PatientMapScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          // 📍 تحويل رسالة التنبيه إلى الإنجليزية
+          
           const SnackBar(
               content: Text('An error occurred while opening maps.')),
         );

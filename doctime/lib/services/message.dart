@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert' show json, jsonEncode;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:googleapis_auth/auth_io.dart';
@@ -56,14 +56,7 @@ class MessageServices {
     return _sendNotification(fcmToken!, title!, body!);
   }
 
-  /*   Future<void> sendNotificationToGroup({
-    String? group,
-    String? title,
-    String? body,
-  }) {
-    return _sendNotification('/topics/' + group!, title!, body!);
-  }
- */
+  
   final String _fcmEndpoint =
       'https://fcm.googleapis.com/v1/projects/zain-33039/messages:send';
 
@@ -88,7 +81,7 @@ class MessageServices {
 
     var scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
 
-    // Create the client to obtain the OAuth2 access token
+    
     var client = await clientViaServiceAccount(credentials, scopes);
 
     var accessToken = client.credentials.accessToken.data;

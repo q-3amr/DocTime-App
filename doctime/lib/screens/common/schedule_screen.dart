@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
@@ -35,7 +35,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       await _db.updateAppointmentStatus(
         docId,
         'cancelled',
-        cancelledBy: 'patient', // patient is the one cancelling
+        cancelledBy: 'patient', 
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -258,11 +258,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       displayStatus = 'Expired';
       statusColor = Colors.orange;
     } else if (status == 'cancelled') {
-      // Patient cancelled the appointment
+      
       displayStatus = 'Cancelled';
       statusColor = Colors.orange;
     } else if (status == 'rejected') {
-      // Doctor rejected the appointment request
+      
       displayStatus = 'Rejected';
       statusColor = Colors.red;
     } else if (status == 'completed') {

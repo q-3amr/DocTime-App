@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
@@ -55,16 +55,16 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           if (mounted) {
             if (userModel != null && !userModel.isPatient) {
-              // Doctor or Admin → go through AuthWrapper for role-based routing
+              
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (context) => const AuthWrapper()),
                 (route) => false,
               );
             } else {
-              // Patient: if opened from within the app (e.g. doctor details dialog)
-              // pop back so they return to where they were.
-              // Otherwise go to PatientHomeScreen.
+              
+              
+              
               if (widget.returnToPrevious) {
                 Navigator.pop(context);
               } else {

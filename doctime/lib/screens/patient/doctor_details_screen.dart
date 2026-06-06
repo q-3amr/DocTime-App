@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,7 +37,7 @@ class DoctorDetailsScreen extends StatefulWidget {
 class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
   final _db = DatabaseService();
   final MessageServices _messageServices = MessageServices();
-  // Always read live so the state refreshes after the user logs in and pops back
+  
   User? get _user => FirebaseAuth.instance.currentUser;
 
   DateTime _selectedDate = DateTime.now();
@@ -60,7 +60,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         if (await canLaunchUrl(googleMapsUrl)) {
           await launchUrl(googleMapsUrl);
         } else {
-          // هان صلحنا حرف الـ $ الناقص ونظفنا الرابط عشان يفتح صح بالمتصفح
+          
           final Uri webUrl = Uri.parse(
               'https://www.google.com/maps/search/?api=1&query=${widget.latitude},${widget.longitude}');
           await launchUrl(webUrl, mode: LaunchMode.externalApplication);
@@ -83,7 +83,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
     final dateKey = formatDateKey(date);
 
-    // 1. جلب أوقات دوام الدكتور الأساسية في هاد اليوم
+    
     final availabilityDoc = await _db.getAvailability(
       widget.doctorId ?? '',
       dateKey,
@@ -103,7 +103,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       availabilityDoc['slots'],
     );
 
-    // 2. تعديل هندسي: جلب مواعيد هاد اليوم بالزبط من الفايربيز بدل ما نسحب تاريخ الدكتور كله
+    
     final appointmentsSnap = await FirebaseFirestore.instance
         .collection('appointments')
         .where('doctor_id', isEqualTo: widget.doctorId ?? '')
@@ -116,7 +116,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       if (rawDate == null) continue;
       final DateTime apptDate = (rawDate as Timestamp).toDate();
 
-      // فحص إذا الموعد المجلوب بطابق اليوم المختار بالزبط
+      
       if (apptDate.year == date.year &&
           apptDate.month == date.month &&
           apptDate.day == date.day) {
@@ -146,7 +146,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
             return false;
           }
         } catch (e) {
-          // Fallback
+          
         }
       }
       return true;

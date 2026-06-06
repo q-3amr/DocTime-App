@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/chat_message.dart';
 import '../services/speech_service.dart';

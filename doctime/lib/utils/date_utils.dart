@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 
 DateTime parseDate(dynamic dateData) {
   if (dateData is Timestamp) return dateData.toDate().toLocal();
