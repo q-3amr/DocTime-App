@@ -1,4 +1,4 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -41,12 +41,10 @@ class DatabaseService {
   }
 
   Future<String> getToken(String uid) async {
-    await _db.collection("users").doc(uid).get().then((doc) {
-      if (doc.exists) {
-        return doc.get("pushToken");
-      }
-    });
-
+    final doc = await _db.collection("users").doc(uid).get();
+    if (doc.exists) {
+      return doc.get("pushToken") ?? "";
+    }
     return "";
   }
 
