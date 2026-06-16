@@ -15,7 +15,7 @@ class ChatMessage {
     required this.sender, // المرسل مطلوب
     DateTime?
         timestamp, // الطابع الزمني اختياري، إذا لم يتم توفيره سيتم استخدام الوقت الحالي
-  })  : id = id ?? Uuid().v4(),
+  })  : id = id ?? Uuid().v4(), // توليد معرف فريد إذا لم يتم توفيره
         timestamp = timestamp ??
             DateTime
                 .now(); // إذا لم يتم توفير الطابع الزمني، سيتم استخدام الوقت الحالي
