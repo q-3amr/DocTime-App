@@ -12,12 +12,14 @@ class VoiceChat extends StatefulWidget {
 }
 
 class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
+  // المتغيرات للتحكم في التمرير، النص، والرسوم المتحركة
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _textController = TextEditingController();
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   late ChatProvider _chatProvider;
 
+// تهيئة الرسوم المتحركة والاستماع لتغييرات المزود بعد بناء الواجهة
   @override
   void initState() {
     super.initState();
@@ -28,6 +30,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.22).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _chatProvider = context.read<ChatProvider>();
       _chatProvider.addListener(_onProviderChange);
@@ -35,6 +38,8 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
       _scrollToBottom();
     });
   }
+
+  // تنظيف الموارد وإلغاء الاستماع عند التخلص من الواجهة
 
   @override
   void dispose() {
@@ -45,12 +50,15 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // التعامل مع تغييرات المزود لعرض رسائل الخطأ أو تحديث الواجهة
+
   void _onProviderChange() {
     if (_chatProvider.hasConnectionError && mounted) {
       _showConnectionError();
     }
   }
 
+// تمرير القائمة إلى الأسفل عند إضافة رسالة جديدة أو عند بدء/إيقاف التسجيل
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -63,6 +71,8 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
     });
   }
 
+  // إرسال رسالة نصية عند الضغط على زر الإرسال أو عند الضغط على "Enter"
+
   void _sendText() {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
@@ -71,10 +81,13 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
     _scrollToBottom();
   }
 
+  // عرض رسالة خطأ عند وجود مشكلة في الاتصال
+
   void _showConnectionError() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Connection error, check your connection and try again!'),
+        content: const Text(
+            'Connection error, check your connection and try again!'),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
       ),
@@ -84,8 +97,10 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Consumer<ChatProvider>(
+      // إعادة بناء الواجهة عند تغير حالة المزود
       builder: (context, chat, _) {
-        if (chat.messages.isNotEmpty) _scrollToBottom();
+        if (chat.messages.isNotEmpty)
+          _scrollToBottom(); // تمرير القائمة إلى الأسفل عند إضافة رسالة جديدة
         return Scaffold(
           resizeToAvoidBottomInset: true,
           backgroundColor: const Color(0xFFF5F7FA),
@@ -93,11 +108,15 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                _buildAppBar(chat),
-                Expanded(child: _buildMessageList(chat)),
+                _buildAppBar(chat), // شريط العنوان مع حالة التسجيل/التحدث
+                Expanded(
+                    child: _buildMessageList(
+                        chat)), // قائمة الرسائل مع مؤشرات التسجيل والكتابة
                 chat.isTriageComplete
-                    ? _buildCompletionButton(chat)
-                    : _buildInputBar(chat),
+                    ? _buildCompletionButton(
+                        chat) // زر إكمال التقييم بناءً على حالة التقييم
+                    : _buildInputBar(
+                        chat), // شريط الإدخال أو زر إكمال التقييم بناءً على حالة التقييم
               ],
             ),
           ),
@@ -107,6 +126,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
   }
 
   Widget _buildAppBar(ChatProvider chat) {
+    // شريط العنوان مع حالة التسجيل/التحدث
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -187,6 +207,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
   }
 
   Widget _buildMessageList(ChatProvider chat) {
+    // قائمة الرسائل مع مؤشرات التسجيل والكتابة
     final bool showIndicator = chat.isListening || chat.isTyping;
     return ListView.builder(
       controller: _scrollController,
@@ -208,6 +229,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
   }
 
   Widget _buildListeningIndicator() {
+    // مؤشر التسجيل الصوتي أثناء تسجيل رسالة المستخدم
     return Padding(
       padding: const EdgeInsets.only(top: 3, bottom: 3, left: 52, right: 0),
       child: Row(
@@ -250,6 +272,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
   }
 
   Widget _buildInputBar(ChatProvider chat) {
+    // شريط الإدخال مع زر التسجيل الصوتي وزر الإرسال
     return Container(
       padding: EdgeInsets.fromLTRB(12, 10, 12, 16),
       decoration: BoxDecoration(
@@ -306,6 +329,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
           GestureDetector(
             onTap: () {
               if (chat.isListening) {
+                // إذا كان في وضع التسجيل، إيقاف التسجيل، وإلا بدء التسجيل
                 chat.stopListening();
               } else {
                 chat.startListening();
@@ -369,6 +393,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
   }
 
   Widget _buildCompletionButton(ChatProvider chat) {
+    // زر إكمال التقييم بناءً على حالة التقييم
     final Color backgroundColor;
     final IconData icon;
     final String label;
@@ -446,6 +471,7 @@ class _VoiceChatState extends State<VoiceChat> with TickerProviderStateMixin {
 }
 
 class _ChatBubble extends StatelessWidget {
+  // فقاعة الدردشة لكل رسالة مع زر الاستماع إذا كانت رسالة AI
   final ChatMessage message;
   final VoidCallback onSpeak;
   final bool isSpeaking;
@@ -544,14 +570,12 @@ class _ChatBubble extends StatelessWidget {
                                 fontSize: 10.5,
                               ),
                             ),
-
                           ],
                         ),
                       ],
                     ),
                   ),
                 ),
-                if (!isUser) ...[SizedBox(width: 5), _buildVoiceBtn()],
               ],
             ),
           ),
@@ -561,6 +585,7 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildVoiceBtn() {
+    // زر الاستماع لرسائل AI، يظهر فقط إذا كانت الرسالة ليست من المستخدم
     return GestureDetector(
       onTap: onSpeak,
       child: Container(
@@ -587,6 +612,7 @@ class _ChatBubble extends StatelessWidget {
   }
 
   String _formatTime(DateTime time) {
+    // تنسيق الوقت لعرضه بجانب كل رسالة
     final h = time.hour.toString().padLeft(2, '0');
     final m = time.minute.toString().padLeft(2, '0');
     return '$h:$m';
@@ -594,6 +620,7 @@ class _ChatBubble extends StatelessWidget {
 }
 
 class _TypingIndicator extends StatefulWidget {
+  // مؤشر الكتابة مع ثلاث نقاط متحركة يظهر عندما يكون AI يكتب ردًا
   const _TypingIndicator();
 
   @override
@@ -667,12 +694,20 @@ class _TypingIndicatorState extends State<_TypingIndicator>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: List.generate(3, (i) {
+                // ثلاث نقاط متحركة مع تأخير زمني لإنشاء تأثير النبض أثناء الكتابة
                 return AnimatedBuilder(
                   animation: _controller,
                   builder: (_, __) {
-                    final delay = i * 0.3;
-                    final t = (_controller.value + delay) % 1.0;
-                    final scale = 0.6 + 0.4 * (t < 0.5 ? t * 2 : (1 - t) * 2);
+                    final delay = i *
+                        0.3; // تأخير زمني لكل نقطة لإنشاء تأثير النبض المتتالي
+                    final t = (_controller.value + delay) %
+                        1.0; // قيمة بين 0 و 1 مع تأخير لكل نقطة
+                    final scale = 0.6 +
+                        0.4 *
+                            (t < 0.5
+                                ? t * 2
+                                : (1 - t) *
+                                    2); // مقياس يتراوح بين 0.6 و 1.0 لإنشاء تأثير النبض
                     return Container(
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       width: 8 * scale,
