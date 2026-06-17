@@ -11,7 +11,9 @@ import 'providers/notification_provider.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  // بتاكد انو ال background handler بيشتغل حتى لو التطبيق مش مفتوح
+  await Firebase
+      .initializeApp(); // لازم نعمل initialize عشان نقدر نتعامل مع ال Firebase في ال background
   debugPrint("Background notification received: ${message.messageId}");
 }
 
@@ -20,32 +22,33 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
   await Firebase.initializeApp();
 
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  FirebaseMessaging messaging = FirebaseMessaging
+      .instance; // بنجيب ال instance بتاع ال FirebaseMessaging عشان نقدر نتعامل مع ال notifications
+  FirebaseMessaging.onBackgroundMessage(
+      _firebaseMessagingBackgroundHandler); // بنحدد ال background handler اللي هيشتغل لما يجي notification في ال background
 
-  await messaging.requestPermission(alert: true, badge: true, sound: true);
+  await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true); // بنطلب صلاحيات ال notifications من المستخدم
 
-  var androidInitialize =
-      const AndroidInitializationSettings("@mipmap/ic_launcher");
+  var androidInitialize = const AndroidInitializationSettings(
+      "@mipmap/ic_launcher"); // بنحدد ال icon اللي هيظهر في ال notification على ال Android
 
   var initializeSetting = InitializationSettings(
     android: androidInitialize,
-  );
-
-  await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
+  ); // بنحدد ال settings اللي هيتم استخدامها في ال notifications
 
   FlutterLocalNotificationsPlugin().initialize(
     initializeSetting,
     onDidReceiveNotificationResponse: (details) {},
-  );
+  ); // بنعمل initialize لل FlutterLocalNotificationsPlugin عشان نقدر نستخدمه في عرض ال notifications
 
   FirebaseMessaging.onMessage.listen((event) async {
+    // بنستمع لرسائل ال notifications اللي بتجي لما التطبيق مفتوح
     if (event.notification != null) {
       BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
+        // بنحدد ال style اللي هيظهر في ال notification لما يكون فيه نص طويل
         event.notification!.body.toString(),
         htmlFormatBigText: true,
         contentTitle: event.notification!.title.toString(),
@@ -59,11 +62,11 @@ Future<void> main() async {
         playSound: true,
         styleInformation: bigTextStyleInformation,
         priority: Priority.high,
-      );
+      ); // بنحدد ال details اللي هيتم استخدامها في عرض ال notification على ال Android
 
       NotificationDetails platformChannelSpecifics = NotificationDetails(
         android: androidPlatformChannelSpecifics,
-      );
+      ); // بنحدد ال details اللي هيتم استخدامها في عرض ال notification على كل المنصات
 
       await FlutterLocalNotificationsPlugin().show(
         event.data.hashCode,
@@ -71,7 +74,7 @@ Future<void> main() async {
         event.notification?.body,
         platformChannelSpecifics,
         payload: event.data["body"],
-      );
+      ); // بنعرض ال notification باستخدام ال FlutterLocalNotificationsPlugin لما يجي notification في ال foreground
     }
   });
 
@@ -97,7 +100,7 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<NotificationProvider>(
           create: (context) => NotificationProvider(),
-        ),
+        ), // بنستخدم ال MultiProvider عشان نقدر نوفر أكتر من provider في نفس الوقت في التطبيق
       ],
       child: const MyApp(),
     ),

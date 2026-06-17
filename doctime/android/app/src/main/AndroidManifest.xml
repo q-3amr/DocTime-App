@@ -10,11 +10,11 @@
 
     <application android:label="CareFlow" android:name="${applicationName}" android:icon="@mipmap/ic_launcher">
 
-        <!-- Firebase Notification Settings -->
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@mipmap/ic_launcher" />
+         <!-- دي بتحدد ال icon اللي هيظهر في ال notification لما يجي notification جديد -->
 
         <service android:name="io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingBackgroundService" android:exported="false" />
-        <!-- End Firebase Notification Settings -->
+         <!-- دي service بتستخدمها ال firebase messaging عشان تقدر تستقبل ال notifications حتى لما يكون التطبيق في background او closed -->
 
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:taskAffinity="" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
             <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme" />
@@ -24,12 +24,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- FOR RAHMAH: The old FLUTTER_NOTIFICATION_CLICK intent-filter was
-                 removed from here. It was a legacy FCM click mechanism that is
-                 deprecated and no longer works reliably on Flutter 3.x + Android 12+.
-                 Notification tap handling is now done properly in main.dart using
-                 FirebaseMessaging.onMessageOpenedApp (background tap) and
-                 messaging.getInitialMessage() (terminated state tap). -->
         </activity>
 
         <meta-data android:name="flutterEmbedding" android:value="2" />

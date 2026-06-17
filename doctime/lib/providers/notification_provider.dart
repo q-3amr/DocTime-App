@@ -3,7 +3,8 @@
 import '../services/message.dart';
 
 class NotificationProvider with ChangeNotifier {
-  MessageServices _messageServices = MessageServices();
+  MessageServices _messageServices =
+      MessageServices(); // بنجيب ال instance بتاع ال MessageServices عشان نقدر نستخدم ال functions اللي فيها في ال provider
 
   NotificationProvider() {
     notifyListeners();
@@ -16,7 +17,7 @@ class NotificationProvider with ChangeNotifier {
       fcmToken: fcmToken,
       title: title,
     );
-  }
+  } // دي function بتستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه
 
   Future<void> sendNotificationToGroup(
       String group, String title, String body) async {
@@ -25,17 +26,17 @@ class NotificationProvider with ChangeNotifier {
       group: group,
       title: title,
     );
-  }
+  } // دي function بتستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل group معين باستخدام ال topic بتاعه
 
   Future<void> unsubscribeFromTopic(String topic) async {
     await _messageServices.unsubscribeFromTopic(
       topic: topic,
     );
-  }
+  } // دي function بتستخدم ال access token اللي جبناها في ال getAccessToken عشان نلغي اشتراك user معين من topic معين
 
   Future<void> subscribeToTopic(String topic) async {
     await _messageServices.subscribeToTopic(
       topic: topic,
     );
-  }
+  } // دي function بتستخدم ال access token اللي جبناها في ال getAccessToken عشان نشترك user معين في topic معين
 }

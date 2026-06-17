@@ -37,7 +37,7 @@ class DoctorDetailsScreen extends StatefulWidget {
 class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
   final _db = DatabaseService();
   final MessageServices _messageServices = MessageServices();
-  
+
   User? get _user => FirebaseAuth.instance.currentUser;
 
   DateTime _selectedDate = DateTime.now();
@@ -60,7 +60,6 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         if (await canLaunchUrl(googleMapsUrl)) {
           await launchUrl(googleMapsUrl);
         } else {
-          
           final Uri webUrl = Uri.parse(
               'https://www.google.com/maps/search/?api=1&query=${widget.latitude},${widget.longitude}');
           await launchUrl(webUrl, mode: LaunchMode.externalApplication);
@@ -83,7 +82,6 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
     final dateKey = formatDateKey(date);
 
-    
     final availabilityDoc = await _db.getAvailability(
       widget.doctorId ?? '',
       dateKey,
@@ -103,7 +101,6 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       availabilityDoc['slots'],
     );
 
-    
     final appointmentsSnap = await FirebaseFirestore.instance
         .collection('appointments')
         .where('doctor_id', isEqualTo: widget.doctorId ?? '')
@@ -116,7 +113,6 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
       if (rawDate == null) continue;
       final DateTime apptDate = (rawDate as Timestamp).toDate();
 
-      
       if (apptDate.year == date.year &&
           apptDate.month == date.month &&
           apptDate.day == date.day) {
@@ -145,9 +141,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
           if (slotTime.isBefore(now)) {
             return false;
           }
-        } catch (e) {
-          
-        }
+        } catch (e) {}
       }
       return true;
     }).toList();
@@ -217,9 +211,9 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
             title: 'New Appointment Request',
             body:
                 '$patientName requested an appointment on ${formatDateTime(finalDate)}',
-          );
+          ); // بنستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه لما يجي appointment جديد
         }
-      });
+      }); // بنجيب ال FCM token بتاع الدكتور اللي هيستقبل ال notification وبنستخدمه في ال sendNotificationToUser عشان نرسل ال notification للدكتور لما يجي appointment جديد
 
       if (mounted) {
         if (success) {

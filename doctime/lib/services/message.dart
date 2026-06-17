@@ -4,10 +4,12 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:http/http.dart' as http;
 
 class MessageServices {
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  // دي class بتحتوي على كل ال functions اللي بتتعامل مع ال notifications في التطبيق
+  final FirebaseMessaging _fcm = FirebaseMessaging
+      .instance; // بنجيب ال instance بتاع ال FirebaseMessaging عشان نقدر نتعامل مع ال notifications
 
   final String _fcmEndpoint =
-      'https://fcm.googleapis.com/v1/projects/zain-33039/messages:send';
+      'https://fcm.googleapis.com/v1/projects/myappse04/messages:send'; // دي ال endpoint اللي هنستخدمها عشان نرسل ال notifications من ال backend
 
   Future<void> unsubscribeFromTopic({String? topic}) {
     return _fcm.unsubscribeFromTopic(topic!);
@@ -18,6 +20,7 @@ class MessageServices {
   }
 
   Future<String> getAccessToken() async {
+    // دي function بتجيب ال access token اللي هنستخدمه في ال authorization لما نرسل ال notifications من ال backend
     var credentials = ServiceAccountCredentials.fromJson({
       "type": "service_account",
       "project_id": "myappse04",
@@ -43,8 +46,8 @@ class MessageServices {
     return accessToken;
   }
 
-  // Sends a push notification to a specific device (e.g. doctor on patient booking)
   Future<void> sendNotificationToUser({
+    // دي function بتستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه
     String? fcmToken,
     String? title,
     String? body,
@@ -80,8 +83,8 @@ class MessageServices {
     }
   }
 
-  // Sends a push notification to a topic group
   Future<void> sendNotificationToGroup({
+    // دي function بتستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل group معين باستخدام ال topic بتاعه
     required String group,
     required String title,
     required String body,
