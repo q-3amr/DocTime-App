@@ -19,12 +19,13 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
   }
 
   void _markReviewsAsSeen() async {
+    // هاي الدالة هي المسؤولة عن إخفاء تنبيهات "التقييمات الجديدة"
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
     try {
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('appointments')
+          .collection('appointments') //من جدول المواعيد
           .where('doctor_id', isEqualTo: uid)
           .get();
 
@@ -35,8 +36,9 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
         final data = doc.data();
 
         if (data['hasFeedback'] == true && data['isReviewSeen'] != true) {
-          batch.update(doc.reference, {'isReviewSeen': true});
-          hasUpdates = true;
+          //وبتدور على كل المواعيد اللي المريض ترك فيها تقييم لكن الدكتور لسا ما شافها
+          batch.update(doc.reference, {'isReviewSeen': true}); //يخليه seen
+          hasUpdates = true; //علشان نحدث الشاشة
         }
       }
 

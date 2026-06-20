@@ -65,7 +65,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
               icon: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('chats')
-                    .where('participants', arrayContains: _uid)
+                    .where('participants',
+                        arrayContains:
+                            _uid) //ببحث في مجموعة المحادثات اللي أنا مشارك فيها
                     .snapshots(),
                 builder: (context, snapshot) {
                   int unreadCount = 0;
@@ -74,11 +76,13 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       final data = doc.data() as Map<String, dynamic>;
                       if (data.containsKey('isRead') &&
                           data.containsKey('lastMessageSenderId')) {
-                        return data['isRead'] == false &&
-                            data['lastMessageSenderId'] != _uid;
+                        return data['isRead'] ==
+                                false && //هل الرسالة غير مقروءة؟
+                            data['lastMessageSenderId'] !=
+                                _uid; //وهل أرسلها المرسل الآخر وليس أنا؟
                       }
-                      return false;
-                    }).length;
+                      return false; // لو ما تحقق الشروط اللي فوق ما بزيد اشي بضل زي ما هو
+                    }).length; //(عدد الشروط اللي فوق اللي اتحققت (بزيد واحد
                   }
                   return _buildBadgeIcon(
                       Icons.chat_bubble_outline_rounded, unreadCount);
@@ -99,21 +103,23 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       clipBehavior: Clip.none,
       children: [
         Icon(icon),
-        if (count > 0)
+        if (count > 0) //لو في رسائل غير مقروءة
           Positioned(
             right: -6,
             top: -6,
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: const BoxDecoration(
-                  color: Colors.red, shape: BoxShape.circle),
+                  color: Colors.red,
+                  shape: BoxShape.circle), //تقوم الدالة برسم دائرة حمراء صغيرة
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              child: Text('$count',
+              child: Text('$count', //(عدد الرسائل الغير مقروءة)
                   style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center),
+                      color: Colors
+                          .white, //تكون الارقام داخل الدائره الحمراء ب لون الخط أبيض
+                      fontSize: 10, //حجم الخط 10
+                      fontWeight: FontWeight.bold), //لون الخط غامق
+                  textAlign: TextAlign.center), //سنتر النص
             ),
           ),
       ],

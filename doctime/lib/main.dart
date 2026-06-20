@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+//لاستقبال الإشعارات من سيرفرات فايربيس
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'auth_wrapper.dart';
+//لعرض الإشعارات على شاشة الهاتف محلياً (خاصة عندما يكون التطبيق مفتوحاً).
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'providers/chat_provider.dart';
 import 'providers/notification_provider.dart';
 
+//الدالة مكتوبة خارج main() ومسبوقة بـ @pragma('vm:entry-point') لكي يراها نظام التشغيل+
+//وتعمل كبرنامج مستقل (Isolate) حتى لو التطبيق غير شغال. ولهذا السبب بالتحديد
+//تم عمل Firebase.initializeApp() بداخلها مرة أخرى لأن سياق التطبيق الأساسي يكون مغلقاً
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // بتاكد انو ال background handler بيشتغل حتى لو التطبيق مش مفتوح
