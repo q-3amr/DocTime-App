@@ -11,8 +11,8 @@ class ChatsListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final db = DatabaseService(); // كائن للتعامل مع Firestore
-    final User? currentUser = FirebaseAuth.instance.currentUser; // المستخدم الحالي المسجل دخوله
+    final db = DatabaseService();
+    final User? currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -24,7 +24,7 @@ class ChatsListScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        leading: Navigator.canPop(context) // إظهار زر الرجوع فقط إذا كان بإمكان المستخدم الرجوع
+        leading: Navigator.canPop(context)
             ? IconButton(
                 icon: const Icon(
                   Icons.arrow_back_ios_new_rounded,
@@ -39,19 +39,27 @@ class ChatsListScreen extends StatelessWidget {
         stream: currentUser?.uid != null
             ? FirebaseFirestore.instance
                 .collection('chats') // الاستماع لمجموعة المحادثات في Firestore
-                .where('participants', arrayContains: currentUser!.uid) // جلب المحادثات التي يشارك فيها المستخدم الحالي فقط
-                .orderBy('lastMessageTime', descending: true) // ترتيب المحادثات من الأحدث للأقدم
+                .where('participants',
+                    arrayContains: currentUser!
+                        .uid) // جلب المحادثات التي يشارك فيها المستخدم الحالي فقط
+                .orderBy('lastMessageTime',
+                    descending: true) // ترتيب المحادثات من الأحدث للأقدم
                 .snapshots()
-            : null, // لا يوجد stream إذا لم يكن المستخدم مسجلاً
+            : null,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}')); // عرض رسالة خطأ إذا فشل التحميل
+            return Center(
+                child: Text(
+                    'Error: ${snapshot.error}')); // عرض رسالة خطأ إذا فشل التحميل
           }
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator()); // مؤشر تحميل أثناء جلب البيانات
+            return const Center(
+                child:
+                    CircularProgressIndicator()); // مؤشر تحميل أثناء جلب البيانات
           }
 
-          final docs = snapshot.data!.docs; // قائمة وثائق المحادثات من Firestore
+          final docs =
+              snapshot.data!.docs; // قائمة وثائق المحادثات من Firestore
 
           if (docs.isEmpty) {
             // عرض رسالة عندما لا توجد محادثات بعد
@@ -78,17 +86,24 @@ class ChatsListScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             itemCount: docs.length, // عدد المحادثات
             itemBuilder: (context, index) {
-              final chatData = docs[index].data() as Map<String, dynamic>; // بيانات المحادثة
-              final List participants = chatData['participants']; // قائمة المشاركين في المحادثة
+              final chatData =
+                  docs[index].data() as Map<String, dynamic>; // بيانات المحادثة
+              final List participants =
+                  chatData['participants']; // قائمة المشاركين في المحادثة
               final String otherUserId = participants.firstWhere(
-                (id) => id != currentUser?.uid, // إيجاد معرف الشخص الآخر (ليس المستخدم الحالي)
+                (id) =>
+                    id !=
+                    currentUser
+                        ?.uid, // إيجاد معرف الشخص الآخر (ليس المستخدم الحالي)
                 orElse: () => '', // إذا لم يُوجد يُعطى قيمة فارغة
               );
 
-              if (otherUserId.isEmpty) return const SizedBox(); // تخطي المحادثة إذا لم يوجد مستخدم آخر
+              if (otherUserId.isEmpty)
+                return const SizedBox(); // تخطي المحادثة إذا لم يوجد مستخدم آخر
 
               return FutureBuilder<UserModel?>(
-                future: db.getUserById(otherUserId), // جلب بيانات المستخدم الآخر من Firestore
+                future: db.getUserById(
+                    otherUserId), // جلب بيانات المستخدم الآخر من Firestore
                 builder: (context, userSnap) {
                   if (!userSnap.hasData) {
                     // عرض مربع رمادي كـ placeholder أثناء تحميل بيانات المستخدم
@@ -102,7 +117,9 @@ class ChatsListScreen extends StatelessWidget {
                     );
                   }
 
-                  if (userSnap.data == null) return const SizedBox.shrink(); // إخفاء العنصر إذا لم يُوجد المستخدم
+                  if (userSnap.data == null)
+                    return const SizedBox
+                        .shrink(); // إخفاء العنصر إذا لم يُوجد المستخدم
 
                   final String name = userSnap.data!.name; // اسم المستخدم الآخر
 
@@ -111,8 +128,10 @@ class ChatsListScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (c) => ChatScreen(
-                          receiverId: otherUserId, // تمرير معرف المستخدم الآخر كـ receiverId
-                          receiverName: name, // تمرير اسم المستخدم الآخر لعرضه في شاشة الدردشة
+                          receiverId:
+                              otherUserId, // تمرير معرف المستخدم الآخر كـ receiverId
+                          receiverName:
+                              name, // تمرير اسم المستخدم الآخر لعرضه في شاشة الدردشة
                         ),
                       ),
                     ),
@@ -136,8 +155,8 @@ class ChatsListScreen extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 28,
-                            backgroundColor:
-                                kPrimaryBlue.withValues(alpha: 0.1), // خلفية زرقاء فاتحة لصورة المستخدم
+                            backgroundColor: kPrimaryBlue.withValues(
+                                alpha: 0.1), // خلفية زرقاء فاتحة لصورة المستخدم
                             child: Icon(
                               Icons.person,
                               color: kPrimaryBlue,
@@ -156,7 +175,8 @@ class ChatsListScreen extends StatelessWidget {
                                       Text(
                                         name, // اسم المستخدم الآخر
                                         maxLines: 1,
-                                        overflow: TextOverflow.ellipsis, // اختصار الاسم إذا كان طويلاً
+                                        overflow: TextOverflow
+                                            .ellipsis, // اختصار الاسم إذا كان طويلاً
                                         style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w800,
@@ -177,14 +197,17 @@ class ChatsListScreen extends StatelessWidget {
                                   ),
                                 ),
                                 if (chatData['lastMessageSenderId'] !=
-                                        currentUser?.uid && // إذا كانت آخر رسالة من الشخص الآخر
-                                    chatData['isRead'] == false) // وكانت غير مقروءة
+                                        currentUser
+                                            ?.uid && // إذا كانت آخر رسالة من الشخص الآخر
+                                    chatData['isRead'] ==
+                                        false) // وكانت غير مقروءة
                                   Container(
                                     width: 12,
                                     height: 12,
                                     decoration: const BoxDecoration(
                                       color: Color(0xFF407CE2),
-                                      shape: BoxShape.circle, // نقطة زرقاء تشير إلى وجود رسالة غير مقروءة
+                                      shape: BoxShape
+                                          .circle, // نقطة زرقاء تشير إلى وجود رسالة غير مقروءة
                                     ),
                                   ),
                               ],

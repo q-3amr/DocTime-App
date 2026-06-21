@@ -35,9 +35,12 @@ class DatabaseService {
   }
 
   Future updateToken(String uid) async {
-    await _db.collection("users").doc(uid).update({
-      "pushToken": await _fcm.getToken(),
-    });
+    final token = await _fcm.getToken(); // جلب الـ FCM Token الحالي
+    if (token != null) { // لا تحفظ null في Firestore حتى لا تُلغي التوكن السابق
+      await _db.collection("users").doc(uid).update({
+        "pushToken": token,
+      });
+    }
   }
 
   Future<String> getToken(String uid) async {

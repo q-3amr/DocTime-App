@@ -26,15 +26,14 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   Future<void> _acceptRequest(String docId, String patientId) async {
     await _db.updateAppointmentStatus(docId, 'accepted');
 
-    await _db.getToken(patientId).then((token) { // ← patientId لجلب توكن المريض
-      if (token.isNotEmpty) {
-        _messageServices.sendNotificationToUser(
-            fcmToken: token,
-            title: 'Appointment accepted',
-            body: 'Your appointment request has been accepted by the doctor.',
-            type: 'appointment');
-      }
-    });
+    final token = await _db.getToken(patientId); // جلب توكن المريض لإرسال الإشعار
+    if (token.isNotEmpty) {
+      await _messageServices.sendNotificationToUser(
+          fcmToken: token,
+          title: 'Appointment Accepted ✅',
+          body: 'Your appointment request has been accepted by the doctor.',
+          type: 'appointment');
+    }
   }
 
   Future<void> _declineRequest(String docId, String patientId) async {
@@ -44,15 +43,14 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
       cancelledBy: 'doctor',
     );
 
-    await _db.getToken(patientId).then((token) { // ← patientId لجلب توكن المريض
-      if (token.isNotEmpty) {
-        _messageServices.sendNotificationToUser(
-            fcmToken: token,
-            title: 'Appointment rejected',
-            body: 'Your appointment request has been rejected by the doctor.',
-            type: 'appointment');
-      }
-    });
+    final token = await _db.getToken(patientId); // جلب توكن المريض لإرسال الإشعار
+    if (token.isNotEmpty) {
+      await _messageServices.sendNotificationToUser(
+          fcmToken: token,
+          title: 'Appointment Rejected ❌',
+          body: 'Your appointment request has been rejected by the doctor.',
+          type: 'appointment');
+    }
   }
 
   @override

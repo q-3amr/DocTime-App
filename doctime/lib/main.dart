@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // لجلب الـ UID عند تحديث الـ FCM Token
 //لاستقبال الإشعارات من سيرفرات فايربيس
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'auth_wrapper.dart';
+import 'services/database_service.dart'; // لحفظ الـ FCM Token عند تحديثه
 //لعرض الإشعارات على شاشة الهاتف محلياً (خاصة عندما يكون التطبيق مفتوحاً).
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'providers/chat_provider.dart';
@@ -101,6 +103,16 @@ Future<void> main() async {
       alert: true,
       badge: true,
       sound: true); // بنطلب صلاحيات ال notifications من المستخدم
+
+  // الاستماع لتحديثات الـ FCM Token وحفظه في Firestore تلقائياً
+  // هذا يضمن أن كل مستخدم لديه توكن صالح دائماً حتى لو تغيّر
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await DatabaseService().updateNotificationToken(uid);
+      debugPrint('FCM Token refreshed and saved for user: $uid');
+    }
+  });
 
   var androidInitialize = const AndroidInitializationSettings(
       "@mipmap/ic_launcher"); // بنحدد ال icon اللي هيظهر في ال notification على ال Android
