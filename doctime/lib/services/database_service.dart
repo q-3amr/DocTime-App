@@ -186,29 +186,25 @@ class DatabaseService {
         .get();
   }
 
-  Future<bool> bookAppointmentSafely(AppointmentModel appointment) async {
-    
+  Future<String?> bookAppointmentSafely(AppointmentModel appointment) async {
     final String appointmentKey =
         "${appointment.doctorId}_${appointment.appointmentDateTime.millisecondsSinceEpoch}";
 
     final txRef = _db.collection('booked_slots').doc(appointmentKey);
 
     try {
-      return await _db.runTransaction<bool>((transaction) async {
+      final isBooked = await _db.runTransaction<bool>((transaction) async {
         final snapshot = await transaction.get(txRef);
 
         if (snapshot.exists) {
-          
-          return false;
+          return true; // true means the slot is already locked
         }
 
-        
         transaction.set(txRef, {
           'bookedBy': appointment.patientId,
           'timestamp': FieldValue.serverTimestamp(),
         });
 
-        
         final newApptDoc = _db.collection('appointments').doc();
         transaction.set(newApptDoc, {
           'id': newApptDoc.id,
@@ -223,10 +219,16 @@ class DatabaseService {
           'isReviewSeen': false,
         });
 
-        return true;
+        return false; // false means we successfully locked it
       });
+
+      if (isBooked) {
+        return 'Sorry, this slot was just booked by someone else!';
+      } else {
+        return null; // success
+      }
     } catch (e) {
-      return false;
+      return 'Transaction failed: $e';
     }
   }
 

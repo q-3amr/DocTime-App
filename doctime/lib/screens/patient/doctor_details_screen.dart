@@ -202,10 +202,10 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
         status: 'pending',
       );
 
-      final success = await _db.bookAppointmentSafely(newAppointment);
+      final error = await _db.bookAppointmentSafely(newAppointment);
 
       if (mounted) {
-        if (success) {
+        if (error == null) {
           _db.getToken(widget.doctorId ?? '').then((token) {
             if (token.isNotEmpty) {
               _messageServices.sendNotificationToUser(
@@ -224,9 +224,8 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
           Navigator.pop(context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content:
-                  Text('Sorry, this slot was just booked by someone else!'),
+            SnackBar(
+              content: Text(error),
               backgroundColor: Colors.red,
             ),
           );

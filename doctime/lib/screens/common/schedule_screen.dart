@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
 import '../../utils/constants.dart';
@@ -139,6 +139,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             const SizedBox(height: 20),
             Expanded(
               child: StreamBuilder<dynamic>(
+                // يستمع للتحديثات الفورية من فايرستور لمواعيد المستخدم
                 stream: user?.uid != null
                     ? _db.streamUserAppointments(
                         user!.uid,
@@ -147,11 +148,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     : null,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
+                    // عرض مؤشر تحميل أثناء جلب البيانات
                     return const Center(child: CircularProgressIndicator());
                   }
 
                   final docs = snapshot.data!.docs;
 
+                  // تصفية المواعيد بناءً على التبويب المحدد (قادمة أو السجل)
                   final filtered = docs.where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
                     final status = data['status'] as String;
@@ -159,8 +162,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     final expired = _isExpired(date);
 
                     if (_buttonIndex == 0) {
+                      // تبويب المواعيد القادمة: عرض المواعيد المقبولة فقط والتي لم تنقضِ بعد
                       return status == 'accepted' && !expired;
                     } else {
+                      // تبويب السجل: عرض المواعيد المكتملة، الملغاة، المرفوضة، أو المنتهية
                       return status == 'completed' ||
                           status == 'cancelled' ||
                           status == 'rejected' ||
@@ -168,13 +173,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     }
                   }).toList();
 
+                  // ترتيب المواعيد المصفاة حسب التاريخ والوقت
                   filtered.sort((a, b) {
                     final dateA =
                         parseDate((a.data() as Map)['appointmentDateTime']);
                     final dateB =
                         parseDate((b.data() as Map)['appointmentDateTime']);
                     return _buttonIndex == 0
+                        // المواعيد القادمة: المواعيد الأقرب أولاً (تصاعدي)
                         ? dateA.compareTo(dateB)
+                        // السجل: المواعيد الأحدث أولاً (تنازلي)
                         : dateB.compareTo(dateA);
                   });
 
@@ -212,13 +220,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _buildTab(String text, int index) {
+    // التحقق مما إذا كان هذا التبويب محدداً حالياً
     final active = _buttonIndex == index;
     return Expanded(
       child: GestureDetector(
+        // تحديث الفهرس عند النقر على التبويب، مما يعيد بناء واجهة المستخدم
         onTap: () => setState(() => _buttonIndex = index),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
+            // تمييز التبويب النشط باللون الأزرق الأساسي
             color: active ? kPrimaryBlue : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -226,6 +237,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: Text(
               text,
               style: TextStyle(
+                // تغيير لون النص بناءً على حالة التبويب (نشط أو غير نشط)
                 color: active ? Colors.white : Colors.grey,
                 fontWeight: FontWeight.bold,
               ),
@@ -238,6 +250,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Widget _buildCard(dynamic doc) {
     final data = doc.data() as Map<String, dynamic>;
+    // تحديد الاسم المراد عرضه بناءً على ما إذا كان المستخدم الحالي طبيباً أم مريضاً
     final String name = widget.isDoctor
         ? (data['patient_name'] ?? 'Patient')
         : (data['doctor_name'] ?? 'Doctor');
@@ -251,6 +264,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     String displayStatus;
     Color statusColor;
 
+    // تحديد نص ولون الحالة المراد عرضها على البطاقة بناءً على حالة الموعد
     if (status == 'accepted' && !expired) {
       displayStatus = 'Upcoming';
       statusColor = Colors.blue;
@@ -318,12 +332,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   ],
                 ),
               ),
+              // زر الإلغاء للمرضى في المواعيد القادمة
               if (!widget.isDoctor && displayStatus == 'Upcoming')
                 IconButton(
                   icon: const Icon(Icons.cancel_outlined,
                       color: Colors.redAccent),
                   onPressed: () => _cancelAppointment(doc.id),
                 ),
+              // زر الإكمال للأطباء في المواعيد القادمة
               if (widget.isDoctor && displayStatus == 'Upcoming')
                 IconButton(
                   icon: const Icon(
@@ -334,6 +350,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   onPressed: () => _completeAppointment(doc.id),
                   tooltip: 'Mark as Completed',
                 ),
+              // زر الحذف من السجل (يظهر فقط في تبويب السجل)
               if (_buttonIndex == 1)
                 IconButton(
                   icon: const Icon(Icons.delete_outline, color: Colors.grey),
