@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -204,20 +204,20 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
       final success = await _db.bookAppointmentSafely(newAppointment);
 
-      _db.getToken(widget.doctorId ?? '').then((token) {
-        if (token.isNotEmpty) {
-          _messageServices.sendNotificationToUser(
-            fcmToken: token,
-            title: 'New Appointment Request',
-            body:
-                '$patientName requested an appointment on ${formatDateTime(finalDate)}',
-            type: 'appointment',
-          ); // بنستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه لما يجي appointment جديد
-        }
-      }); // بنجيب ال FCM token بتاع الدكتور اللي هيستقبل ال notification وبنستخدمه في ال sendNotificationToUser عشان نرسل ال notification للدكتور لما يجي appointment جديد
-
       if (mounted) {
         if (success) {
+          _db.getToken(widget.doctorId ?? '').then((token) {
+            if (token.isNotEmpty) {
+              _messageServices.sendNotificationToUser(
+                fcmToken: token,
+                title: 'New Appointment Request',
+                body:
+                    '$patientName requested an appointment on ${formatDateTime(finalDate)}',
+                type: 'appointment',
+              ); // بنستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه لما يجي appointment جديد
+            }
+          }); // بنجيب ال FCM token بتاع الدكتور اللي هيستقبل ال notification وبنستخدمه في ال sendNotificationToUser عشان نرسل ال notification للدكتور لما يجي appointment جديد
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Request Sent! Wait for approval.')),
           );

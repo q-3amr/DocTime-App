@@ -26,11 +26,12 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   Future<void> _acceptRequest(String docId, String patientId) async {
     await _db.updateAppointmentStatus(docId, 'accepted');
 
-    final token = await _db.getToken(patientId); // جلب توكن المريض لإرسال الإشعار
+    final token =
+        await _db.getToken(patientId); // جلب توكن المريض لإرسال الإشعار
     if (token.isNotEmpty) {
       await _messageServices.sendNotificationToUser(
           fcmToken: token,
-          title: 'Appointment Accepted ✅',
+          title: 'Appointment Accepted',
           body: 'Your appointment request has been accepted by the doctor.',
           type: 'appointment');
     }
@@ -43,11 +44,12 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
       cancelledBy: 'doctor',
     );
 
-    final token = await _db.getToken(patientId); // جلب توكن المريض لإرسال الإشعار
+    final token =
+        await _db.getToken(patientId); // جلب توكن المريض لإرسال الإشعار
     if (token.isNotEmpty) {
       await _messageServices.sendNotificationToUser(
           fcmToken: token,
-          title: 'Appointment Rejected ❌',
+          title: 'Appointment Rejected',
           body: 'Your appointment request has been rejected by the doctor.',
           type: 'appointment');
     }
@@ -122,7 +124,8 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                   name: data['patient_name'] ?? 'Unknown',
                   date: _formatDateTime(dateObj),
                   docId: req.id,
-                  patientId: data['patient_id'] ?? '', // ← معرف المريض لإرسال الإشعار
+                  patientId:
+                      data['patient_id'] ?? '', // ← معرف المريض لإرسال الإشعار
                 );
               },
             );

@@ -9,11 +9,14 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class DatabaseService {
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  final FirebaseMessaging? _customFcm;
   final FirebaseFirestore _db;
 
-  DatabaseService({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+  DatabaseService({FirebaseFirestore? firestore, FirebaseMessaging? fcm})
+      : _db = firestore ?? FirebaseFirestore.instance,
+        _customFcm = fcm;
+
+  FirebaseMessaging get _fcm => _customFcm ?? FirebaseMessaging.instance;
 
   Stream<List<UserModel>> streamDoctors() {
     return _db
@@ -236,6 +239,26 @@ class DatabaseService {
     if (cancelledBy != null) {
       data['cancelledBy'] = cancelledBy;
     }
+
+    if (status == 'cancelled' || status == 'rejected') {
+      try {
+        final docSnap = await _db.collection('appointments').doc(docId).get();
+        if (docSnap.exists) {
+          final apptData = docSnap.data() as Map<String, dynamic>;
+          final doctorId = apptData['doctor_id'];
+          final Timestamp? timestamp = apptData['appointmentDateTime'];
+          if (doctorId != null && timestamp != null) {
+            final int millis = timestamp.millisecondsSinceEpoch;
+            final String slotKey = "${doctorId}_$millis";
+            await _db.collection('booked_slots').doc(slotKey).delete();
+            debugPrint("Released booked slot: $slotKey");
+          }
+        }
+      } catch (e) {
+        debugPrint("Error releasing booked slot: $e");
+      }
+    }
+
     await _db.collection('appointments').doc(docId).update(data);
   }
 
