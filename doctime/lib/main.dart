@@ -10,6 +10,10 @@ import 'auth_wrapper.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'providers/chat_provider.dart';
 import 'providers/notification_provider.dart';
+import 'screens/common/chats_list_screen.dart';
+import 'screens/common/schedule_screen.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 //الدالة مكتوبة خارج main() ومسبوقة بـ @pragma('vm:entry-point') لكي يراها نظام التشغيل+
 //وتعمل كبرنامج مستقل (Isolate) حتى لو التطبيق غير شغال. ولهذا السبب بالتحديد
@@ -20,6 +24,67 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase
       .initializeApp(); // لازم نعمل initialize عشان نقدر نتعامل مع ال Firebase في ال background
   debugPrint("Background notification received: ${message.messageId}");
+
+  if (message.notification != null) {
+    BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
+      // بنحدد ال style اللي هيظهر في ال notification لما يكون فيه نص طويل
+      message.notification!.body.toString(),
+      htmlFormatBigText: true,
+      contentTitle: message.notification!.title.toString(),
+      htmlFormatContentTitle: true,
+    );
+    AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'CareFlow',
+      'CareFlow',
+      importance: Importance.high,
+      playSound: true,
+      styleInformation: bigTextStyleInformation,
+      priority: Priority.high,
+    ); // بنحدد ال details اللي هيتم استخدامها في عرض ال notification على ال Android
+
+    NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    ); // بنحدد ال details اللي هيتم استخدامها في عرض ال notification على كل المنصات
+
+    await FlutterLocalNotificationsPlugin().show(
+      message.data.hashCode,
+      message.notification?.title,
+      message.notification?.body,
+      platformChannelSpecifics,
+      payload: message.data["body"],
+    ); // بنعرض ال notification باستخدام ال FlutterLocalNotificationsPlugin لما يجي notification في ال background
+  }
+}
+
+void handleNotificationNavigation(RemoteMessage message) {
+  // دي function بتتعامل مع ال navigation لما يجي notification ونضغط عليه عشان نروح ل screen معين بناءً على نوع ال notification
+  final type = message.data['type'];
+
+  if (type == null) return;
+
+  switch (type) {
+    case 'chat':
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => const ChatsListScreen(),
+        ),
+      );
+      break;
+
+    case 'appointment':
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => const ScheduleScreen(
+            isDoctor: false,
+          ),
+        ),
+      );
+      break;
+
+    default:
+      break;
+  }
 }
 
 Future<void> main() async {
@@ -82,6 +147,22 @@ Future<void> main() async {
       ); // بنعرض ال notification باستخدام ال FlutterLocalNotificationsPlugin لما يجي notification في ال foreground
     }
   });
+
+  FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    // بنستمع لحدث فتح ال notification لما يجي notification ونضغط عليه عشان نروح ل screen معين بناءً على نوع ال notification
+    handleNotificationNavigation(message);
+  });
+
+  final initialMessage = await FirebaseMessaging.instance
+      .getInitialMessage(); // بنجيب ال notification اللي فتح التطبيق لو التطبيق كان مغلق لما يجي notification ونضغط عليه عشان نروح ل screen معين بناءً على نوع ال notification
+
+  if (initialMessage != null) {
+    // لو كان في notification فتح التطبيق لما يجي notification ونضغط عليه عشان نروح ل screen معين بناءً على نوع ال notification
+    Future.delayed(
+      const Duration(milliseconds: 500),
+      () => handleNotificationNavigation(initialMessage),
+    );
+  }
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

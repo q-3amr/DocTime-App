@@ -49,17 +49,24 @@ class MessageServices {
 
   Future<void> sendNotificationToUser({
     // دي function بتستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه
-    String? fcmToken,
-    String? title,
-    String? body,
+    required String fcmToken,
+    required String title,
+    required String body,
+    required String type,
   }) async {
     try {
       String accessToken = await getAccessToken();
+
+      Map<String, String> data = {
+        'type':
+            type, // بنضيف ال type في ال data عشان نقدر نستخدمه في ال onMessage و onBackgroundMessage لما يجي notification ونحدد نوعه عشان نعمل حاجات معينة بناءً على نوع ال notification
+      };
 
       var payload = {
         "message": {
           "token": fcmToken,
           "notification": {"title": title, "body": body},
+          "data": data,
           "android": {"priority": "high"},
         },
       };

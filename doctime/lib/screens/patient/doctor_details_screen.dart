@@ -211,6 +211,7 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
             title: 'New Appointment Request',
             body:
                 '$patientName requested an appointment on ${formatDateTime(finalDate)}',
+            type: 'appointment',
           ); // بنستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه لما يجي appointment جديد
         }
       }); // بنجيب ال FCM token بتاع الدكتور اللي هيستقبل ال notification وبنستخدمه في ال sendNotificationToUser عشان نرسل ال notification للدكتور لما يجي appointment جديد

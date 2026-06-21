@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
+import '../../services/message.dart';
 import '../../utils/constants.dart';
 import '../../utils/date_utils.dart';
 
@@ -14,6 +15,7 @@ class DoctorRequestsScreen extends StatefulWidget {
 class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   final _db = DatabaseService();
   final User? user = FirebaseAuth.instance.currentUser;
+  final MessageServices _messageServices = MessageServices();
 
   String _formatDateTime(DateTime date) {
     final datePart = formatDateDisplay(date);
@@ -23,6 +25,16 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
 
   Future<void> _acceptRequest(String docId) async {
     await _db.updateAppointmentStatus(docId, 'accepted');
+
+    await _db.getToken(docId).then((token) {
+      if (token.isNotEmpty) {
+        _messageServices.sendNotificationToUser(
+            fcmToken: token,
+            title: 'Appointment accepted',
+            body: 'Your appointment request has been accepted by the doctor.',
+            type: 'appointment');
+      }
+    });
   }
 
   Future<void> _declineRequest(String docId) async {
@@ -31,6 +43,16 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
       'rejected',
       cancelledBy: 'doctor',
     );
+
+    await _db.getToken(docId).then((token) {
+      if (token.isNotEmpty) {
+        _messageServices.sendNotificationToUser(
+            fcmToken: token,
+            title: 'Appointment rejected',
+            body: 'Your appointment request has been rejected by the doctor.',
+            type: 'appointment');
+      }
+    });
   }
 
   @override
