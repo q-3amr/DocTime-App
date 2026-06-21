@@ -26,9 +26,10 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
   Future<void> _acceptRequest(String docId, String patientId) async {
     await _db.updateAppointmentStatus(docId, 'accepted');
 
-    final token =
-        await _db.getToken(patientId); // جلب توكن المريض لإرسال الإشعار
+    final token = await _db.getToken(
+        patientId); //جلب توكن المريض //هذا السطر هو الذي يبحث في قاعدة البيانات عن "العنوان الرقمي" (FCM Token) الخاص بجهاز المريض
     if (token.isNotEmpty) {
+      //ارسال القبول
       await _messageServices.sendNotificationToUser(
           fcmToken: token,
           title: 'Appointment Accepted',
@@ -44,9 +45,9 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
       cancelledBy: 'doctor',
     );
 
-    final token =
-        await _db.getToken(patientId); // جلب توكن المريض لإرسال الإشعار
+    final token = await _db.getToken(patientId); //جلب توكن المريض
     if (token.isNotEmpty) {
+      //ارسال الرفض
       await _messageServices.sendNotificationToUser(
           fcmToken: token,
           title: 'Appointment Rejected',

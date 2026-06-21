@@ -206,17 +206,20 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
 
       if (mounted) {
         if (error == null) {
+          //عشان المريض يبعت إشعار للدكتور، لازم يعرف "رقم جهاز" الدكتور
           _db.getToken(widget.doctorId ?? '').then((token) {
+            //التطبيق بيستدعي دالة _db.getToken(doctorId)
             if (token.isNotEmpty) {
+              //اللي بتروح على قاعدة البيانات وبتجيب الـ FCM Token الخاص بجوال هذا الدكتور تحديداً.
               _messageServices.sendNotificationToUser(
-                fcmToken: token,
-                title: 'New Appointment Request',
+                fcmToken: token, //وين يروح الاشعار
+                title: 'New Appointment Request', //عنوان الاشعار
                 body:
-                    '$patientName requested an appointment on ${formatDateTime(finalDate)}',
-                type: 'appointment',
-              ); // بنستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه لما يجي appointment جديد
+                    '$patientName requested an appointment on ${formatDateTime(finalDate)}', //محتوى الاشعار
+                type: 'appointment', //نوع الاشعار
+              ); //
             }
-          }); // بنجيب ال FCM token بتاع الدكتور اللي هيستقبل ال notification وبنستخدمه في ال sendNotificationToUser عشان نرسل ال notification للدكتور لما يجي appointment جديد
+          }); //
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Request Sent! Wait for approval.')),

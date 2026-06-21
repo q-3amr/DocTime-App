@@ -26,7 +26,8 @@ class NotificationModel {
     _uid = snapshot.get("uid");
     _title = snapshot.get("title");
     _body = snapshot.get("body");
-    _type = snapshot.get("type") ??
+    _type = snapshot.get(
+            "type") ?? //عندما يقرأ التطبيق قائمة الإشعارات المجهزة بهذا الـ Model، يمكنه التحقق من نوع كل إشعار
         "general"; // لو ال type مش موجود في ال snapshot، بنخليه "general" ك default value
   }
 }
