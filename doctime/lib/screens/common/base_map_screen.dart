@@ -29,7 +29,7 @@ abstract class BaseMapState<T extends BaseMapScreen> extends State<T> {
     });
   }
 
-Future<void> _showLocationServiceDialog() async {
+  Future<void> _showLocationServiceDialog() async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -37,21 +37,17 @@ Future<void> _showLocationServiceDialog() async {
         return AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-
           title: const Text('Enable Location',
               style: TextStyle(fontWeight: FontWeight.bold)),
-
           content: const Text(
               'Please enable location services (GPS) to allow the app to determine your location accurately.'),
           actions: <Widget>[
             TextButton(
-
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
               onPressed: () => Navigator.of(context).pop(),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-
               child:
                   const Text('Settings', style: TextStyle(color: Colors.white)),
               onPressed: () {
@@ -65,7 +61,7 @@ Future<void> _showLocationServiceDialog() async {
     );
   }
 
-Future<void> requestLocationAndGetPosition() async {
+  Future<void> requestLocationAndGetPosition() async {
     if (!mounted) return;
     setState(() => isLoading = true);
     try {
@@ -80,14 +76,12 @@ Future<void> requestLocationAndGetPosition() async {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-
           _showMessage('Permission denied. Cannot determine location.');
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-
         _showMessage(
             'Permissions are permanently denied. Please enable them from app settings.');
         return;
@@ -97,17 +91,15 @@ Future<void> requestLocationAndGetPosition() async {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-mapController?.animateCamera(
+      mapController?.animateCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(currentPosition!.latitude, currentPosition!.longitude),
           16,
         ),
       );
     } catch (e) {
-
       _showMessage('An error occurred while fetching location');
     } finally {
-
       if (mounted) setState(() => isLoading = false);
     }
   }
@@ -123,7 +115,6 @@ mapController?.animateCamera(
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-
         title: const Text('Map', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -132,21 +123,27 @@ mapController?.animateCamera(
       body: Stack(
         children: [
           GoogleMap(
-            initialCameraPosition: initialPosition,
+            initialCameraPosition:
+                initialPosition, // موقع الكاميرا البدئي (عمان)
             onMapCreated: (controller) {
-              mapController = controller;
+              mapController =
+                  controller; // لقطنا الريموت كنترول وخزناه بالمتغير
 
-              requestLocationAndGetPosition();
+              requestLocationAndGetPosition(); // شغلنا دالة جلب الموقع الحقيقي فوراً
             },
-            markers: markers,
-            onTap: onMapTapped,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: true,
+            markers:
+                markers, // مجموعة الدبابيس الجاية ديناميكياً من شاشات الأبناء
+            onTap: onMapTapped, // دالة الضغط على الخريطة الجاية من الأبناء
+            myLocationEnabled: true, // إظهار النقطة الزرقاء المشعة لموقع المريض
+            myLocationButtonEnabled:
+                false, // طفينا زر جوجل الافتراضي المشوه للتصميم
+            zoomControlsEnabled:
+                true, // تفعيل زري الـ (+ و -) لتكبير وتصغير الخريطة
           ),
-
-Positioned(
-            bottom: buildBottomPanel() != null ? 140 : 20,
+          Positioned(
+            bottom: buildBottomPanel() != null
+                ? 140
+                : 20, // لوجيك ذكي: إذا الابن عارض لوحة سفلية، ارفع زر الموقع لـ 140 بكسل عشان ما يتغطى، وإلا نزلّه لـ 20 بكسل
             left: 16,
             child: ElevatedButton.icon(
               onPressed: isLoading ? null : requestLocationAndGetPosition,
@@ -166,18 +163,17 @@ Positioned(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.blue))
+                          // حط جوة المربع دائرة تحميل بتلف باللون الأزرق
+                          strokeWidth: 2,
+                          color: Colors.blue))
                   : const Icon(Icons.my_location, size: 20),
-
               label: const Text(
                 'Current Location',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
-
           if (isLoading) const Center(child: CircularProgressIndicator()),
-
           if (buildBottomPanel() != null)
             Positioned(
               bottom: 0,
