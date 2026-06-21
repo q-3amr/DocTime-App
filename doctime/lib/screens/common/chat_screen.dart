@@ -70,17 +70,18 @@ class _ChatScreenState extends State<ChatScreen> {
       'isRead': false, // تعليم المحادثة كغير مقروءة عند إرسال رسالة جديدة
     });
 
-    // جلب الـ FCM Token للمستقبِل وإرسال إشعار له
-    await _db.getToken(widget.receiverId).then((token) {
-      if (token.isNotEmpty) { // إرسال الإشعار فقط إذا كان التوكن موجوداً
-        _messageServices.sendNotificationToUser(
-            fcmToken: token, // التوكن الخاص بجهاز المستقبِل
-            title:
-                'New Message from ${FirebaseAuth.instance.currentUser!.displayName}', // عنوان الإشعار باسم المرسل
-            body: msg, // نص الرسالة في جسم الإشعار
-            type: 'chat'); // نوع الإشعار لتمييزه عن أنواع الإشعارات الأخرى
-      }
-    });
+    // جلب اسم المرسل من Firestore ثم إرسال إشعار للمستقبِل
+    final senderUser = await _db.getUserById(_currentUserId); // جلب بيانات المرسل من Firestore
+    final senderName = senderUser?.name ?? 'Someone'; // اسم المرسل، وإذا لم يُوجد يُعطى 'Someone'
+
+    final token = await _db.getToken(widget.receiverId); // جلب الـ FCM Token للمستقبِل
+    if (token.isNotEmpty) { // إرسال الإشعار فقط إذا كان التوكن موجوداً
+      await _messageServices.sendNotificationToUser(
+          fcmToken: token, // التوكن الخاص بجهاز المستقبِل
+          title: 'New Message from $senderName', // عنوان الإشعار باسم المرسل الحقيقي من Firestore
+          body: msg, // نص الرسالة في جسم الإشعار
+          type: 'chat'); // نوع الإشعار لتمييزه عن أنواع الإشعارات الأخرى
+    }
   }
 
   @override
