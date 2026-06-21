@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/database_service.dart';
 import '../../services/message.dart';
@@ -23,10 +23,10 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
     return '$datePart | $timePart';
   }
 
-  Future<void> _acceptRequest(String docId) async {
+  Future<void> _acceptRequest(String docId, String patientId) async {
     await _db.updateAppointmentStatus(docId, 'accepted');
 
-    await _db.getToken(docId).then((token) {
+    await _db.getToken(patientId).then((token) { // ← patientId لجلب توكن المريض
       if (token.isNotEmpty) {
         _messageServices.sendNotificationToUser(
             fcmToken: token,
@@ -37,14 +37,14 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
     });
   }
 
-  Future<void> _declineRequest(String docId) async {
+  Future<void> _declineRequest(String docId, String patientId) async {
     await _db.updateAppointmentStatus(
       docId,
       'rejected',
       cancelledBy: 'doctor',
     );
 
-    await _db.getToken(docId).then((token) {
+    await _db.getToken(patientId).then((token) { // ← patientId لجلب توكن المريض
       if (token.isNotEmpty) {
         _messageServices.sendNotificationToUser(
             fcmToken: token,
@@ -124,6 +124,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
                   name: data['patient_name'] ?? 'Unknown',
                   date: _formatDateTime(dateObj),
                   docId: req.id,
+                  patientId: data['patient_id'] ?? '', // ← معرف المريض لإرسال الإشعار
                 );
               },
             );
@@ -137,6 +138,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
     required String name,
     required String date,
     required String docId,
+    required String patientId, // ← معرف المريض لإرسال إشعار القبول/الرفض
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -214,7 +216,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _declineRequest(docId),
+                  onPressed: () => _declineRequest(docId, patientId),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red.shade50,
                     foregroundColor: Colors.red,
@@ -233,7 +235,7 @@ class _DoctorRequestsScreenState extends State<DoctorRequestsScreen> {
               const SizedBox(width: 15),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _acceptRequest(docId),
+                  onPressed: () => _acceptRequest(docId, patientId),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kPrimaryBlue,
                     foregroundColor: Colors.white,
