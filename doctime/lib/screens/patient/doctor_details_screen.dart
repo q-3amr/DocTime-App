@@ -360,45 +360,71 @@ class _DoctorDetailsScreenState extends State<DoctorDetailsScreen> {
                         ? _db.streamUser(widget.doctorId!)
                         : null,
                     builder: (context, snap) {
-                      double avg = snap.data?.rating ?? 0.0;
-                      int count = snap.data?.reviewCount ?? 0;
+                      final userModel = snap.data;
+                      double avg = userModel?.rating ?? 0.0;
+                      int count = userModel?.reviewCount ?? 0;
+                      String? bio = userModel?.about;
 
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              if (avg > 0) ...[
-                                StarRatingWidget(
-                                  initialRating: avg,
-                                  starSize: 20,
-                                  isReadOnly: true,
-                                ),
-                                const SizedBox(width: 6),
+                              Row(
+                                children: [
+                                  if (avg > 0) ...[
+                                    StarRatingWidget(
+                                      initialRating: avg,
+                                      starSize: 20,
+                                      isReadOnly: true,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '${avg.toStringAsFixed(1)}  ($count ${count == 1 ? 'Review' : 'Reviews'})',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ] else
+                                    const Text(
+                                      'No reviews yet',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              if (widget.distance != null)
                                 Text(
-                                  '${avg.toStringAsFixed(1)}  ($count ${count == 1 ? 'Review' : 'Reviews'})',
+                                  '${widget.distance!.toStringAsFixed(1)} km away',
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ] else
-                                const Text(
-                                  'No reviews yet',
-                                  style: TextStyle(
+                                    color: kPrimaryBlue,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.grey,
+                                    fontSize: 14,
                                   ),
                                 ),
                             ],
                           ),
-                          if (widget.distance != null)
-                            Text(
-                              '${widget.distance!.toStringAsFixed(1)} km away',
-                              style: const TextStyle(
-                                color: kPrimaryBlue,
+                          if (bio != null && bio.trim().isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            const Text(
+                              'About Doctor',
+                              style: TextStyle(
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 14,
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            Text(
+                              bio.trim(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
                         ],
                       );
                     },
