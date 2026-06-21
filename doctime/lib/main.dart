@@ -199,6 +199,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey, // ← مطلوب للتنقل عند الضغط على الإشعارات
       debugShowCheckedModeBanner: false,
       title: 'CareFlow',
       theme: ThemeData(
