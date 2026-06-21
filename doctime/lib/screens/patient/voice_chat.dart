@@ -524,7 +524,6 @@ class _ChatBubble extends StatelessWidget {
                   isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (!isUser) ...[_buildVoiceBtn(), SizedBox(width: 5)],
                 Flexible(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -576,6 +575,7 @@ class _ChatBubble extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (!isUser) ...[SizedBox(width: 5), _buildVoiceBtn()],
               ],
             ),
           ),
