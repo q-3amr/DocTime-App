@@ -77,6 +77,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+//أيقونة الطلبات في القائمة السفلية بتعرض دائرة حمراء تحتوي على عدد الطلبات المعلقة لتنبيه الطبيب.
   Widget _buildBadgeIcon(IconData icon, int count) {
     return Stack(clipBehavior: Clip.none, children: [
       Icon(icon),
@@ -188,8 +189,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
                       final bool hasNewReview = docs.any((d) {
                         final data = d.data() as Map<String, dynamic>;
-                        return data['hasFeedback'] == true &&
-                            data['isReviewSeen'] != true;
+                        return data['hasFeedback'] ==
+                                true && //هل في مريض ترك تقييم
+                            data['isReviewSeen'] != true; //والطبيب لسا ما شافه
                       });
 
                       final int upcoming = docs.where((d) {
@@ -201,7 +203,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       }).length;
                       final int pending =
                           docs.where((d) => d['status'] == 'pending').length;
-
+//بيرسم دائرة زرقاء صغيرة فوق أيقونة النجمة ⭐️
                       return Column(
                         children: [
                           Container(
