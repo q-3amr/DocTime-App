@@ -2,6 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/database_service.dart';
+import '../../services/message.dart';
 import '../../utils/constants.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _db = DatabaseService();
   final TextEditingController _messageController = TextEditingController();
   final String _currentUserId = FirebaseAuth.instance.currentUser!.uid;
+  final MessageServices _messageServices = MessageServices();
 
   String _chatRoomId(String user1, String user2) =>
       user1.compareTo(user2) > 0 ? '${user1}_$user2' : '${user2}_$user1';
@@ -62,6 +64,17 @@ class _ChatScreenState extends State<ChatScreen> {
       'users': {_currentUserId: true, widget.receiverId: true},
       'lastMessageSenderId': _currentUserId,
       'isRead': false,
+    });
+
+    await _db.getToken(widget.receiverId).then((token) {
+      if (token.isNotEmpty) {
+        _messageServices.sendNotificationToUser(
+            fcmToken: token,
+            title:
+                'New Message from ${FirebaseAuth.instance.currentUser!.displayName}',
+            body: msg,
+            type: 'chat');
+      }
     });
   }
 

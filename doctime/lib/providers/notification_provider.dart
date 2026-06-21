@@ -11,16 +11,22 @@ class NotificationProvider with ChangeNotifier {
   }
 
   Future<void> sendNotificationToUser(
-      {String? fcmToken, String? title, String? body}) async {
+      {required String fcmToken,
+      required String title,
+      required String body,
+      required String type}) async {
     await _messageServices.sendNotificationToUser(
       body: body,
       fcmToken: fcmToken,
       title: title,
+      type: type,
     );
   } // دي function بتستخدم ال access token اللي جبناها في ال getAccessToken عشان نرسل notification ل user معين باستخدام ال FCM token بتاعه
 
   Future<void> sendNotificationToGroup(
-      String group, String title, String body) async {
+      {required String group,
+      required String title,
+      required String body}) async {
     await _messageServices.sendNotificationToGroup(
       body: body,
       group: group,
