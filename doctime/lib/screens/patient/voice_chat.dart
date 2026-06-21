@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../models/chat_message.dart';
@@ -524,7 +524,7 @@ class _ChatBubble extends StatelessWidget {
                   isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (isUser) ...[_buildVoiceBtn(), SizedBox(width: 5)],
+                if (!isUser) ...[_buildVoiceBtn(), SizedBox(width: 5)],
                 Flexible(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
