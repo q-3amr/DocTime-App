@@ -17,18 +17,23 @@ class FeedbackHelper {
   }
 
   void _startFeedbackListener() {
+    //براقب مواعيد المريض اللي خلصت عشان يظهر بوكس الفيدباك
     _feedbackListener = FirebaseFirestore.instance
         .collection('appointments')
-        .where('patient_id', isEqualTo: userId)
-        .where('status', isEqualTo: 'completed')
-        .snapshots()
+        .where('patient_id',
+            isEqualTo: userId) //المريض اللي بتتعمل عليه المراقبة
+        .where('status', isEqualTo: 'completed') //المواعيد اللي خلصت
+        .snapshots() //اول ما يحصل تعديل في الداتا بظهر البوكس
         .listen((snapshot) {
+      //الـ snapshot دي بنستخدمها عشان نراقب التغييرات في الداتا
       for (var doc in snapshot.docs) {
+        //الداتا اللي بتيجي من الـ snapshot بتكون على هيئة list من الـ documents
         final data = doc.data();
         if (data['hasFeedback'] != true && data['isDismissed'] != true) {
+          //لو مفيش فيدباك وعند المريض
           if (context.mounted) {
-            _showFeedbackPopup(doc.id);
-            break;
+            _showFeedbackPopup(doc.id); //بستدعي الدالة هاي عشان يظهر البوكس
+            break; //بكسر اللوب عشان ما يبين البوكس اكتر من مرة
           }
         }
       }
@@ -145,15 +150,19 @@ class FeedbackHelper {
                                     .collection('appointments')
                                     .doc(appointmentId)
                                     .update({
-                                  'hasFeedback': true,
-                                  'feedback_text': _feedbackController.text,
-                                  'isReviewSeen': false,
-                                  'rating': dialogRating,
+                                  'hasFeedback': true, // المريض حط فيدباك
+                                  'feedback_text': _feedbackController
+                                      .text, //النص اللي المريض رح يكتبو
+                                  'isReviewSeen':
+                                      false, //اول ما يحط فيدباك يخليه false عشان ما يبين البوكس مره ثانيه
+                                  'rating':
+                                      dialogRating, //التقييم اللي المريض رح يحطو
                                 });
 
                                 if (doctorId != null && doctorId.isNotEmpty) {
-                                  await _db
-                                      .updateDoctorAggregateRating(doctorId);
+                                  //لو الدكتور موجود
+                                  await _db.updateDoctorAggregateRating(
+                                      doctorId); //دالة تتحدث التقييم الكلي للدكتور
                                 }
 
                                 _feedbackController.clear();
@@ -178,11 +187,12 @@ class FeedbackHelper {
                     child: IconButton(
                       icon: const Icon(Icons.close_rounded, color: Colors.grey),
                       onPressed: () async {
-                        await FirebaseFirestore.instance
+                        await FirebaseFirestore
+                            .instance // لما المريض يعمل skip نخلي البوكس هاد يختفي
                             .collection('appointments')
                             .doc(appointmentId)
                             .update({
-                          'isDismissed': true,
+                          'isDismissed': true, // انه المريض تخطى البوكس
                         });
                         if (dialogContext.mounted) Navigator.pop(dialogContext);
                       },

@@ -136,24 +136,29 @@ class PatientHomeContent extends StatefulWidget {
 class _PatientHomeContentState extends State<PatientHomeContent> {
   final _db = DatabaseService();
   final User? user = AuthService().currentUser;
-  FeedbackHelper? _feedbackHelper;
+  FeedbackHelper?
+      _feedbackHelper; //عشان نستخدم الـ helper اللي فيه ال functions اللي بتعمل feedback
 
   @override
   void initState() {
     super.initState();
     if (user != null) {
-      _feedbackHelper = FeedbackHelper(context: context, userId: user!.uid);
+      _feedbackHelper = FeedbackHelper(
+          context: context,
+          userId:
+              user!.uid); //بنستدعي الـ helper ونعطيه الـ context والـ user ID
     }
   }
 
   @override
   void dispose() {
-    _feedbackHelper?.dispose();
-    super.dispose();
+    _feedbackHelper?.dispose(); //بنعمل dispose للـ helper
+    super.dispose(); //بنعمل dispose للـ widget
   }
 
   @override
   Widget build(BuildContext context) {
+    //هنا بنعمل build للـ widget
     return Scaffold(
       body: Stack(
         children: [
