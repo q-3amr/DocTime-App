@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../widgets/star_rating_widget.dart';
@@ -21,14 +21,17 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
   void _markReviewsAsSeen() async {
     // هاي الدالة هي المسؤولة عن إخفاء تنبيهات "التقييمات الجديدة"
     final uid = FirebaseAuth.instance.currentUser?.uid;
+    // التحقق من وجود مستخدم مسجل الدخول، إذا لم يوجد يتم الخروج من الدالة
     if (uid == null) return;
 
     try {
+      // جلب جميع المواعيد الخاصة بالطبيب الحالي
       final querySnapshot = await FirebaseFirestore.instance
           .collection('appointments') //من جدول المواعيد
           .where('doctor_id', isEqualTo: uid)
           .get();
 
+      // استخدام WriteBatch لتحديث عدة مستندات في قاعدة البيانات في نفس الوقت (لتحسين الأداء)
       WriteBatch batch = FirebaseFirestore.instance.batch();
       bool hasUpdates = false;
 
@@ -42,9 +45,11 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
         }
       }
 
+      // إذا كان هناك تقييمات جديدة لم تُرَ من قبل، نقوم بتنفيذ التحديثات
       if (hasUpdates) {
         await batch.commit();
 
+        // تحديث واجهة المستخدم بعد تغيير حالة التقييمات إلى مقروءة
         if (mounted) setState(() {});
       }
     } catch (e) {
@@ -53,8 +58,10 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
   }
 
   Widget _buildAggregateSummary(List<QueryDocumentSnapshot> docs) {
+    // إذا لم تكن هناك تقييمات، لا تعرض شيئًا
     if (docs.isEmpty) return const SizedBox.shrink();
 
+    // استخراج جميع التقييمات الرقمية وتجاهل القيم الفارغة
     final ratings = docs
         .map((d) => (d.data() as Map<String, dynamic>)['rating'])
         .where((r) => r != null)
@@ -63,6 +70,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
     if (ratings.isEmpty) return const SizedBox.shrink();
 
+    // حساب متوسط التقييمات وعددها الإجمالي
     final double average = ratings.reduce((a, b) => a + b) / ratings.length;
     final int count = ratings.length;
 
@@ -138,6 +146,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      // الاستماع المباشر (Real-time) للتقييمات الخاصة بالطبيب
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('appointments')
@@ -146,11 +155,13 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
+            // عرض مؤشر تحميل أثناء جلب البيانات
             return const Center(child: CircularProgressIndicator());
           }
 
           var docs = snapshot.data!.docs;
 
+          // ترتيب التقييمات بناءً على تاريخ الموعد (الأحدث أولاً)
           docs.sort((a, b) {
             final rawA = (a.data() as Map)['appointmentDateTime'];
             final rawB = (b.data() as Map)['appointmentDateTime'];
@@ -159,6 +170,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
           });
 
           if (docs.isEmpty) {
+            // رسالة تظهر إذا لم يكن هناك أي تقييمات
             return const Center(
               child: Text('No reviews yet',
                   style: TextStyle(color: Colors.grey, fontSize: 16)),
@@ -167,10 +179,13 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
+            // إضافة 1 لعدد العناصر لأننا سنعرض ملخص التقييمات في أول عنصر
             itemCount: docs.length + 1,
             itemBuilder: (context, index) {
+              // العنصر الأول هو دائماً مربع ملخص التقييمات
               if (index == 0) return _buildAggregateSummary(docs);
 
+              // طرح 1 من الفهرس للحصول على التقييم الصحيح من القائمة
               final data = docs[index - 1].data() as Map<String, dynamic>;
               final double reviewRating =
                   (data['rating'] as num?)?.toDouble() ?? 0.0;

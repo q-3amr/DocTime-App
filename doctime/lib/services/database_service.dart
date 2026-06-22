@@ -7,6 +7,7 @@ import '../models/appointment.dart';
 import '../utils/date_utils.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/message.dart';
 
 class DatabaseService {
   final FirebaseMessaging? _customFcm;
@@ -620,6 +621,21 @@ class DatabaseService {
         'isReviewSeen': false,
         'created_at': FieldValue.serverTimestamp(),
       });
+
+      // Send a notification to the doctor
+      try {
+        final token = await getToken(doctorId);
+        if (token.isNotEmpty) {
+          MessageServices().sendNotificationToUser(
+            fcmToken: token,
+            title: 'New Appointment Request',
+            body: '$patientName requested an appointment on $date at $time',
+            type: 'appointment',
+          );
+        }
+      } catch (e) {
+        debugPrint('Failed to send notification for AI booking: $e');
+      }
 
       return jsonEncode({
         "success": true,
