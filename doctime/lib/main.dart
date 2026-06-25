@@ -26,37 +26,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase
       .initializeApp(); // لازم نعمل initialize عشان نقدر نتعامل مع ال Firebase في ال background
   debugPrint("Background notification received: ${message.messageId}");
-
-  if (message.notification != null) {
-    BigTextStyleInformation bigTextStyleInformation = BigTextStyleInformation(
-      // بنحدد ال style اللي هيظهر في ال notification لما يكون فيه نص طويل
-      message.notification!.body.toString(),
-      htmlFormatBigText: true,
-      contentTitle: message.notification!.title.toString(),
-      htmlFormatContentTitle: true,
-    );
-    AndroidNotificationDetails androidPlatformChannelSpecifics =
-        AndroidNotificationDetails(
-      'CareFlow',
-      'CareFlow',
-      importance: Importance.high,
-      playSound: true,
-      styleInformation: bigTextStyleInformation,
-      priority: Priority.high,
-    ); // بنحدد ال details اللي هيتم استخدامها في عرض ال notification على ال Android
-
-    NotificationDetails platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    ); // بنحدد ال details اللي هيتم استخدامها في عرض ال notification على كل المنصات
-
-    await FlutterLocalNotificationsPlugin().show(
-      message.data.hashCode,
-      message.notification?.title,
-      message.notification?.body,
-      platformChannelSpecifics,
-      payload: message.data["body"],
-    ); // بنعرض ال notification باستخدام ال FlutterLocalNotificationsPlugin لما يجي notification في ال background
-  }
+  // لا نعرض الإشعار يدوياً هنا لأن Android/FCM يعرضه تلقائياً عندما يكون التطبيق في الخلفية أو مغلقاً
+  // عرضه يدوياً هنا كان يسبب ظهوره مرتين
 }
 
 void handleNotificationNavigation(RemoteMessage message) {
