@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'database_service.dart';
@@ -107,7 +107,9 @@ class AiService {
       }
     }
   ];
+  // دالة البناء (Constructor). تسمح لنا بتمرير متغيرات اختيارية (مثل httpClient أو apiKey) عند إنشاء هذه الخدمة
   AiService({http.Client? httpClient, String? apiKey})
+      // تهيئة الأداة: إذا تم تمرير httpClient نستخدمه، وإلا (علامة ??) ننشئ نسخة جديدة (http.Client()) كقيمة افتراضية
       : _httpClient = httpClient ?? http.Client() {
     const keyFromEnv = String.fromEnvironment('GROQ_API_KEY');
     final key = apiKey ??
@@ -117,7 +119,11 @@ class AiService {
           'API Key for Groq is missing! Please provide it using --dart-define=GROQ_API_KEY=your_key or in a .env file.');
     }
     _apiKey = key.trim();
+    // جلب تاريخ اليوم الفعلي فقط (بدون الوقت) لكي نعطيه للذكاء الاصطناعي ليعرف تاريخ اليوم (مثلاً 2026-06-22)
     String todayDate = DateTime.now().toString().split(' ')[0];
+
+    // إضافة "الرسالة التأسيسية" (System Prompt) إلى سجل المحادثة. هذه الرسالة تحدد شخصية الذكاء الاصطناعي وقوانينه الصارمة.
+    // دورها "system" يعني أنها تعليمات سرية من المبرمج للذكاء الاصطناعي، ولن يراها المستخدم العادي.
     _chatHistory.add({
       "role": "system",
       "content":
@@ -156,54 +162,58 @@ RULES:
 - After finding the doctor, naturally transition to checking availability using `get_doctor_availability`, and finally use `book_appointment`.
 
 13. UI STATE LOCK: During this ENTIRE flow (Triage -> Search -> Availability -> Booking), you MUST keep "status": "asking". NEVER send "status": "finished" unless the patient explicitly says they don't want to book or ends the chat.
-14. CRITICAL JSON FORMAT CONSTRAINT: You MUST respond strictly with a valid JSON object matching the required schema. NEVER wrap the JSON in markdown code blocks like ```json ... ```. NEVER output any text, punctuation, whitespace, or commentary before or after the JSON payload. The entire response must strictly be a raw, parseable JSON string. Failure to comply breaks the mobile app interface."""
+14. CRITICAL JSON FORMAT CONSTRAINT: You MUST respond strictly with a valid JSON object matching the required schema. NEVER wrap the JSON in markdown code blocks like ```json ... ```. NEVER output any text, punctuation, whitespace, or commentary before or after the JSON payload. The entire response must strictly be a raw, parseable JSON string. Failure to comply breaks the mobile app interface.
+15. STRICT ANTI-ECHO RULE: NEVER repeat or echo the patient's symptoms verbatim in your responses. Process them internally and transition directly to either a follow-up question or the final clinical recommendation.
+16. NO VERBAL STALLING: NEVER output passive transition phrases (e.g., "Let me search for available times today") or halt the execution chain to wait for redundant permissions. Execute the tools instantly and seamlessly as defined in the flow."""
     });
   }
 
-  Future<String> getAiResponse(String userMessage) async {
-    _chatHistory.add({"role": "user", "content": userMessage.trim()});
+  Future<String> getAiResponse(String userMessage) async { // فنكشن مسؤول عن إرسال رسالة المريض والحصول على رد الذكاء الاصطناعي
+    _chatHistory.add({"role": "user", "content": userMessage.trim()}); // أضف رسالة المريض إلى سجل المحادثة كرسالة من نوع "يوزر"
     try {
-      final response = await _httpClient.post(
-        Uri.parse(_apiUrl),
-        headers: {
-          "Authorization": "Bearer $_apiKey",
-          "Content-Type": "application/json",
+      final response = await _httpClient.post( // أرسل طلب (POST) عبر الإنترنت إلى خادم الذكاء الاصطناعي وانتظر الرد
+        Uri.parse(_apiUrl), // حوّل الرابط النصي إلى رابط قابل للاستخدام
+        headers: { // ديباجة الطلب (معلومات للخادم قبل المحتوى)
+          "Authorization": "Bearer $_apiKey", // كلمة السر (مفتاح الـ API) لإثبات هوية التطبيق للخادم
+          "Content-Type": "application/json", // إخبار الخادم أن لغتنا ستكون جيسون (JSON)
         },
-        body: jsonEncode({
-          "model": "llama-3.3-70b-versatile",
-          "messages": _chatHistory,
-          "temperature": 0.5,
-          "tools": _tools,
-          "tool_choice": "auto"
+        body: jsonEncode({ // محتوى الطلب: حوّله من Map إلى نص JSON قبل الإرسال
+          "model": "llama-3.3-70b-versatile", // اسم "عقل" الذكاء الاصطناعي الذي نريد استخدامه
+          "messages": _chatHistory, // أرسل سجل المحادثة كاملاً لكي يتذكر الذكاء الاصطناعي السياق
+          "temperature": 0.5, // درجة الإبداع والخيال (0 = آلة جامدة، 1 = خيال واسع). 0.5 = توازن مثالي
+          "tools": _tools, // أرسل له قائمة الأدوات التي يمكنه استخدامها (البحث عن طبيب، الحجز...)
+          "tool_choice": "auto" // اتركه يقرر بنفسه متى يستخدم الأداة ومتى يرد بنص عادي
         }),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final responseMessage = data['choices'][0]['message'];
+      if (response.statusCode == 200) { // إذا كان رمز الحالة 200 يعني الطلب نجح وجاء رد من الخادم
+        final data = jsonDecode(response.body); // حوّل نص الجيسون الخام القادم من الخادم إلى خريطة بيانات يفهمها الكود
+        final responseMessage = data['choices'][0]['message']; // استخرج رسالة الذكاء الاصطناعي من داخل الخريطة (الخادم يضع الرد دائماً داخل مصفوفة اسمها "تشويسز" ونأخذ أول عنصر منها)
 
-        if (responseMessage['tool_calls'] != null) {
-          final toolCalls = responseMessage['tool_calls'];
-          final toolCall = toolCalls[0];
-          final toolCallId = toolCall['id'];
-          final toolName = toolCall['function']['name'];
+        if (responseMessage['tool_calls'] != null) { // إذا قرر الذكاء الاصطناعي استخدام أداة (يعني ما رد بنص عادي، بل طلب تنفيذ فنكشن)
+          final toolCalls = responseMessage['tool_calls']; // استخرج قائمة الأدوات التي طلب الذكاء الاصطناعي تنفيذها
+          final toolCall = toolCalls[0]; // خذ أول أداة من القائمة (في الغالب تكون أداة واحدة فقط)
+          final toolCallId = toolCall['id']; // رقم تعريفي فريد لهذا الطلب، سنحتاجه لاحقاً لإخبار الذكاء الاصطناعي بنتيجة الأداة
+          final toolName = toolCall['function']['name']; // اسم الفنكشن الذي طلب الذكاء الاصطناعي تشغيله (مثلاً "بحث_أطباء" أو "حجز_موعد")
 
-          final toolArgs = jsonDecode(toolCall['function']['arguments']);
+          final toolArgs = jsonDecode(toolCall['function']['arguments']); // حوّل المدخلات التي أرسلها الذكاء الاصطناعي (مثلاً اسم التخصص والتاريخ) من نص جيسون إلى خريطة بيانات يمكن قراءتها
 
+          // أضف قرار الذكاء الاصطناعي (طلب الأداة) إلى سجل المحادثة، حتى يتذكر أنه هو من طلب هذه الأداة عندما نرد عليه لاحقاً
           _chatHistory.add(
               {"role": "assistant", "content": null, "tool_calls": toolCalls});
 
-          String toolResultString = "";
+          String toolResultString = ""; // متغير فارغ سيتم وضع نتيجة الأداة بداخله لاحقاً وإرسالها للذكاء الاصطناعي
 
           if (toolName == "search_doctors") {
             final String specialty = toolArgs['specialty'];
+            // اقرأ طريقة الترتيب التي طلبها الذكاء الاصطناعي. نجرب اسمين مختلفين (sort_by أو sortBy) لأن الذكاء الاصطناعي قد يرسلها بأي شكل منهما
             String rawSort =
-                (toolArgs['sort_by'] ?? toolArgs['sortBy'] ?? "none")
-                    .toString()
-                    .toLowerCase()
-                    .trim();
+                (toolArgs['sort_by'] ?? toolArgs['sortBy'] ?? "none") // إذا لم يرسل الذكاء الاصطناعي أي ترتيب فسنضع قيمة افتراضية "none"
+                    .toString() // تأكد أن القيمة نص
+                    .toLowerCase() // حوّله إلى حروف صغيرة لتجنب مشكلة اختلاف الحالة (Nearest أو nearest)
+                    .trim(); // احذف المسافات الفارغة من بداية ونهاية النص
             final String sortBy =
-                rawSort.contains("near") ? "nearest" : rawSort;
+                rawSort.contains("near") ? "nearest" : rawSort; // إذا كان النص يحتوي على كلمة "near" (مثل nearest أو nearby) فاستخدم قيمة ثابتة "الأقرب" لتوحيد المصطلح
 
             if (sortBy == "nearest") {
               try {
