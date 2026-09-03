@@ -1,0 +1,29 @@
+{
+  "Files": [
+    {
+      "Id": "/home/ubuntu/DocTime-App/luminos-hrm/wwwroot/css/site.css",
+      "PackagePath": "staticwebassets/css/site.css"
+    },
+    {
+      "Id": "/home/ubuntu/DocTime-App/luminos-hrm/wwwroot/js/site.js",
+      "PackagePath": "staticwebassets/js/site.js"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.LuminosHrm.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.LuminosHrm.props",
+      "PackagePath": "build\\LuminosHrm.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildMultiTargeting.LuminosHrm.props",
+      "PackagePath": "buildMultiTargeting\\LuminosHrm.props"
+    },
+    {
+      "Id": "obj/Debug/net8.0/staticwebassets/msbuild.buildTransitive.LuminosHrm.props",
+      "PackagePath": "buildTransitive\\LuminosHrm.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
